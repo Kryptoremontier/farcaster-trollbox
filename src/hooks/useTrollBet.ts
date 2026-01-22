@@ -3,10 +3,10 @@ import { type Address, parseUnits, formatUnits } from 'viem';
 import TrollBetABI from '~/lib/abi/TrollBet.json';
 
 // Contract address - TODO: Update this after deployment
-export const TROLLBET_CONTRACT_ADDRESS: Address = '0x0000000000000000000000000000000000000000';
+export const TROLLBET_CONTRACT_ADDRESS: Address = '0x26dEe56f85fAa471eFF9210326734389186ac625';
 
 // $DEGEN token address on Base (chain ID 8453)
-export const DEGEN_TOKEN_ADDRESS: Address = '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed';
+export const DEGEN_TOKEN_ADDRESS: Address = '0xdDB5C1a86762068485baA1B481FeBeB17d30e002';
 
 /**
  * Hook to place a bet on a market
