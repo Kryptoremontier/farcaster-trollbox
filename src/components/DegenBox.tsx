@@ -19,7 +19,9 @@ import {
   useMarketData, 
   useUserBet, 
   useTransactionStatus,
-  useApproveToken 
+  useApproveToken,
+  useDegenBalance,
+  useDegenAllowance
 } from "~/hooks/useTrollBet"
 import type { Address } from "viem"
 
@@ -132,6 +134,10 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const { marketData, refetch: refetchMarket } = useMarketData(marketIdNum)
   const { userBet, refetch: refetchUserBet } = useUserBet(marketIdNum, address as Address | undefined)
   
+  // Balance hooks
+  const { balance: degenBalance, refetch: refetchBalance } = useDegenBalance(address as Address | undefined)
+  const { allowance: degenAllowance, refetch: refetchAllowance } = useDegenAllowance(address as Address | undefined)
+  
   // Transaction hooks
   const { placeBet, hash: betHash, isPending: isBetPending } = usePlaceBet()
   const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinnings()
@@ -146,6 +152,15 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const [betStatus, setBetStatus] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null)
   const [needsApproval, setNeedsApproval] = useState(true)
   const [selectedSide, setSelectedSide] = useState<'YES' | 'NO' | null>(null)
+
+  // Check if approval is needed based on allowance
+  useEffect(() => {
+    if (degenAllowance && selectedAmount) {
+      const allowanceNum = parseFloat(degenAllowance);
+      const amountNum = parseFloat(selectedAmount);
+      setNeedsApproval(allowanceNum < amountNum);
+    }
+  }, [degenAllowance, selectedAmount]);
 
   // Initialize Farcaster SDK
   useEffect(() => {
@@ -232,6 +247,8 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       });
       refetchMarket();
       refetchUserBet();
+      refetchBalance();
+      refetchAllowance();
       setSelectedSide(null);
       
       // Add message to chat
@@ -251,7 +268,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       
       setTimeout(() => setBetStatus(null), 5000);
     }
-  }, [isBetConfirmed, selectedSide, selectedAmount, context, refetchMarket, refetchUserBet]);
+  }, [isBetConfirmed, selectedSide, selectedAmount, context, refetchMarket, refetchUserBet, refetchBalance, refetchAllowance]);
 
   // Handle claim confirmation
   useEffect(() => {
@@ -270,13 +287,14 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   useEffect(() => {
     if (isApproveConfirmed) {
       setNeedsApproval(false);
+      refetchAllowance();
       setBetStatus({
         type: 'success',
         message: `Token approval successful! You can now place bets.`
       });
       setTimeout(() => setBetStatus(null), 3000);
     }
-  }, [isApproveConfirmed]);
+  }, [isApproveConfirmed, refetchAllowance]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
@@ -655,26 +673,50 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 </Button>
               </div>
 
-              {/* User Balance & Stats */}
-              <div className="p-3 bg-gradient-to-br from-[#9E75FF]/5 to-[#9E75FF]/10 rounded-lg border border-[#9E75FF]/20">
+              {/* Wallet Balance */}
+              <div className="p-3 bg-gradient-to-br from-green-500/5 to-green-500/10 rounded-lg border border-green-500/20">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs text-gray-600 font-medium">Your Balance</span>
-                  <span className="text-lg font-bold text-[#9E75FF] font-mono">
-                    {userBet ? formatNumber(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)) : '0'} $DEGEN
+                  <span className="text-xs text-gray-600 font-medium">💰 Wallet Balance</span>
+                  <span className="text-lg font-bold text-green-600 font-mono">
+                    {isConnected ? formatNumber(parseFloat(degenBalance)) : '0'} $DEGEN
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>YES: {userBet ? formatNumber(parseFloat(userBet.yesAmount)) : '0'} $DEGEN</span>
-                  <span>NO: {userBet ? formatNumber(parseFloat(userBet.noAmount)) : '0'} $DEGEN</span>
+                  <span>Your Bets: {userBet ? formatNumber(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)) : '0'} $DEGEN</span>
+                  <span className="text-green-600">Available: {isConnected ? formatNumber(parseFloat(degenBalance)) : '0'}</span>
                 </div>
               </div>
 
-              {/* Amount Quick Select */}
-              <div className="space-y-2">
+              {/* Amount Selection */}
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500 font-medium">Bet Amount</span>
                   <span className="text-xs text-gray-400">Amount in $DEGEN</span>
                 </div>
+                
+                {/* Custom Input with MAX button */}
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    value={selectedAmount}
+                    onChange={(e) => setSelectedAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    className="flex-1 font-mono text-base"
+                    min="0"
+                    step="100"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedAmount(degenBalance)}
+                    disabled={!isConnected || parseFloat(degenBalance) === 0}
+                    className="px-4 font-bold text-green-600 border-green-500 hover:bg-green-50"
+                  >
+                    MAX
+                  </Button>
+                </div>
+
+                {/* Quick Select Buttons */}
                 <div className="flex gap-2">
                   {[100, 500, 1000, 5000].map((amount) => (
                     <Button

@@ -196,6 +196,73 @@ export function useCalculatePayout(marketId: number, side: boolean, amount: stri
 }
 
 /**
+ * Hook to get user's $DEGEN balance
+ */
+export function useDegenBalance(userAddress?: Address) {
+  // ERC20 balanceOf ABI
+  const erc20BalanceABI = [
+    {
+      type: 'function',
+      name: 'balanceOf',
+      inputs: [{ name: 'account', type: 'address' }],
+      outputs: [{ name: '', type: 'uint256' }],
+      stateMutability: 'view'
+    }
+  ] as const;
+
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: DEGEN_TOKEN_ADDRESS,
+    abi: erc20BalanceABI,
+    functionName: 'balanceOf',
+    args: userAddress ? [userAddress] : undefined,
+  });
+
+  const balance = data ? formatUnits(data as bigint, 18) : '0';
+
+  return {
+    balance,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+/**
+ * Hook to check $DEGEN allowance for TrollBet contract
+ */
+export function useDegenAllowance(userAddress?: Address) {
+  // ERC20 allowance ABI
+  const erc20AllowanceABI = [
+    {
+      type: 'function',
+      name: 'allowance',
+      inputs: [
+        { name: 'owner', type: 'address' },
+        { name: 'spender', type: 'address' }
+      ],
+      outputs: [{ name: '', type: 'uint256' }],
+      stateMutability: 'view'
+    }
+  ] as const;
+
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: DEGEN_TOKEN_ADDRESS,
+    abi: erc20AllowanceABI,
+    functionName: 'allowance',
+    args: userAddress ? [userAddress, TROLLBET_CONTRACT_ADDRESS] : undefined,
+  });
+
+  const allowance = data ? formatUnits(data as bigint, 18) : '0';
+
+  return {
+    allowance,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+/**
  * Hook to wait for transaction confirmation with toast-friendly status
  */
 export function useTransactionStatus(hash?: `0x${string}`) {
