@@ -1,1135 +1,349 @@
-# 🖼️ frames-v2-demo
+# TrollBox - Farcaster Prediction Market Hub 🎲
 
-A Farcaster Frames v2 demo app.
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/yourusername/farcaster-trollbox)
 
-[🛠️ Frame Playground](https://warpcast.com/~/developers/frame-playground) (Mobile only)<br/>
-[📦 Frame SDK](https://github.com/farcasterxyz/frames/)<br/>
-[👀 Dev preview docs](https://github.com/farcasterxyz/frames/wiki/frames-v2-developer-playground-preview)<br/>
+A complete Farcaster Mini App (Frame v2) featuring a prediction market with real-time betting, live chat (TrollBox), and leaderboards.
 
-## Getting Started
+## 🎯 What is TrollBox?
 
-This is a [NextJS](https://nextjs.org/) + TypeScript + React app.
+TrollBox is a **multi-market prediction platform** built specifically for Farcaster. Browse through 12+ troll-themed prediction markets (from "Will Peter Schiff tweet about Bitcoin?" to "Will Elon post a Pepe?") and bet using a **Pari-mutuel betting system** where odds dynamically adjust based on pool sizes.
 
-To install dependencies:
+### Architecture
+
+- **Hub (Market Grid)**: Browse all available prediction markets
+- **Detail View**: Deep-dive into specific market with live betting, chat, and leaderboard
+
+### Features
+
+#### Hub (TrollBoxHub)
+- ✅ **Market Grid** - Responsive grid of 12+ prediction markets
+- ✅ **Search & Filter** - Real-time search by question/description
+- ✅ **Category Filters** - Filter by crypto, tech, memes, politics, sports
+- ✅ **Market Cards** - Live stats (time, pool size, YES/NO %, bettors)
+- ✅ **Troll Thumbnails** - Emoji-based market icons (ready for images)
+
+#### Market Detail (DegenBox)
+- ✅ **Mock Betting Engine** - Full Pari-mutuel logic without blockchain
+- ✅ **Real-time Odds** - Dynamically calculated based on YES/NO pool sizes  
+- ✅ **User Balance Tracking** - Track bets, winnings, and total wagered
+- ✅ **Live TrollBox Chat** - Real-time messaging with bet indicators
+- ✅ **Leaderboard** - Top performers by wins, accuracy, and earnings
+- ✅ **Back Navigation** - Return to Hub to explore other markets
+
+#### Platform
+- ✅ **Farcaster SDK Integration** - Detects Farcaster context and displays user info
+- ✅ **Wagmi Wallet Support** - Ready for Web3 wallet connections (Base, Optimism, Mainnet, Degen, Unichain)
+- ✅ **Responsive UI** - Built with Tailwind CSS and shadcn/ui components
+- ✅ **Professional Design** - Purple gradient (#9E75FF) branding throughout
+
+## 🚀 Current Implementation Status
+
+### ✅ Completed
+
+#### 1. Farcaster Manifest & SDK Integration
+- **Manifest**: `public/.well-known/farcaster.json` configured as "TrollBox"
+- **SDK**: `@farcaster/frame-sdk` initialized in both Hub and Detail views
+- **Context Detection**: App detects if running in Farcaster client
+- **User Info**: Displays Farcaster user profile (username, avatar, FID)
+
+#### 2. Hub/Detail Architecture
+- **TrollBoxHub** (`src/components/TrollBoxHub.tsx`): Market grid with search/filter
+- **DegenBox** (`src/components/DegenBox.tsx`): Market detail with betting
+- **State Routing** (`src/app/app.tsx`): Switch between Hub and Detail
+- **Back Navigation**: Arrow button to return to Hub
+
+#### 3. Mock Markets Data (`src/lib/mockMarkets.ts`)
+- **12 Markets**: Troll-themed predictions (crypto, tech, memes, politics, sports)
+- **Helper Functions**: Time remaining, odds calculation, formatting
+- **Dynamic Loading**: Markets load data from central array
+
+#### 4. Market Card Component (`src/components/MarketCard.tsx`)
+- **Thumbnail Display**: Emoji-based (ready for image replacement)
+- **Live Stats**: Time, bettors, pool size, YES/NO percentages
+- **Category Badges**: Color-coded by market type
+- **Hover Effects**: Purple glow and thumbnail animation
+
+#### 5. Mock Betting Logic (`src/lib/mockBettingEngine.ts`)
+Complete Pari-mutuel betting system in TypeScript:
+
+**Core Features:**
+- ✅ Pool management (YES/NO pools with initial liquidity)
+- ✅ Dynamic odds calculation (Total Pool / Side Pool)
+- ✅ Real-time percentage updates
+- ✅ User balance tracking (starts with 10,000 $DEGEN)
+- ✅ Bet history with timestamps and odds
+- ✅ Market simulation (other users betting every 5 seconds)
+- ✅ Payout calculation (when market resolves)
+
+**Example Flow:**
+```typescript
+const engine = getBettingEngine();
+
+// User places bet
+const result = engine.placeBet(1000, 'YES');
+// Updates pools, deducts balance, stores bet
+
+// Real-time odds
+const yesOdds = engine.calculateOdds('YES'); // e.g., 1.54x
+const noOdds = engine.calculateOdds('NO');   // e.g., 2.86x
+
+// Market resolves
+engine.resolveMarket('YES');
+// Calculates winnings based on user's share of winning pool
+```
+
+### 🔄 Next Steps (Steps 3 & 4)
+
+#### 3. Wallet Integration (In Progress)
+- Wagmi configured with Farcaster Mini App connector
+- Supports: Base, Optimism, Mainnet, Degen, Unichain
+- **TODO**: Connect wallet state to betting actions
+
+#### 4. Smart Contract (Future)
+- Port mock logic to Solidity
+- Deploy on Base network
+- Replace mock engine with contract calls
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **Farcaster**: `@farcaster/frame-sdk` for Mini App integration
+- **Wallets**: Wagmi + Viem (Ethereum) + Solana wallet adapters
+- **State Management**: React hooks + Mock Betting Engine singleton
+- **Icons**: Lucide React
+- **Deployment**: Netlify (configured with `netlify.toml`)
+
+## 📦 Installation
 
 ```bash
-$ pnpm
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
 ```
 
-To run the app:
+## 🧪 Testing TrollBox
 
-```bash
-$ pnpm dev
+### Testing the Hub (http://localhost:3000)
+
+1. **Browse Markets**: See grid of 12 prediction markets
+2. **Search**: Type "Bitcoin" to filter markets
+3. **Filter by Category**: Click "crypto" pill to see only crypto markets
+4. **Market Cards**: Each shows:
+   - Thumbnail emoji (e.g., 🧓💬)
+   - Question and description
+   - Time remaining
+   - Total bettors
+   - Pool size in $DEGEN
+   - YES/NO percentage bars
+5. **Click "Bet Now"**: Navigate to market detail
+
+### Testing Market Detail
+
+1. **Click any market card** from Hub
+2. **See Market Info**:
+   - Back arrow (top left) to return to Hub
+   - Market question and description
+   - Category badge
+   - Live stats
+
+3. **Place Bets**:
+   - User starts with 10,000 $DEGEN
+   - Select amount (100, 500, 1K, 5K)
+   - Click YES or NO
+   - See odds on buttons (e.g., "1.54x odds")
+   - Balance updates instantly
+   - Bet appears in chat
+
+4. **Watch Market Activity**:
+   - Other "users" bet every 5 seconds
+   - Pools fluctuate
+   - Odds recalculate automatically
+
+5. **Return to Hub**:
+   - Click back arrow
+   - Explore and bet on other markets
+
+## 🎮 How Pari-Mutuel Betting Works
+
+Unlike traditional betting with fixed odds, **pari-mutuel** creates a prize pool where:
+
+1. All bets go into shared pools (YES pool + NO pool)
+2. Odds = `Total Pool / Your Side's Pool`
+3. When market resolves, winners split the entire pool proportionally
+
+**Example:**
+```
+YES Pool: 65,000 $DEGEN
+NO Pool: 35,000 $DEGEN
+Total: 100,000 $DEGEN
+
+YES Odds: 100,000 / 65,000 = 1.54x
+NO Odds: 100,000 / 35,000 = 2.86x
+
+If you bet 1,000 on YES and YES wins:
+Your share of YES pool: 1,000 / 65,000 = 1.54%
+Your winnings: 1.54% × 100,000 = 1,540 $DEGEN
 ```
 
-To try your app in the Warpcast playground, you'll want to use a tunneling tool like [ngrok](https://ngrok.com/).
-
-## Tutorial
-
-Here's a full walkthrough of creating a frames v2 app:
-
-[![Frames v2 Tutorial](https://img.youtube.com/vi/5wAbo_YsuC4/0.jpg)](https://www.youtube.com/watch?v=5wAbo_YsuC4)
-
-[📺 View video](https://www.youtube.com/watch?v=5wAbo_YsuC4)
-
-### Setup and dependencies
-
-We'll start with a fresh NextJS app:
-
-```bash
-$ pnpm create next-app
-✔ What is your project named? … frames-v2-demo
-✔ Would you like to use TypeScript? … No / Yes
-✔ Would you like to use ESLint? … No / Yes
-✔ Would you like to use Tailwind CSS? … No / Yes
-✔ Would you like your code inside a `src/` directory? … No / Yes
-✔ Would you like to use App Router? (recommended) … No / Yes
-✔ Would you like to use Turbopack for next dev? … No / Yes
-✔ Would you like to customize the import alias (@/* by default)? … No / Yes
-✔ What import alias would you like configured? … ~/*
-Creating a new Next.js app in /Users/horsefacts/Projects/frames-v2-demo.
-```
-
-Next, install frame related dependencies. We'll need the official frame SDK:
-
-```bash
-$ pnpm add @farcaster/frame-sdk
-```
-
-We'll also need [Wagmi](https://wagmi.sh/) to handle wallet interactions. Let's install it and its dependencies.
-
-```bash
-$ pnpm add wagmi viem@2.x @tanstack/react-query
-```
-
-OK, we're ready to get started!
-
-### Configuring providers
-
-We'll need to set up a custom Wagmi connector in order to interact with the user's Farcaster wallet. Since the frames SDK is a frontend only package, we'll also need to use client components and [Next dynamic imports](https://nextjs.org/docs/pages/building-your-application/optimizing/lazy-loading#nextdynamic) in a few places.
-
-First, let's create a custom connector component at `lib/connector.ts`. We'll use this to connect to the user's Farcaster wallet from our app.
-
-> [!NOTE]
-> We plan to move this connector into the frames SDK so you don't have to worry about it. But you'll need to copy-paste it for now.
-
-```ts
-import sdk from "@farcaster/frame-sdk";
-import { SwitchChainError, fromHex, getAddress, numberToHex } from "viem";
-import { ChainNotConfiguredError, createConnector } from "wagmi";
-
-frameConnector.type = "frameConnector" as const;
-
-export function frameConnector() {
-  let connected = true;
-
-  return createConnector<typeof sdk.wallet.ethProvider>((config) => ({
-    id: "farcaster",
-    name: "Farcaster Wallet",
-    type: frameConnector.type,
-
-    async setup() {
-      this.connect({ chainId: config.chains[0].id });
-    },
-    async connect({ chainId } = {}) {
-      const provider = await this.getProvider();
-      const accounts = await provider.request({
-        method: "eth_requestAccounts",
-      });
-
-      let currentChainId = await this.getChainId();
-      if (chainId && currentChainId !== chainId) {
-        const chain = await this.switchChain!({ chainId });
-        currentChainId = chain.id;
-      }
-
-      connected = true;
-
-      return {
-        accounts: accounts.map((x) => getAddress(x)),
-        chainId: currentChainId,
-      };
-    },
-    async disconnect() {
-      connected = false;
-    },
-    async getAccounts() {
-      if (!connected) throw new Error("Not connected");
-      const provider = await this.getProvider();
-      const accounts = await provider.request({
-        method: "eth_requestAccounts",
-      });
-      return accounts.map((x) => getAddress(x));
-    },
-    async getChainId() {
-      const provider = await this.getProvider();
-      const hexChainId = await provider.request({ method: "eth_chainId" });
-      return fromHex(hexChainId, "number");
-    },
-    async isAuthorized() {
-      if (!connected) {
-        return false;
-      }
-
-      const accounts = await this.getAccounts();
-      return !!accounts.length;
-    },
-    async switchChain({ chainId }) {
-      const provider = await this.getProvider();
-      const chain = config.chains.find((x) => x.id === chainId);
-      if (!chain) throw new SwitchChainError(new ChainNotConfiguredError());
-
-      await provider.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: numberToHex(chainId) }],
-      });
-      return chain;
-    },
-    onAccountsChanged(accounts) {
-      if (accounts.length === 0) this.onDisconnect();
-      else
-        config.emitter.emit("change", {
-          accounts: accounts.map((x) => getAddress(x)),
-        });
-    },
-    onChainChanged(chain) {
-      const chainId = Number(chain);
-      config.emitter.emit("change", { chainId });
-    },
-    async onDisconnect() {
-      config.emitter.emit("disconnect");
-      connected = false;
-    },
-    async getProvider() {
-      return sdk.wallet.ethProvider;
-    },
-  }));
-}
-```
-
-Next, let's create a provider component that handles our Wagmi configuration. Create `components/providers/WagmiProvider.tsx`.
-
-We'll configure our client with Base as a connected network and use the `frameConnector` that we just created:
+## 📁 Project Structure
 
 ```
-import { createConfig, http, WagmiProvider } from "wagmi";
-import { base } from "wagmi/chains";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { frameConnector } from "~/lib/connector";
-
-export const config = createConfig({
-  chains: [base],
-  transports: {
-    [base.id]: http(),
-  },
-  connectors: [frameConnector()],
-});
-
-const queryClient = new QueryClient();
-
-export default function Provider({ children }: { children: React.ReactNode }) {
-  return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </WagmiProvider>
-  );
-}
+src/
+├── app/
+│   ├── page.tsx              # Main entry (metadata + dynamic import)
+│   ├── app.tsx               # ⭐ Router (Hub ↔ Detail)
+│   ├── layout.tsx            # Root layout with Providers
+│   ├── providers.tsx         # Wagmi + Solana providers
+│   └── api/                  # API routes (webhooks, notifications)
+├── components/
+│   ├── TrollBoxHub.tsx       # ⭐ Market grid (Hub)
+│   ├── MarketCard.tsx        # ⭐ Individual market card
+│   ├── DegenBox.tsx          # ⭐ Market detail (betting UI)
+│   ├── ui/                   # shadcn/ui components
+│   └── providers/            # Wagmi & Solana configs
+└── lib/
+    ├── mockMarkets.ts        # ⭐ 12 markets + helpers
+    ├── mockBettingEngine.ts  # ⭐ Pari-mutuel logic
+    ├── utils.ts              # Tailwind cn() helper
+    └── truncateAddress.ts    # Address formatting
 ```
 
-Now let's create a top-level `Providers` component that will include all our required providers. In this simple demo app, we'll just be adding Wagmi, but this is where you might also add other providers necessary for your own app.
+## 🔑 Key Files
 
-Create `app/providers.tsx`:
+### `src/lib/mockBettingEngine.ts`
+The heart of the betting system:
+- `MockBettingEngine` class with subscribe/notify pattern
+- `calculateOdds()` - Real-time odds from pool ratios
+- `placeBet()` - Validates and executes bets
+- `simulateMarketActivity()` - Adds random bets for realism
+- `resolveMarket()` - Calculates payouts
 
-```tsx
-"use client";
+### `src/components/DegenBox.tsx`
+Main UI component:
+- Subscribes to betting engine updates
+- Shows live odds on bet buttons
+- Displays user balance and stats
+- Integrates Farcaster SDK context
 
-import dynamic from "next/dynamic";
-
-const WagmiProvider = dynamic(
-  () => import("~/components/providers/WagmiProvider"),
-  {
-    ssr: false,
+### `public/.well-known/farcaster.json`
+Farcaster Mini App manifest:
+```json
+{
+  "frame": {
+    "version": "1",
+    "name": "DegenBox",
+    "iconUrl": "https://your-url/icon.png",
+    "splashImageUrl": "https://your-url/splash.png",
+    "homeUrl": "https://your-url"
   }
-);
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return <WagmiProvider>{children}</WagmiProvider>;
 }
 ```
 
-Note two new things here: since the SDK relies on the browser `window`, we need to define this as a client component with `"use client";` and use a dynamic import to import `WagmiProvider`.
+## 🚢 Deployment
 
-Finally, let's add this providers component to our app layout. Edit `app/layout.tsx`:
+### Netlify (Recommended)
 
-```tsx
-import type { Metadata } from "next";
+1. Push to GitHub
+2. Connect repo to Netlify
+3. Set build command: `npm run build`
+4. Set publish directory: `.next`
+5. Deploy!
 
-import "~/app/globals.css";
-import { Providers } from "~/app/providers";
+The `netlify.toml` is already configured:
+```toml
+[build]
+  command = "npm run build"
+  publish = ".next"
 
-export const metadata: Metadata = {
-  title: "Farcaster Frames v2 Demo",
-  description: "A Farcaster Frames v2 demo app",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en">
-      <body>
-        <Providers>{children}</Providers>
-      </body>
-    </html>
-  );
-}
+[[redirects]]
+  from = "/.well-known/farcaster.json"
+  to = "/.well-known/farcaster.json"
+  status = 200
 ```
 
-OK, setup is all done, let's do something more interesting...
+### Testing in Farcaster
 
-### Creating the app
+1. Deploy to production URL
+2. Update `farcaster.json` with your domain
+3. Open in Warpcast mobile app
+4. Share frame link or add to your profile
 
-Let's create a component for our app's `homeUrl` page. Create `app/components/Demo.tsx`.
+## 🧠 Understanding the Code
 
-For now, let's just put in a placeholder, Since our frame app will be rendering at mobile width, we'll give it a fixed width and center the content:
+### Betting Flow
+```typescript
+// 1. User clicks YES button
+handlePlaceBet('YES')
 
-```tsx
-export default function Demo() {
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-    </div>
-  );
-}
+// 2. Engine validates and processes
+const result = bettingEngine.placeBet(selectedAmount, 'YES')
+
+// 3. State updates trigger UI refresh
+setEngineState(newState)
+
+// 4. Odds recalculate automatically
+const newOdds = bettingEngine.calculateOdds('YES')
+
+// 5. UI shows updated balance, pools, and odds
 ```
 
-Since we're going to import the frames SDK in this component, we'll need to load it dynamically, too. Edit `app/page.tsx`:
-
-```tsx
-"use client";
-
-import dynamic from "next/dynamic";
-
-const Demo = dynamic(() => import("~/components/Demo"), {
-  ssr: false,
-});
-
-export default function Home() {
-  return (
-    <main className="min-h-screen flex flex-col p-4">
-      <Demo />
-    </main>
-  );
-}
+### Reactive Updates
+```typescript
+// Subscribe to engine changes
+useEffect(() => {
+  const unsubscribe = bettingEngine.subscribe((newState) => {
+    setEngineState(newState); // Triggers re-render
+  });
+  return () => unsubscribe();
+}, [bettingEngine]);
 ```
 
-OK, we're all set up! Now is a good time to try out our frames app in the developer playground. To do so, we'll use ngrok to access our local dev server over the internet.
+## 🔐 Environment Variables
 
-First, run the dev server:
+Optional (for production features):
 
-```bash
-$ pnpm dev
+```env
+# Upstash Redis (for persistent storage)
+UPSTASH_REDIS_REST_URL=your_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_redis_token
+
+# App URL (for metadata)
+NEXT_PUBLIC_URL=https://your-app.netlify.app
 ```
 
-Next, start ngrok:
+## 🐛 Troubleshooting
 
-```bash
-$ ngrok http http://localhost:3000
-```
+### "Module not found: button.tsx"
+- Windows case-sensitivity issue
+- Solution: Use `button-component.tsx` (already configured)
 
-Now open the Frame Playground on Warpcast mobile, by visiting [https://warpcast.com/~/developers/frame-playground](https://warpcast.com/~/developers/frame-playground).
+### "SDK not loading"
+- Check if `sdk.actions.ready()` is called
+- Verify `farcaster.json` is accessible at `/.well-known/farcaster.json`
 
-Enter your ngrok URL:
+### "Odds not updating"
+- Ensure betting engine subscription is active
+- Check browser console for errors
 
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/1_playground.png" width="200" alt="Frames Playground" />
+## 📚 Resources
 
-..and tap "Launch" to open your app.
+- [Farcaster Frames v2 Docs](https://docs.farcaster.xyz/developers/frames/v2/spec)
+- [Farcaster SDK](https://github.com/farcasterxyz/fc-frame-sdk)
+- [Wagmi Documentation](https://wagmi.sh/)
+- [shadcn/ui Components](https://ui.shadcn.com/)
 
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/2_blank.png" width="200" alt="Launch" />
+## 📄 License
 
-If you watch your dev server and ngrok logs, you'll see a request to your server. But nothing will load until we signal to Warpcast that our app is `ready()`.
+MIT
 
-### Calling `ready()`
+---
 
-To give frames a consistent loading experience, clients display a splash screen and image until the app calls `sdk.actions.ready()`. In order to make it more visible here, let's add a splash image and loading color:
+**Built with ❤️ for the Farcaster community**
 
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/3_config.png" width="200" alt="Config" />
-
-Now we get a nice background color and splash image:
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/4_splash.png" width="200" alt="Splash" />
-
-Let's call `ready()` to load our app. We'll call `sdk.actions.ready()` in an effect on render, which tells the parent Farcaster app that our frame is ready to render and hides the splash screen:
-
-```tsx
-import { useEffect, useState } from "react";
-import sdk from "@farcaster/frame-sdk";
-
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-    </div>
-  );
-}
-```
-
-Try again in the playground and we'll see our app:
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/5_hello.png" width="200" alt="Hello" />
-
-### Viewing context
-
-When your frame loads, the parent Farcaster app provides it with context information, including the current user. Let's take a look at it.
-
-We can access the context data at `sdk.context` to see information about the current user.:
-
-```tsx
-import { useEffect, useCallback, useState } from "react";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
-
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
-
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-
-      <div className="mb-4">
-        <h2 className="font-2xl font-bold">Context</h2>
-        <button
-          onClick={toggleContext}
-          className="flex items-center gap-2 transition-colors"
-        >
-          <span
-            className={`transform transition-transform ${
-              isContextOpen ? "rotate-90" : ""
-            }`}
-          >
-            ➤
-          </span>
-          Tap to expand
-        </button>
-
-        {isContextOpen && (
-          <div className="p-4 mt-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <pre className="font-mono text-xs whitespace-pre-wrap break-words max-w-[260px] overflow-x-">
-              {JSON.stringify(context, null, 2)}
-            </pre>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-When you load this in the Warpcast frames playground, you should see your own Farcaster user profile:
-
-> [!WARNING]
-> For the Framesgiving developer preview, context data is unauthenticated. Assume this data is spoofable and don't use it to grant privileged access to the user! Future frame SDK releases will include a mechanism fo verify context data.
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/6_context.PNG" width="200" alt="Context" />
-
-This is a lot of data, so let's hide it behind a simple toggle:
-
-```tsx
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
-  const [isContextOpen, setIsContextOpen] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  const toggleContext = useCallback(() => {
-    setIsContextOpen((prev) => !prev);
-  }, []);
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-
-      <div className="mb-4">
-        <h2 className="font-2xl font-bold">Context</h2>
-        <button
-          onClick={toggleContext}
-          className="flex items-center gap-2 transition-colors"
-        >
-          <span
-            className={`transform transition-transform ${
-              isContextOpen ? "rotate-90" : ""
-            }`}
-          >
-            ➤
-          </span>
-          Tap to expand
-        </button>
-
-        {isContextOpen && (
-          <div className="p-4 mt-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <pre className="font-mono text-xs whitespace-pre-wrap break-words max-w-[260px] overflow-x-">
-              {JSON.stringify(context, null, 2)}
-            </pre>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/7_toggle.png" width="200" alt="Toggle" />
-
-### Invoking actions
-
-Now let's make our frame do something. We can invoke actions by calling the functions on `sdk.actions`. We've already used `sdk.actions.ready`. We can also call functions like `sdk.actions.openUrl` and `sdk.actions.close` to send commands back to the Farcaster client app.
-
-Let's start by opening an external URL. Add an `openUrl` callback that calls `sdk.actions.openUrl` and a button that calls it:
-
-```tsx
-import { useEffect, useCallback, useState } from "react";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
-
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
-  const [isContextOpen, setIsContextOpen] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  const openUrl = useCallback(() => {
-    sdk.actions.openUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-  }, []);
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-
-      {/* context toggle and data */}
-
-      <div>
-        <h2 className="font-2xl font-bold">Actions</h2>
-
-        <div className="mb-4">
-          <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg my-2">
-            <pre className="font-mono text-xs whitespace-pre-wrap break-words max-w-[260px] overflow-x-">
-              sdk.actions.openUrl
-            </pre>
-          </div>
-          <Button onClick={openUrl}>Open Link</Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/8_actions.png" width="200" alt="Actions" />
-
-Tap the button and you'll be directed to an external URL.
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/9_url.png" width="200" alt="URL" />
-
-Let's add another button to call `close()`:
-
-```tsx
-import { useEffect, useCallback, useState } from "react";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
-
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
-
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  const openUrl = useCallback(() => {
-    sdk.actions.openUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-  }, []);
-
-  const close = useCallback(() => {
-    sdk.actions.close();
-  }, []);
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-
-      <div>
-        <h2 className="font-2xl font-bold">Actions</h2>
-
-        <div className="mb-4">
-          <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg my-2">
-            <pre className="font-mono text-xs whitespace-pre-wrap break-words max-w-[260px] overflow-x-">
-              sdk.actions.openUrl
-            </pre>
-          </div>
-          <Button onClick={openUrl}>Open Link</Button>
-        </div>
-
-        <div className="mb-4">
-          <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg my-2">
-            <pre className="font-mono text-xs whitespace-pre-wrap break-words max-w-[260px] overflow-x-">
-              sdk.actions.close
-            </pre>
-          </div>
-          <Button onClick={close}>Close Frame</Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/10_close.png" width="200" alt="URL" />
-
-When you tap this, the frame should close.
-
-### Wallet interactions
-
-Finally, let's interact with the user's connected wallet. To do so, we can use the wallet connector and Wagmi hooks we set up earlier. To start, let's read the user's connected wallet address, using `useAccount`:
-
-```tsx
-import { useEffect, useCallback, useState } from "react";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
-import { useAccount } from "wagmi";
-
-import { Button } from "~/components/ui/Button";
-
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
-
-  const { address, isConnected } = useAccount();
-
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-
-      {/* Context and action buttons omitted */}
-
-      <div>
-        <h2 className="font-2xl font-bold">Wallet</h2>
-
-        {address && (
-          <div className="my-2 text-xs">
-            Address: <pre className="inline">{address}</pre>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/10_wallet.png" width="200" alt="Wallet" />
-
-If your wallet is connected to Warpcast, you should see its address. In case it's not, let's add a connect/disconnect button. Note that we'll need to import our Wagmi config to `connect`:
-
-```tsx
-import { useEffect, useCallback, useState } from "react";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
-import { useAccount } from "wagmi";
-
-import { config } from "~/components/providers/WagmiProvider";
-import { Button } from "~/components/ui/Button";
-
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
-
-  const { address, isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
-  const { connect } = useConnect();
-
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-
-      {/* Context and action buttons omitted */}
-
-      <div>
-        <h2 className="font-2xl font-bold">Wallet</h2>
-
-        {address && (
-          <div className="my-2 text-xs">
-            Address: <pre className="inline">{address}</pre>
-          </div>
-        )}
-
-        <div className="mb-4">
-          <Button
-            onClick={() =>
-              isConnected
-                ? disconnect()
-                : connect({ connector: config.connectors[0] })
-            }
-          >
-            {isConnected ? "Disconnect" : "Connect"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
-
-Now let's request a transaction. We'll use the Wagmi `useSendTransaction` hook to call the Yoink contract and `useWaitForTransactionReceipt` to watch its status.
-
-> [!NOTE]
-> In a more complex app, you'll probably want to use Wagmi's [useWriteContract](https://wagmi.sh/react/api/hooks/useWriteContract) hook instead. This provides better type safety and automatic encoding/decoding of calldata based on the contract ABI.
-
-```tsx
-import { useEffect, useCallback, useState } from "react";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
-import {
-  useAccount,
-  useSendTransaction,
-  useSignMessage,
-  useSignTypedData,
-  useWaitForTransactionReceipt,
-  useDisconnect,
-  useConnect,
-} from "wagmi";
-
-import { config } from "~/components/providers/WagmiProvider";
-import { Button } from "~/components/ui/Button";
-
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
-  const [txHash, setTxHash] = useState<string | null>(null);
-
-  const { address, isConnected } = useAccount();
-  const {
-    sendTransaction,
-    error: sendTxError,
-    isError: isSendTxError,
-    isPending: isSendTxPending,
-  } = useSendTransaction();
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      hash: txHash as `0x${string}`,
-    });
-
-  const { disconnect } = useDisconnect();
-  const { connect } = useConnect();
-
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  const sendTx = useCallback(() => {
-    sendTransaction(
-      {
-        to: "0x4bBFD120d9f352A0BEd7a014bd67913a2007a878",
-        data: "0x9846cd9efc000023c0",
-      },
-      {
-        onSuccess: (hash) => {
-          setTxHash(hash);
-        },
-      }
-    );
-  }, [sendTransaction]);
-
-  const renderError = (error: Error | null) => {
-    if (!error) return null;
-    return <div className="text-red-500 text-xs mt-1">{error.message}</div>;
-  };
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-
-      {/* Context and actions omitted. */}
-
-      <div>
-        <h2 className="font-2xl font-bold">Wallet</h2>
-
-        {address && (
-          <div className="my-2 text-xs">
-            Address: <pre className="inline">{address}</pre>
-          </div>
-        )}
-
-        <div className="mb-4">
-          <Button
-            onClick={() =>
-              isConnected
-                ? disconnect()
-                : connect({ connector: config.connectors[0] })
-            }
-          >
-            {isConnected ? "Disconnect" : "Connect"}
-          </Button>
-        </div>
-
-        {isConnected && (
-          <>
-            <div className="mb-4">
-              <Button
-                onClick={sendTx}
-                disabled={!isConnected || isSendTxPending}
-                isLoading={isSendTxPending}
-              >
-                Send Transaction
-              </Button>
-              {isSendTxError && renderError(sendTxError)}
-              {txHash && (
-                <div className="mt-2 text-xs">
-                  <div>Hash: {txHash}</div>
-                  <div>
-                    Status:{" "}
-                    {isConfirming
-                      ? "Confirming..."
-                      : isConfirmed
-                      ? "Confirmed!"
-                      : "Pending"}
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/10_tx.png" width="200" alt="Tx" />
-
-Tap "Send Transaction" and you'll be directed to your wallet.
-
-<img src="https://raw.githubusercontent.com/farcasterxyz/frames-v2-demo/refs/heads/main/docs/img/12_yoink.png" width="200" alt="Yoink" />
-
-### Signatures
-
-Finally, let's add two new helpers for wallet signature methods. Below is the full `Demo` component:
-
-```tsx
-import { useEffect, useCallback, useState } from "react";
-import sdk, { type FrameContext } from "@farcaster/frame-sdk";
-import {
-  useAccount,
-  useSendTransaction,
-  useSignMessage,
-  useSignTypedData,
-  useWaitForTransactionReceipt,
-  useDisconnect,
-  useConnect,
-} from "wagmi";
-
-import { config } from "~/components/providers/WagmiProvider";
-import { Button } from "~/components/ui/Button";
-import { truncateAddress } from "~/lib/truncateAddress";
-
-export default function Demo() {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-  const [context, setContext] = useState<FrameContext>();
-  const [isContextOpen, setIsContextOpen] = useState(false);
-  const [txHash, setTxHash] = useState<string | null>(null);
-
-  const { address, isConnected } = useAccount();
-  const {
-    sendTransaction,
-    error: sendTxError,
-    isError: isSendTxError,
-    isPending: isSendTxPending,
-  } = useSendTransaction();
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      hash: txHash as `0x${string}`,
-    });
-
-  const {
-    signMessage,
-    error: signError,
-    isError: isSignError,
-    isPending: isSignPending,
-  } = useSignMessage();
-
-  const {
-    signTypedData,
-    error: signTypedError,
-    isError: isSignTypedError,
-    isPending: isSignTypedPending,
-  } = useSignTypedData();
-
-  const { disconnect } = useDisconnect();
-  const { connect } = useConnect();
-
-  useEffect(() => {
-    const load = async () => {
-      setContext(await sdk.context);
-      sdk.actions.ready();
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
-    }
-  }, [isSDKLoaded]);
-
-  const openUrl = useCallback(() => {
-    sdk.actions.openUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-  }, []);
-
-  const close = useCallback(() => {
-    sdk.actions.close();
-  }, []);
-
-  const sendTx = useCallback(() => {
-    sendTransaction(
-      {
-        to: "0x4bBFD120d9f352A0BEd7a014bd67913a2007a878",
-        data: "0x9846cd9efc000023c0",
-      },
-      {
-        onSuccess: (hash) => {
-          setTxHash(hash);
-        },
-      }
-    );
-  }, [sendTransaction]);
-
-  const sign = useCallback(() => {
-    signMessage({ message: "Hello from Frames v2!" });
-  }, [signMessage]);
-
-  const signTyped = useCallback(() => {
-    signTypedData({
-      domain: {
-        name: "Frames v2 Demo",
-        version: "1",
-        chainId: 8453,
-      },
-      types: {
-        Message: [{ name: "content", type: "string" }],
-      },
-      message: {
-        content: "Hello from Frames v2!",
-      },
-      primaryType: "Message",
-    });
-  }, [signTypedData]);
-
-  const toggleContext = useCallback(() => {
-    setIsContextOpen((prev) => !prev);
-  }, []);
-
-  const renderError = (error: Error | null) => {
-    if (!error) return null;
-    return <div className="text-red-500 text-xs mt-1">{error.message}</div>;
-  };
-
-  if (!isSDKLoaded) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="w-[300px] mx-auto py-4 px-2">
-      <h1 className="text-2xl font-bold text-center mb-4">Frames v2 Demo</h1>
-
-      <div className="mb-4">
-        <h2 className="font-2xl font-bold">Context</h2>
-        <button
-          onClick={toggleContext}
-          className="flex items-center gap-2 transition-colors"
-        >
-          <span
-            className={`transform transition-transform ${
-              isContextOpen ? "rotate-90" : ""
-            }`}
-          >
-            ➤
-          </span>
-          Tap to expand
-        </button>
-
-        {isContextOpen && (
-          <div className="p-4 mt-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <pre className="font-mono text-xs whitespace-pre-wrap break-words max-w-[260px] overflow-x-">
-              {JSON.stringify(context, null, 2)}
-            </pre>
-          </div>
-        )}
-      </div>
-
-      <div>
-        <h2 className="font-2xl font-bold">Actions</h2>
-
-        <div className="mb-4">
-          <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg my-2">
-            <pre className="font-mono text-xs whitespace-pre-wrap break-words max-w-[260px] overflow-x-">
-              sdk.actions.openUrl
-            </pre>
-          </div>
-          <Button onClick={openUrl}>Open Link</Button>
-        </div>
-
-        <div className="mb-4">
-          <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg my-2">
-            <pre className="font-mono text-xs whitespace-pre-wrap break-words max-w-[260px] overflow-x-">
-              sdk.actions.close
-            </pre>
-          </div>
-          <Button onClick={close}>Close Frame</Button>
-        </div>
-      </div>
-
-      <div>
-        <h2 className="font-2xl font-bold">Wallet</h2>
-
-        {address && (
-          <div className="my-2 text-xs">
-            Address: <pre className="inline">{truncateAddress(address)}</pre>
-          </div>
-        )}
-
-        <div className="mb-4">
-          <Button
-            onClick={() =>
-              isConnected
-                ? disconnect()
-                : connect({ connector: config.connectors[0] })
-            }
-          >
-            {isConnected ? "Disconnect" : "Connect"}
-          </Button>
-        </div>
-
-        {isConnected && (
-          <>
-            <div className="mb-4">
-              <Button
-                onClick={sendTx}
-                disabled={!isConnected || isSendTxPending}
-                isLoading={isSendTxPending}
-              >
-                Send Transaction
-              </Button>
-              {isSendTxError && renderError(sendTxError)}
-              {txHash && (
-                <div className="mt-2 text-xs">
-                  <div>Hash: {truncateAddress(txHash)}</div>
-                  <div>
-                    Status:{" "}
-                    {isConfirming
-                      ? "Confirming..."
-                      : isConfirmed
-                      ? "Confirmed!"
-                      : "Pending"}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="mb-4">
-              <Button
-                onClick={sign}
-                disabled={!isConnected || isSignPending}
-                isLoading={isSignPending}
-              >
-                Sign Message
-              </Button>
-              {isSignError && renderError(signError)}
-            </div>
-            <div className="mb-4">
-              <Button
-                onClick={signTyped}
-                disabled={!isConnected || isSignTypedPending}
-                isLoading={isSignTypedPending}
-              >
-                Sign Typed Data
-              </Button>
-              {isSignTypedError && renderError(signTypedError)}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-We've build a simple v2 frame by:
-
-1. Setting up a NextJS web app
-2. Importing the Frames SDK and calling `sdk.actions.ready()`
-3. Reading the user context from `sdk.context`
-4. Invoking actions using `sdk.actions`
-5. Connecting to the user's wallet using Wagmi and `sdk.wallet.ethProvider`
-
-Happy Framesgiving! 🖼️🦃
+Questions? Open an issue or reach out on Farcaster!

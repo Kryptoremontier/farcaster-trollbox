@@ -1,19 +1,19 @@
 import { Metadata } from "next";
 import App from "./app";
 
-const appUrl = process.env.NEXT_PUBLIC_URL;
+const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 
 const frame = {
   version: "next",
-  imageUrl: `${appUrl}/opengraph-image`,
+  imageUrl: `${appUrl}/troll-banner.png`,
   button: {
-    title: "Launch Frame",
+    title: "Launch TrollBox",
     action: {
       type: "launch_frame",
-      name: "Farcaster Frames v2 Demo",
+      name: "TrollBox",
       url: appUrl,
       splashImageUrl: `${appUrl}/splash.png`,
-      splashBackgroundColor: "#f7f7f7",
+      splashBackgroundColor: "#9E75FF",
     },
   },
 };
@@ -22,10 +22,10 @@ export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Farcaster Frames v2 Demo",
+    title: "TrollBox - Prediction Markets",
     openGraph: {
-      title: "Farcaster Frames v2 Demo",
-      description: "A Farcaster Frames v2 demo app.",
+      title: "TrollBox - Prediction Markets",
+      description: "Bet on anything. From crypto predictions to Elon's next tweet. Powered by Farcaster.",
     },
     other: {
       "fc:frame": JSON.stringify(frame),

@@ -1,0 +1,16 @@
+{
+  "accountAssociation": {
+    "header": "eyJhbGciOiJFUzI1NksiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJkaWQ6ZmN6OmZpZDozODkzMDciLCJhdWQiOiJkaWQ6ZmN6OmZpZDowIiwiaWF0IjoxNzM1OTA4MTY4LCJleHAiOjE3MzU5OTQ1Njh9.MHgxNWNlZWEzMGQxZjk4ZmYyOGFiNDkxOTVjNmI0NGVlZWE5MDkyNjhkYjliZGI1YzRmMDRlM2E4ZjUyNWM5MjE1MDUzNTRmNzZkYTQ5MTdiZDdhYTMzNmQ4NTNmNTZiYzNmZDcyMzM0MjNlMzFlOTUxNDUyNmExMDRjZTNlYzliMTI",
+    "payload": "eyJkb21haW4iOiJmYXJjYXN0ZXItdHJvbGxib3gubmV0bGlmeS5hcHAifQ",
+    "signature": "MHgxY2FmYThmOWQyY2Y3ZTU0NjhkZDM0YjY0ZGU4ZjJlZWRhOTI2OGRiOWJkYjVjNGYwNGUzYThmNTI1YzkyMTUwNTM1NGY3NmRhNDkxN2JkN2FhMzMzNmQ4NTNmNTZiYzNmZDcyMzM0MjNlMzFlOTUxNDUyNmExMDRjZTNlYzliMTI"
+  },
+  "frame": {
+    "version": "next",
+    "name": "TrollBox",
+    "iconUrl": "https://farcaster-trollbox.netlify.app/icon.png",
+    "homeUrl": "https://farcaster-trollbox.netlify.app",
+    "imageUrl": "https://farcaster-trollbox.netlify.app/troll-banner.png",
+    "splashImageUrl": "https://farcaster-trollbox.netlify.app/splash.png",
+    "splashBackgroundColor": "#9E75FF"
+  }
+}
