@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/TrollBet.sol";
-import "../script/DeployTrollBet.s.sol";
 
 contract TrollBetTest is Test {
     TrollBet public trollBet;

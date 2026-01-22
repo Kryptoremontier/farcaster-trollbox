@@ -23,9 +23,12 @@ TrollBox is a **multi-market prediction platform** built specifically for Farcas
 - ✅ **Troll Thumbnails** - Emoji-based market icons (ready for images)
 
 #### Market Detail (DegenBox)
-- ✅ **Mock Betting Engine** - Full Pari-mutuel logic without blockchain
-- ✅ **Real-time Odds** - Dynamically calculated based on YES/NO pool sizes  
-- ✅ **User Balance Tracking** - Track bets, winnings, and total wagered
+- ✅ **Smart Contract Integration** - Real TrollBet.sol contract on Base
+- ✅ **Token Approval Flow** - Approve $DEGEN before betting
+- ✅ **On-Chain Betting** - Place bets via Wagmi hooks
+- ✅ **Real-time Odds** - Dynamically calculated from blockchain pools
+- ✅ **Transaction Status** - Loading states and success/error toasts
+- ✅ **Claim Winnings** - Withdraw payouts after market resolution
 - ✅ **Live TrollBox Chat** - Real-time messaging with bet indicators
 - ✅ **Leaderboard** - Top performers by wins, accuracy, and earnings
 - ✅ **Back Navigation** - Return to Hub to explore other markets
@@ -36,11 +39,27 @@ TrollBox is a **multi-market prediction platform** built specifically for Farcas
 - ✅ **Responsive UI** - Built with Tailwind CSS and shadcn/ui components
 - ✅ **Professional Design** - Purple gradient (#9E75FF) branding throughout
 
-## 🚀 Current Implementation Status
+## 🚀 Quick Start - Deploy Your Own TrollBox
+
+### **→ [Follow CONTRACT_DEPLOYMENT_STEPS.md](./CONTRACT_DEPLOYMENT_STEPS.md) for step-by-step deployment guide**
+
+Or see detailed documentation:
+- 📘 **[CONTRACT_INTEGRATION.md](./CONTRACT_INTEGRATION.md)** - How the smart contract works
+- 🧪 **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Test locally and in Warpcast
+- 🚀 **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete production deployment guide
+
+## 🎯 Current Implementation Status
 
 ### ✅ Completed
 
-#### 1. Farcaster Manifest & SDK Integration
+#### 1. Smart Contract Integration
+- **Contract**: `TrollBet.sol` - Full pari-mutuel betting system
+- **ABI**: Extracted and saved in `src/lib/abi/TrollBet.json`
+- **Hooks**: Custom Wagmi hooks in `src/hooks/useTrollBet.ts`
+- **Transactions**: Place bets, claim winnings, approve tokens
+- **Read Operations**: Get market data, user bets, calculate payouts
+
+#### 2. Farcaster Manifest & SDK Integration
 - **Manifest**: `public/.well-known/farcaster.json` configured as "TrollBox"
 - **SDK**: `@farcaster/frame-sdk` initialized in both Hub and Detail views
 - **Context Detection**: App detects if running in Farcaster client

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { sdk } from "@farcaster/frame-sdk"
-import { Wallet, Trophy, Clock, Users, TrendingUp, ChevronUp, Send } from "lucide-react"
+import { Wallet, Trophy, Clock, Users, TrendingUp, ChevronUp, Send, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import { Button } from "~/components/ui/button-component"
 import { Card } from "~/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar"
@@ -11,9 +11,17 @@ import { Input } from "~/components/ui/input"
 import { cn } from "~/lib/utils"
 import { useAccount, useConnect, useDisconnect } from "wagmi"
 import { config } from "~/components/providers/WagmiProvider"
-import { getBettingEngine, type BettingEngineState } from "~/lib/mockBettingEngine"
 import { getMarketById } from "~/lib/mockMarkets"
 import { ArrowLeft } from "lucide-react"
+import { 
+  usePlaceBet, 
+  useClaimWinnings, 
+  useMarketData, 
+  useUserBet, 
+  useTransactionStatus,
+  useApproveToken 
+} from "~/hooks/useTrollBet"
+import type { Address } from "viem"
 
 interface FarcasterUser {
   fid: number
@@ -108,7 +116,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
   
-  const [selectedAmount, setSelectedAmount] = useState(100)
+  const [selectedAmount, setSelectedAmount] = useState("100")
   const [activeTab, setActiveTab] = useState<"chat" | "leaderboard">("chat")
   const [messages, setMessages] = useState<ChatMessage[]>(MOCK_MESSAGES)
   const [newMessage, setNewMessage] = useState("")
@@ -119,10 +127,25 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const [context, setContext] = useState<FarcasterContext | undefined>(undefined)
   const [isSDKLoaded, setIsSDKLoaded] = useState(false)
 
-  // Mock Betting Engine state
-  const [bettingEngine] = useState(() => getBettingEngine())
-  const [engineState, setEngineState] = useState<BettingEngineState>(bettingEngine.getState())
-  const [betStatus, setBetStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+  // Contract hooks - get contract market ID from market data
+  const marketIdNum = market?.contractMarketId ?? 0;
+  const { marketData, refetch: refetchMarket } = useMarketData(marketIdNum)
+  const { userBet, refetch: refetchUserBet } = useUserBet(marketIdNum, address as Address | undefined)
+  
+  // Transaction hooks
+  const { placeBet, hash: betHash, isPending: isBetPending } = usePlaceBet()
+  const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinnings()
+  const { approve, hash: approveHash, isPending: isApprovePending } = useApproveToken()
+  
+  // Transaction status tracking
+  const { isConfirming: isBetConfirming, isConfirmed: isBetConfirmed } = useTransactionStatus(betHash)
+  const { isConfirming: isClaimConfirming, isConfirmed: isClaimConfirmed } = useTransactionStatus(claimHash)
+  const { isConfirming: isApproveConfirming, isConfirmed: isApproveConfirmed } = useTransactionStatus(approveHash)
+  
+  // UI state
+  const [betStatus, setBetStatus] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null)
+  const [needsApproval, setNeedsApproval] = useState(true)
+  const [selectedSide, setSelectedSide] = useState<'YES' | 'NO' | null>(null)
 
   // Initialize Farcaster SDK
   useEffect(() => {
@@ -137,15 +160,16 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     }
   }, [isSDKLoaded]);
 
-  // Subscribe to betting engine updates
+  // Refetch market data periodically
   useEffect(() => {
-    const unsubscribe = bettingEngine.subscribe((newState) => {
-      setEngineState(newState);
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, [bettingEngine]);
+    const interval = setInterval(() => {
+      refetchMarket();
+      if (address) {
+        refetchUserBet();
+      }
+    }, 10000); // Every 10 seconds
+    return () => clearInterval(interval);
+  }, [refetchMarket, refetchUserBet, address]);
 
   // Countdown timer
   useEffect(() => {
@@ -199,13 +223,60 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     }
   }, [messages])
 
-  // Simulate market activity (other users betting)
+  // Handle bet confirmation
   useEffect(() => {
-    const interval = setInterval(() => {
-      bettingEngine.simulateMarketActivity();
-    }, 5000); // Every 5 seconds
-    return () => clearInterval(interval);
-  }, [bettingEngine]);
+    if (isBetConfirmed) {
+      setBetStatus({
+        type: 'success',
+        message: `Bet placed successfully! 🎉`
+      });
+      refetchMarket();
+      refetchUserBet();
+      setSelectedSide(null);
+      
+      // Add message to chat
+      if (selectedSide) {
+        const betMessage: ChatMessage = {
+          id: Date.now().toString(),
+          user: { 
+            name: context?.user?.displayName || context?.user?.username || "You", 
+            avatar: context?.user?.pfpUrl || "/avatars/user.png", 
+            bet: selectedSide 
+          },
+          message: `Bet ${selectedAmount} $DEGEN on ${selectedSide}! 🎲`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, betMessage]);
+      }
+      
+      setTimeout(() => setBetStatus(null), 5000);
+    }
+  }, [isBetConfirmed, selectedSide, selectedAmount, context, refetchMarket, refetchUserBet]);
+
+  // Handle claim confirmation
+  useEffect(() => {
+    if (isClaimConfirmed) {
+      setBetStatus({
+        type: 'success',
+        message: `Winnings claimed successfully! 💰`
+      });
+      refetchMarket();
+      refetchUserBet();
+      setTimeout(() => setBetStatus(null), 5000);
+    }
+  }, [isClaimConfirmed, refetchMarket, refetchUserBet]);
+
+  // Handle approval confirmation
+  useEffect(() => {
+    if (isApproveConfirmed) {
+      setNeedsApproval(false);
+      setBetStatus({
+        type: 'success',
+        message: `Token approval successful! You can now place bets.`
+      });
+      setTimeout(() => setBetStatus(null), 3000);
+    }
+  }, [isApproveConfirmed]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
@@ -227,42 +298,93 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     connect({ connector: config.connectors[0] })
   }, [connect])
 
-  const handlePlaceBet = useCallback((side: 'YES' | 'NO') => {
-    const result = bettingEngine.placeBet(selectedAmount, side);
-    
-    if (result.success) {
-      setBetStatus({ 
-        type: 'success', 
-        message: `Bet placed! ${selectedAmount} on ${side} @ ${result.bet?.odds.toFixed(2)}x odds` 
-      });
-      
-      // Add message to chat
-      const betMessage: ChatMessage = {
-        id: Date.now().toString(),
-        user: { 
-          name: context?.user?.displayName || context?.user?.username || "You", 
-          avatar: context?.user?.pfpUrl || "/avatars/user.png", 
-          bet: side 
-        },
-        message: `Bet ${selectedAmount} $DEGEN on ${side}! 🎲`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, betMessage]);
-    } else {
+  const handleApprove = useCallback(async () => {
+    if (!isConnected) {
+      setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
+      setTimeout(() => setBetStatus(null), 3000);
+      return;
+    }
+
+    try {
+      setBetStatus({ type: 'info', message: 'Requesting token approval...' });
+      await approve(selectedAmount);
+    } catch (error) {
+      console.error('Approval error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to approve tokens';
       setBetStatus({ 
         type: 'error', 
-        message: result.error || 'Failed to place bet' 
+        message: errorMessage
       });
+      setTimeout(() => setBetStatus(null), 3000);
     }
-    
-    // Clear status after 3 seconds
-    setTimeout(() => setBetStatus(null), 3000);
-  }, [bettingEngine, selectedAmount, context]);
+  }, [approve, selectedAmount, isConnected]);
 
-  // Calculate current values from engine state
-  const yesPercentage = bettingEngine.calculatePercentage('YES');
-  const yesOdds = bettingEngine.calculateOdds('YES');
-  const noOdds = bettingEngine.calculateOdds('NO');
+  const handlePlaceBet = useCallback(async (side: 'YES' | 'NO') => {
+    if (!isConnected) {
+      setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
+      setTimeout(() => setBetStatus(null), 3000);
+      return;
+    }
+
+    if (needsApproval) {
+      setBetStatus({ type: 'info', message: 'Please approve token spending first' });
+      setTimeout(() => setBetStatus(null), 3000);
+      return;
+    }
+
+    try {
+      setSelectedSide(side);
+      setBetStatus({ type: 'info', message: `Placing bet on ${side}...` });
+      await placeBet(marketIdNum, side === 'YES', selectedAmount);
+    } catch (error) {
+      console.error('Bet error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to place bet';
+      setBetStatus({ 
+        type: 'error', 
+        message: errorMessage
+      });
+      setSelectedSide(null);
+      setTimeout(() => setBetStatus(null), 3000);
+    }
+  }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval]);
+
+  const handleClaimWinnings = useCallback(async () => {
+    if (!isConnected) {
+      setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
+      setTimeout(() => setBetStatus(null), 3000);
+      return;
+    }
+
+    try {
+      setBetStatus({ type: 'info', message: 'Claiming winnings...' });
+      await claimWinnings(marketIdNum);
+    } catch (error) {
+      console.error('Claim error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to claim winnings';
+      setBetStatus({ 
+        type: 'error', 
+        message: errorMessage
+      });
+      setTimeout(() => setBetStatus(null), 3000);
+    }
+  }, [claimWinnings, marketIdNum, isConnected]);
+
+  // Calculate current values from market data
+  const totalPool = marketData 
+    ? parseFloat(marketData.yesPool) + parseFloat(marketData.noPool)
+    : 0;
+  
+  const yesPercentage = totalPool > 0 
+    ? (parseFloat(marketData?.yesPool || "0") / totalPool) * 100 
+    : 50;
+  
+  const yesOdds = totalPool > 0 && parseFloat(marketData?.yesPool || "0") > 0
+    ? totalPool / parseFloat(marketData?.yesPool || "1")
+    : 2.0;
+  
+  const noOdds = totalPool > 0 && parseFloat(marketData?.noPool || "0") > 0
+    ? totalPool / parseFloat(marketData?.noPool || "1")
+    : 2.0;
 
   if (!isSDKLoaded) {
     return <div className="flex items-center justify-center h-screen">Loading SDK...</div>
@@ -416,31 +538,102 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>{formatNumber(engineState.pool.yesPool)} $DEGEN</span>
-                  <span>{formatNumber(engineState.pool.noPool)} $DEGEN</span>
+                  <span>{formatNumber(parseFloat(marketData?.yesPool || "0"))} $DEGEN</span>
+                  <span>{formatNumber(parseFloat(marketData?.noPool || "0"))} $DEGEN</span>
                 </div>
               </div>
             </div>
 
             {/* Betting Interface */}
             <div className="p-4 space-y-4 bg-white">
-              {/* Bet Status Message */}
+              {/* Transaction Status Toast */}
               {betStatus && (
                 <div className={cn(
-                  "p-3 rounded-lg text-sm font-medium",
+                  "p-3 rounded-lg text-sm font-medium flex items-center gap-2 animate-in slide-in-from-top-2",
                   betStatus.type === 'success' 
                     ? "bg-green-50 text-green-700 border border-green-200" 
-                    : "bg-red-50 text-red-700 border border-red-200"
+                    : betStatus.type === 'error'
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-blue-50 text-blue-700 border border-blue-200"
                 )}>
-                  {betStatus.message}
+                  {betStatus.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
+                  {betStatus.type === 'error' && <AlertCircle className="w-4 h-4" />}
+                  {betStatus.type === 'info' && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{betStatus.message}</span>
                 </div>
+              )}
+
+              {/* Transaction Pending States */}
+              {(isBetPending || isBetConfirming) && (
+                <div className="p-3 rounded-lg text-sm font-medium flex items-center gap-2 bg-yellow-50 text-yellow-700 border border-yellow-200">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>
+                    {isBetPending ? 'Waiting for signature in Warpcast...' : 'Confirming transaction on chain...'}
+                  </span>
+                </div>
+              )}
+
+              {(isClaimPending || isClaimConfirming) && (
+                <div className="p-3 rounded-lg text-sm font-medium flex items-center gap-2 bg-yellow-50 text-yellow-700 border border-yellow-200">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>
+                    {isClaimPending ? 'Waiting for signature in Warpcast...' : 'Claiming winnings...'}
+                  </span>
+                </div>
+              )}
+
+              {(isApprovePending || isApproveConfirming) && (
+                <div className="p-3 rounded-lg text-sm font-medium flex items-center gap-2 bg-yellow-50 text-yellow-700 border border-yellow-200">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>
+                    {isApprovePending ? 'Waiting for approval signature...' : 'Approving tokens...'}
+                  </span>
+                </div>
+              )}
+
+              {/* Approval & Claim Buttons */}
+              {needsApproval && isConnected && (
+                <Button
+                  onClick={handleApprove}
+                  disabled={isApprovePending || isApproveConfirming}
+                  className="w-full h-12 bg-[#9E75FF] hover:bg-[#8E65EF] text-white font-bold shadow-md active:scale-95 transition-transform"
+                >
+                  {isApprovePending || isApproveConfirming ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Approving...
+                    </>
+                  ) : (
+                    'Approve $DEGEN Token'
+                  )}
+                </Button>
+              )}
+
+              {marketData?.resolved && userBet && !userBet.claimed && (
+                <Button
+                  onClick={handleClaimWinnings}
+                  disabled={isClaimPending || isClaimConfirming}
+                  className="w-full h-12 bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow-md active:scale-95 transition-transform"
+                >
+                  {isClaimPending || isClaimConfirming ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Claiming...
+                    </>
+                  ) : (
+                    <>
+                      <Trophy className="w-4 h-4 mr-2" />
+                      Claim Winnings
+                    </>
+                  )}
+                </Button>
               )}
 
               {/* Bet Buttons with Odds */}
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={() => handlePlaceBet('YES')}
-                  disabled={selectedAmount > engineState.userState.balance}
+                  disabled={isBetPending || isBetConfirming || !isConnected || parseFloat(selectedAmount) <= 0}
                   className="h-16 bg-green-500 hover:bg-green-600 text-white font-bold text-base shadow-md active:scale-95 transition-transform flex flex-col items-center justify-center gap-1"
                 >
                   <div className="flex items-center gap-2">
@@ -451,7 +644,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 </Button>
                 <Button
                   onClick={() => handlePlaceBet('NO')}
-                  disabled={selectedAmount > engineState.userState.balance}
+                  disabled={isBetPending || isBetConfirming || !isConnected || parseFloat(selectedAmount) <= 0}
                   className="h-16 bg-red-500 hover:bg-red-600 text-white font-bold text-base shadow-md active:scale-95 transition-transform flex flex-col items-center justify-center gap-1"
                 >
                   <div className="flex items-center gap-2">
@@ -467,12 +660,12 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs text-gray-600 font-medium">Your Balance</span>
                   <span className="text-lg font-bold text-[#9E75FF] font-mono">
-                    {formatNumber(engineState.userState.balance)} $DEGEN
+                    {userBet ? formatNumber(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)) : '0'} $DEGEN
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>Wagered: {formatNumber(engineState.userState.totalWagered)} $DEGEN</span>
-                  <span>Active Bets: {engineState.userState.bets.length}</span>
+                  <span>YES: {userBet ? formatNumber(parseFloat(userBet.yesAmount)) : '0'} $DEGEN</span>
+                  <span>NO: {userBet ? formatNumber(parseFloat(userBet.noAmount)) : '0'} $DEGEN</span>
                 </div>
               </div>
 
@@ -480,7 +673,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500 font-medium">Bet Amount</span>
-                  <span className="text-xs text-gray-400">Max: {formatNumber(engineState.userState.balance)}</span>
+                  <span className="text-xs text-gray-400">Amount in $DEGEN</span>
                 </div>
                 <div className="flex gap-2">
                   {[100, 500, 1000, 5000].map((amount) => (
@@ -488,11 +681,11 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                       key={amount}
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedAmount(Math.min(amount, engineState.userState.balance))}
-                      disabled={amount > engineState.userState.balance}
+                      onClick={() => setSelectedAmount(amount.toString())}
+                      disabled={false}
                       className={cn(
                         "flex-1 font-mono font-medium transition-all text-xs",
-                        selectedAmount === amount
+                        selectedAmount === amount.toString()
                           ? "bg-white border-[#9E75FF] text-[#9E75FF] border-2 shadow-sm"
                           : "bg-white border-gray-200 text-gray-500 hover:text-[#9E75FF] hover:border-[#9E75FF]/50"
                       )}

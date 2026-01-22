@@ -5,6 +5,7 @@
 
 export interface Market {
   id: string;
+  contractMarketId?: number; // Maps to smart contract market ID (undefined = not on contract yet)
   question: string;
   description: string;
   thumbnail: string; // Emoji for now, can be replaced with images
@@ -20,6 +21,7 @@ export interface Market {
 export const MOCK_MARKETS: Market[] = [
   {
     id: 'peter-schiff-btc',
+    contractMarketId: 0, // TODO: Update after deploying and creating markets
     question: 'Will Peter Schiff tweet negatively about Bitcoin in the next 24 hours?',
     description: 'Peter literally cannot go 24hrs without BTC FUD',
     thumbnail: '🧓💬',
