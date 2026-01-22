@@ -11,7 +11,9 @@ import { cn } from "~/lib/utils";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { config } from "~/components/providers/WagmiProvider";
 import { MarketCard } from "~/components/MarketCard";
+import { UserBetCard } from "~/components/UserBetCard";
 import { MOCK_MARKETS, type Market } from "~/lib/mockMarkets";
+import type { Address } from "viem";
 
 interface FarcasterUser {
   fid: number;
@@ -44,7 +46,7 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   const [context, setContext] = useState<FarcasterContext | undefined>(undefined);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<Market["category"] | "all">("all");
+  const [selectedCategory, setSelectedCategory] = useState<Market["category"] | "all" | "my-bets">("all");
 
   // Initialize Farcaster SDK
   useEffect(() => {
@@ -70,14 +72,21 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
       market.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       market.description.toLowerCase().includes(searchQuery.toLowerCase());
 
+    // For "Your Bets" tab, only show markets where user has placed bets
+    if (selectedCategory === "my-bets") {
+      // We'll check if user has bets in the rendering logic
+      return matchesSearch && market.status === "active" && market.contractMarketId !== undefined;
+    }
+
     const matchesCategory =
       selectedCategory === "all" || market.category === selectedCategory;
 
     return matchesSearch && matchesCategory && market.status === "active";
   });
 
-  const categories: Array<Market["category"] | "all"> = [
+  const categories: Array<Market["category"] | "all" | "my-bets"> = [
     "all",
+    "my-bets",
     "crypto",
     "tech",
     "memes",
@@ -181,21 +190,19 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-[#9E75FF] to-[#7E55DF] text-white py-8 px-4">
-        <div className="max-w-7xl mx-auto text-center space-y-3">
-          <h2 className="text-3xl font-bold">Welcome to TrollBox 🎲</h2>
-          <p className="text-lg text-white/90 max-w-2xl mx-auto">
-            Bet on anything. From crypto price predictions to Elon&apos;s next tweet.
-            <br />
-            <span className="text-sm">Powered by Farcaster • Built on Base</span>
+      {/* Compact Hero Section */}
+      <div className="bg-gradient-to-r from-[#9E75FF] to-[#7E55DF] text-white py-4 px-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-xl font-bold">Bet on anything 🎲</h2>
+          <p className="text-sm text-white/80 mt-1">
+            Powered by Farcaster • Built on Base
           </p>
         </div>
       </div>
 
       {/* Search & Filters */}
-      <div className="bg-white border-b border-gray-200 py-4 px-4 sticky top-[73px] z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto space-y-3">
+      <div className="bg-white border-b border-gray-200 py-3 px-4 sticky top-[73px] z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto space-y-2">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -204,24 +211,36 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
               placeholder="Search markets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-full"
+              className="pl-10 w-full h-9"
             />
           </div>
 
-          {/* Category Pills */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {/* Category Pills - Horizontal Scroll */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
                 className={cn(
-                  "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
+                  "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0",
                   selectedCategory === category
                     ? "bg-[#9E75FF] text-white shadow-md"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 )}
               >
-                {category === "all" ? "All Markets" : category.charAt(0).toUpperCase() + category.slice(1)}
+                {category === "all" 
+                  ? "🏠 All Markets" 
+                  : category === "my-bets"
+                  ? "💰 Your Bets"
+                  : category === "crypto"
+                  ? "₿ Crypto"
+                  : category === "tech"
+                  ? "💻 Tech"
+                  : category === "memes"
+                  ? "😂 Memes"
+                  : category === "politics"
+                  ? "🏛️ Politics"
+                  : "⚽ Sports"}
               </button>
             ))}
           </div>
@@ -231,11 +250,25 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
       {/* Market Grid */}
       <div className="flex-1 py-6 px-4">
         <div className="max-w-7xl mx-auto">
-          {filteredMarkets.length === 0 ? (
+          {selectedCategory === "my-bets" && !isConnected ? (
             <div className="text-center py-16 space-y-3">
-              <div className="text-6xl">🤷</div>
-              <p className="text-gray-500 font-medium">No markets found</p>
-              <p className="text-sm text-gray-400">Try adjusting your filters</p>
+              <div className="text-6xl">🔒</div>
+              <p className="text-gray-500 font-medium">Connect your wallet</p>
+              <p className="text-sm text-gray-400">Connect to see your active bets</p>
+            </div>
+          ) : filteredMarkets.length === 0 ? (
+            <div className="text-center py-16 space-y-3">
+              <div className="text-6xl">
+                {selectedCategory === "my-bets" ? "📭" : "🤷"}
+              </div>
+              <p className="text-gray-500 font-medium">
+                {selectedCategory === "my-bets" ? "No bets yet" : "No markets found"}
+              </p>
+              <p className="text-sm text-gray-400">
+                {selectedCategory === "my-bets" 
+                  ? "Place your first bet to get started!" 
+                  : "Try adjusting your filters"}
+              </p>
             </div>
           ) : (
             <>
@@ -249,13 +282,26 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredMarkets.map((market) => (
-                  <MarketCard
-                    key={market.id}
-                    market={market}
-                    onSelect={onMarketSelect}
-                  />
-                ))}
+                {selectedCategory === "my-bets" && address ? (
+                  // Show user's bets
+                  filteredMarkets.map((market) => (
+                    <UserBetCard
+                      key={market.id}
+                      market={market}
+                      userAddress={address as Address}
+                      onSelect={onMarketSelect}
+                    />
+                  ))
+                ) : (
+                  // Show all markets
+                  filteredMarkets.map((market) => (
+                    <MarketCard
+                      key={market.id}
+                      market={market}
+                      onSelect={onMarketSelect}
+                    />
+                  ))
+                )}
               </div>
             </>
           )}
