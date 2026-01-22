@@ -145,45 +145,53 @@ contract MockDEGEN {
 
 In Remix, with TrollBet expanded:
 
-### Market 1: Peter Schiff
-1. Find `createMarket` function
-2. Parameters:
-   - `question`: `Will Peter Schiff tweet about Bitcoin today?`
-   - `endTime`: `1738540800` (tomorrow)
-3. Click "transact" → Confirm
+### Create All 6 Markets:
 
-### Market 2: Degen Price
-- `question`: `Will $DEGEN hit $0.10 this week?`
-- `endTime`: `1738972800` (7 days)
-- Click "transact" → Confirm
+Use `createMarket` function for each:
 
-### Market 3: Elon Pepe
-- `question`: `Will Elon Musk post a Pepe meme today?`
-- `endTime`: `1738540800` (tomorrow)
-- Click "transact" → Confirm
+1. **Peter Schiff**: `Will Peter Schiff tweet about Bitcoin today?` | `1738540800`
+2. **Degen Price**: `Will $DEGEN hit $0.10 this week?` | `1738972800`
+3. **Elon Pepe**: `Will Elon Musk post a Pepe meme today?` | `1738540800`
+4. **Bitcoin 110k**: `Will Bitcoin hit $110k this week?` | `1738972800`
+5. **Vitalik**: `Will Vitalik call Ethereum ultrasound money?` | `1738713600`
+6. **PoW vs PoS**: `Will Crypto Twitter argue about PoW vs PoS today?` | `1738540800`
 
-### Market 4: Bitcoin 110k
-- `question`: `Will Bitcoin hit $110k this week?`
-- `endTime`: `1738972800` (7 days)
-- Click "transact" → Confirm
-
-### Market 5: Vitalik
-- `question`: `Will Vitalik call Ethereum ultrasound money?`
-- `endTime`: `1738713600` (3 days)
-- Click "transact" → Confirm
-
-### Market 6: PoW vs PoS
-- `question`: `Will Crypto Twitter argue about PoW vs PoS today?`
-- `endTime`: `1738540800` (tomorrow)
-- Click "transact" → Confirm
+Click "transact" → Confirm for each one.
 
 ✅ **6 Markets created!**
 
 ---
 
-## 📋 STEP 4: Update Frontend (2 min)
+## 📋 STEP 4-6: AUTOMATED UPDATE & DEPLOY (30 seconds!)
 
-### 4.1 Update Contract Address
+### 🚀 Use the Auto-Update Script:
+
+Instead of manually editing files, just run:
+
+```bash
+node update-contracts.js 0xYOUR_MOCKDEGEN_ADDRESS 0xYOUR_TROLLBET_ADDRESS
+```
+
+**This script automatically:**
+- ✅ Updates `src/hooks/useTrollBet.ts` with contract addresses
+- ✅ Updates `src/lib/mockMarkets.ts` with market IDs (0-5)
+- ✅ Updates `contracts/.env` with deployed addresses
+- ✅ Runs `npm run build`
+- ✅ Commits changes to git
+- ✅ Pushes to GitHub
+- ✅ Triggers Netlify deployment
+
+**Example:**
+```bash
+node update-contracts.js 0x1234567890abcdef1234567890abcdef12345678 0xabcdef1234567890abcdef1234567890abcdef12
+```
+
+### 📝 Or Manual Method (2 min):
+
+<details>
+<summary>Click to expand manual steps</summary>
+
+#### 4.1 Update Contract Address
 Open: `src/hooks/useTrollBet.ts`
 
 **Line 9:** Replace with:
@@ -191,66 +199,26 @@ Open: `src/hooks/useTrollBet.ts`
 export const TROLLBET_CONTRACT_ADDRESS: Address = '0xYOUR_TROLLBET_ADDRESS';
 ```
 
-### 4.2 Update Token Address
+#### 4.2 Update Token Address
 **Line 12:** Replace with:
 ```typescript
 export const DEGEN_TOKEN_ADDRESS: Address = '0xYOUR_MOCKDEGEN_ADDRESS';
 ```
 
-### 4.3 Update Market IDs
+#### 4.3 Update Market IDs
 Open: `src/lib/mockMarkets.ts`
 
-Update first 6 markets:
-```typescript
-{
-  id: 'peter-schiff-btc',
-  contractMarketId: 0, // ← Market 1
-  // ...
-},
-{
-  id: 'degen-price',
-  contractMarketId: 1, // ← Market 2
-  // ...
-},
-{
-  id: 'elon-pepe',
-  contractMarketId: 2, // ← Market 3
-  // ...
-},
-{
-  id: 'base-tvl',
-  contractMarketId: 3, // ← Market 4
-  // ...
-},
-{
-  id: 'vitalik-tweet',
-  contractMarketId: 4, // ← Market 5
-  // ...
-},
-{
-  id: 'farcaster-users',
-  contractMarketId: 5, // ← Market 6
-  // ...
-},
-```
+Update first 6 markets with `contractMarketId: 0` through `5`
 
----
-
-## 📋 STEP 5: Deploy to Production
-
-### 5.1 Build
+#### 4.4 Build & Deploy
 ```bash
 npm run build
-```
-
-Should complete ✅
-
-### 5.2 Commit
-```bash
 git add .
-git commit -m "🚀 Deploy: TrollBet on Base Sepolia"
+git commit -m "Deploy: TrollBet on Base Sepolia"
 git push origin main
 ```
+
+</details>
 
 ### 5.3 Wait for Netlify
 - Auto-deploys in ~2 minutes
@@ -258,7 +226,7 @@ git push origin main
 
 ---
 
-## 📋 STEP 6: Test in Warpcast
+## 📋 STEP 7: Test in Warpcast
 
 1. Go to: https://warpcast.com/~/developers/frames
 2. Enter: `https://farcaster-trollbox.netlify.app`
@@ -290,7 +258,10 @@ TROLLBET_ADDRESS=0xYOUR_TROLLBET_ADDRESS
 
 ---
 
-## ⏱️ Total Time: ~15 minutes
+## ⏱️ Total Time: ~10 minutes (with auto-script!)
+
+**Manual:** ~15 minutes  
+**With Script:** ~10 minutes
 
 **Cost: FREE (testnet)**
 
