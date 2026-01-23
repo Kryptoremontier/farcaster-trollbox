@@ -1,0 +1,12 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NEXT_PUBLIC_TROLLBET_ADDRESS": "0xYourContractAddress",
+    "NEXT_PUBLIC_DEGEN_TOKEN_ADDRESS": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed"
+  }
+}
