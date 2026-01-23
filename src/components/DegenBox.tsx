@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar"
 import { Badge } from "~/components/ui/badge"
 import { Input } from "~/components/ui/input"
 import { cn } from "~/lib/utils"
-import { useAccount, useConnect, useDisconnect } from "wagmi"
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi"
 import { config } from "~/components/providers/WagmiProvider"
 import { getMarketById } from "~/lib/mockMarkets"
 import { ArrowLeft } from "lucide-react"
@@ -22,6 +22,7 @@ import {
   useETHBalance
 } from "~/hooks/useTrollBetETH"
 import type { Address } from "viem"
+import { base } from "wagmi/chains"
 
 interface FarcasterUser {
   fid: number
@@ -119,9 +120,18 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const { address, isConnected, chain } = useAccount()
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
+  const { switchChain } = useSwitchChain()
   
   // Check if we're on the correct network (Base Mainnet)
   const isCorrectNetwork = chain?.id === 8453;
+  
+  // Auto-switch to Base Mainnet when connected to wrong network
+  useEffect(() => {
+    if (isConnected && !isCorrectNetwork && switchChain) {
+      console.log('[DegenBox] Auto-switching to Base Mainnet...');
+      switchChain({ chainId: base.id });
+    }
+  }, [isConnected, isCorrectNetwork, switchChain]);
   
   // ETH amounts (much smaller than token amounts!)
   const [selectedAmount, setSelectedAmount] = useState("0.001")
@@ -817,10 +827,16 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
               <div className="p-3 bg-gradient-to-br from-green-500/5 to-green-500/10 rounded-lg border border-green-500/20">
                 {/* Network Warning */}
                 {isConnected && !isCorrectNetwork && (
-                  <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-center">
-                    <p className="text-xs text-yellow-800 font-bold">⚠️ Wrong Network!</p>
-                    <p className="text-xs text-yellow-700">Switch to Base Mainnet</p>
-                    <p className="text-xs text-yellow-600">(Current: {chain?.name})</p>
+                  <div className="mb-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-center">
+                    <p className="text-xs text-yellow-800 font-bold mb-1">⚠️ Wrong Network!</p>
+                    <p className="text-xs text-yellow-700 mb-2">Please switch to Base Mainnet</p>
+                    <p className="text-xs text-yellow-600 mb-2">(Current: {chain?.name})</p>
+                    <Button
+                      onClick={() => switchChain({ chainId: base.id })}
+                      className="w-full py-1 text-xs bg-blue-600 hover:bg-blue-700"
+                    >
+                      Switch to Base Mainnet
+                    </Button>
                   </div>
                 )}
                 
