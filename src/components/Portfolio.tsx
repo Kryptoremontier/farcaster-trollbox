@@ -7,7 +7,7 @@ import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
 import { Wallet, TrendingUp, Trophy, Activity } from "lucide-react";
 import { Card } from "~/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface PortfolioProps {
   onMarketSelect: (marketId: string) => void;
@@ -25,31 +25,60 @@ function BetStatsCollector({
 }) {
   const bets = markets.map(market => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { userBet } = useUserBetETH(market.contractMarketId ?? 0, userAddress);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { marketData } = useMarketDataETH(market.contractMarketId ?? 0);
-    return { userBet, marketData, market };
+    const { userBet, isLoading } = useUserBetETH(market.contractMarketId ?? 0, userAddress);
+    return { userBet, isLoading, marketId: market.contractMarketId };
   });
 
+  // Serialize bet data for dependency tracking
+  const betDataString = JSON.stringify(
+    bets.map(b => ({
+      yes: b.userBet?.yesAmount || '0',
+      no: b.userBet?.noAmount || '0',
+      claimed: b.userBet?.claimed || false,
+      loading: b.isLoading,
+    }))
+  );
+
   useEffect(() => {
+    // Wait for all bets to load
+    const allLoaded = bets.every(b => !b.isLoading);
+    
+    console.log('[BetStatsCollector] Update triggered', {
+      allLoaded,
+      betsCount: bets.length,
+      loadingCount: bets.filter(b => b.isLoading).length,
+    });
+
+    if (!allLoaded) {
+      console.log('[BetStatsCollector] Waiting for bets to load...');
+      return;
+    }
+
     let activeBets = 0;
     let totalWagered = 0;
 
-    bets.forEach(({ userBet, marketData }) => {
+    bets.forEach(({ userBet, marketId }) => {
       if (userBet) {
         const yesAmount = parseFloat(userBet.yesAmount);
         const noAmount = parseFloat(userBet.noAmount);
         const totalBet = yesAmount + noAmount;
 
         if (totalBet > 0) {
+          console.log('[BetStatsCollector] Found active bet', {
+            marketId,
+            yesAmount,
+            noAmount,
+            totalBet,
+          });
           activeBets++;
           totalWagered += totalBet;
         }
       }
     });
 
+    console.log('[BetStatsCollector] Final stats', { activeBets, totalWagered });
     onStatsUpdate({ activeBets, totalWagered });
-  }, [bets, onStatsUpdate]);
+  }, [betDataString, onStatsUpdate, bets]);
 
   return null;
 }
@@ -58,6 +87,10 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
   const { address, isConnected } = useAccount();
   const { balance: ethBalance } = useETHBalance(address as Address | undefined);
   const [stats, setStats] = useState({ activeBets: 0, totalWagered: 0 });
+
+  const handleStatsUpdate = useCallback((newStats: { activeBets: number, totalWagered: number }) => {
+    setStats(newStats);
+  }, []);
 
   if (!isConnected || !address) {
     return (
@@ -82,7 +115,7 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
       <BetStatsCollector 
         markets={marketsWithBets} 
         userAddress={address as Address}
-        onStatsUpdate={setStats}
+        onStatsUpdate={handleStatsUpdate}
       />
 
       {/* Portfolio Stats */}
