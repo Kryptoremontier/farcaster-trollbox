@@ -169,17 +169,27 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     }
   }, [degenAllowance, selectedAmount]);
 
-  // Load Farcaster context (sdk.actions.ready() is called in app.tsx)
+  // Load Farcaster context and auto-connect wallet
   useEffect(() => {
     const load = async () => {
       const context = await sdk.context;
       setContext(context);
+      
+      // Auto-connect wallet if in Farcaster context and not already connected
+      if (context && !isConnected) {
+        console.log('[TrollBox] Auto-connecting wallet...');
+        try {
+          connect({ connector: config.connectors[0] });
+        } catch (e) {
+          console.error('[TrollBox] Auto-connect failed:', e);
+        }
+      }
     };
     if (sdk && !isSDKLoaded) {
       setIsSDKLoaded(true);
       load();
     }
-  }, [isSDKLoaded]);
+  }, [isSDKLoaded, isConnected, connect]);
 
   // Refetch market data periodically
   useEffect(() => {
@@ -363,49 +373,77 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     connect({ connector: config.connectors[0] })
   }, [connect])
 
-  // handleApprove removed - now handled automatically in handlePlaceBet
+  // State for pending bet after approval
+  const [pendingBetSide, setPendingBetSide] = useState<'YES' | 'NO' | null>(null);
+
+  // When approval is confirmed, automatically place the pending bet
+  useEffect(() => {
+    if (isApproveConfirmed && pendingBetSide && !needsApproval) {
+      console.log('[TrollBox] Approval confirmed, now placing bet...', { pendingBetSide });
+      setBetStatus({ type: 'info', message: 'Step 2/2: Placing bet...' });
+      
+      placeBet(marketIdNum, pendingBetSide === 'YES', selectedAmount)
+        .then(() => {
+          console.log('[TrollBox] Bet transaction sent');
+        })
+        .catch((err) => {
+          console.error('[TrollBox] Bet error after approval:', err);
+          setBetStatus({ type: 'error', message: 'Failed to place bet' });
+          setPendingBetSide(null);
+          setTimeout(() => setBetStatus(null), 3000);
+        });
+    }
+  }, [isApproveConfirmed, pendingBetSide, needsApproval, placeBet, marketIdNum, selectedAmount]);
 
   const handlePlaceBet = useCallback(async (side: 'YES' | 'NO') => {
     console.log('[TrollBox] handlePlaceBet called', { side, isConnected, address, needsApproval, selectedAmount });
     
     if (!isConnected) {
-      console.log('[TrollBox] Not connected, showing error');
-      setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
-      setTimeout(() => setBetStatus(null), 3000);
+      console.log('[TrollBox] Not connected, connecting wallet...');
+      setBetStatus({ type: 'info', message: 'Connecting wallet...' });
+      try {
+        connect({ connector: config.connectors[0] });
+        // Wait for connection and retry
+        setTimeout(() => {
+          setBetStatus(null);
+        }, 2000);
+      } catch (e) {
+        console.error('[TrollBox] Connect error:', e);
+        setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
+        setTimeout(() => setBetStatus(null), 3000);
+      }
       return;
     }
 
     try {
       setSelectedSide(side);
 
-      // Auto-approve if needed
+      // If approval is needed, do approval first
       if (needsApproval) {
         console.log('[TrollBox] Needs approval, starting approve...');
-        setBetStatus({ type: 'info', message: 'Step 1/2: Approving tokens...' });
+        setPendingBetSide(side); // Save the side for after approval
+        setBetStatus({ type: 'info', message: 'Step 1/2: Approve tokens in your wallet...' });
         
         try {
           console.log('[TrollBox] Calling approve...');
-          const approveResult = await approve(selectedAmount);
-          console.log('[TrollBox] Approve result:', approveResult);
+          await approve(selectedAmount);
+          console.log('[TrollBox] Approve transaction sent, waiting for confirmation...');
+          // The useEffect above will handle placing the bet after confirmation
         } catch (approveError) {
           console.error('[TrollBox] Approve error:', approveError);
+          setPendingBetSide(null);
           throw approveError;
         }
-        
-        // Wait for approval to be confirmed
-        setBetStatus({ type: 'info', message: 'Waiting for approval confirmation...' });
-        // The useEffect will handle refetching allowance and updating needsApproval
-        // We'll wait a bit for the state to update
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        return; // Exit - the useEffect will continue after approval
       }
 
-      // Place the bet
+      // No approval needed - place the bet directly
       console.log('[TrollBox] Placing bet...', { marketIdNum, side, selectedAmount });
-      setBetStatus({ type: 'info', message: needsApproval ? 'Step 2/2: Placing bet...' : 'Placing bet...' });
+      setBetStatus({ type: 'info', message: 'Confirm bet in your wallet...' });
       
       try {
-        const betResult = await placeBet(marketIdNum, side === 'YES', selectedAmount);
-        console.log('[TrollBox] Bet result:', betResult);
+        await placeBet(marketIdNum, side === 'YES', selectedAmount);
+        console.log('[TrollBox] Bet transaction sent');
       } catch (betError) {
         console.error('[TrollBox] Bet error:', betError);
         throw betError;
@@ -418,9 +456,10 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
         message: errorMessage
       });
       setSelectedSide(null);
+      setPendingBetSide(null);
       setTimeout(() => setBetStatus(null), 3000);
     }
-  }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval, approve, address]);
+  }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval, approve, address, connect]);
 
   const handleClaimWinnings = useCallback(async () => {
     if (!isConnected) {

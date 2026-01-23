@@ -55,17 +55,27 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   // Check if user is admin
   const isAdmin = context?.user?.username === "kryptoremontier";
 
-  // Load Farcaster context (sdk.actions.ready() is called in app.tsx)
+  // Load Farcaster context and auto-connect wallet
   useEffect(() => {
     const load = async () => {
       const context = await sdk.context;
       setContext(context);
+      
+      // Auto-connect wallet if in Farcaster context and not already connected
+      if (context && !isConnected) {
+        console.log('[TrollBoxHub] Auto-connecting wallet...');
+        try {
+          connect({ connector: config.connectors[0] });
+        } catch (e) {
+          console.error('[TrollBoxHub] Auto-connect failed:', e);
+        }
+      }
     };
     if (sdk && !isSDKLoaded) {
       setIsSDKLoaded(true);
       load();
     }
-  }, [isSDKLoaded]);
+  }, [isSDKLoaded, isConnected, connect]);
 
   const handleConnect = useCallback(() => {
     connect({ connector: config.connectors[0] });
