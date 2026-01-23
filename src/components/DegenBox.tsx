@@ -621,14 +621,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 </div>
               )}
 
-              {(isApprovePending || isApproveConfirming) && (
-                <div className="p-3 rounded-lg text-sm font-medium flex items-center gap-2 bg-yellow-50 text-yellow-700 border border-yellow-200">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>
-                    {isApprovePending ? 'Waiting for approval signature...' : 'Approving tokens...'}
-                  </span>
-                </div>
-              )}
+              {/* NOTE: No approval status needed with Native ETH! 🎉 */}
 
               {/* Claim Button */}
               {marketData?.resolved && userBet && !userBet.claimed && (

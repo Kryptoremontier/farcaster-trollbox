@@ -1,6 +1,7 @@
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract, useAccount, useBalance } from 'wagmi';
 import { type Address, parseEther, formatEther } from 'viem';
 import { baseSepolia } from 'wagmi/chains';
+import { fromSolidityTimestamp } from '~/lib/utils';
 
 // TrollBetETH ABI (Native ETH version - no token approval needed!)
 const TrollBetETH_ABI = [
@@ -80,7 +81,7 @@ const TrollBetETH_ABI = [
 
 // Contract address - UPDATE THIS after deploying TrollBetETH!
 // TODO: Deploy TrollBetETH via Remix and paste address here
-export const TROLLBET_ETH_ADDRESS: Address = '0xd9145CCE52D386f254917e481eB44e9943F39138';
+export const TROLLBET_ETH_ADDRESS: Address = '0xc629e67E221db99CF2A6e0468907bBcFb7D5f5A3';
 
 // ⚠️ IMPORTANT: After deploying TrollBetETH via Remix, update the address above!
 // Example: export const TROLLBET_ETH_ADDRESS: Address = '0x1234...5678';
@@ -201,7 +202,8 @@ export function useMarketDataETH(marketId: number) {
 
   const marketData = data ? {
     question: data[0],
-    endTime: Number(data[1]),
+    endTime: Number(data[1]), // Solidity timestamp in seconds
+    endTimeDate: fromSolidityTimestamp(data[1]), // Converted to JS Date
     yesPool: formatEther(data[2]),
     noPool: formatEther(data[3]),
     resolved: data[4],
