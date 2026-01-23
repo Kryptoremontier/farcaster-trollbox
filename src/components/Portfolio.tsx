@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { useETHBalance, useUserBetETH } from "~/hooks/useTrollBetETH";
+import { useETHBalance, useUserBetETH, useClaimWinningsETH } from "~/hooks/useTrollBetETH";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
@@ -86,6 +86,7 @@ function BetStatsCollector({
 export function Portfolio({ onMarketSelect }: PortfolioProps) {
   const { address, isConnected, isConnecting } = useAccount();
   const { balance: ethBalance } = useETHBalance(address as Address | undefined);
+  const { claimWinnings } = useClaimWinningsETH();
   const [stats, setStats] = useState({ activeBets: 0, totalWagered: 0 });
 
   const handleStatsUpdate = useCallback((newStats: { activeBets: number, totalWagered: number }) => {
@@ -221,6 +222,7 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
               market={market}
               userAddress={address as Address}
               onSelect={onMarketSelect}
+              onClaim={claimWinnings}
             />
           ))}
         </div>

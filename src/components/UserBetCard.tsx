@@ -13,9 +13,10 @@ interface UserBetCardProps {
   market: Market;
   userAddress: Address;
   onSelect: (marketId: string) => void;
+  onClaim?: (marketId: number) => void;
 }
 
-export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps) {
+export function UserBetCard({ market, userAddress, onSelect, onClaim }: UserBetCardProps) {
   const { userBet, isLoading } = useUserBetETH(
     market.contractMarketId ?? 0,
     userAddress
@@ -63,19 +64,31 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
   const hasBetYes = yesAmount > 0;
   const hasBetNo = noAmount > 0;
 
+  // Market status from contract
+  const isResolved = marketData?.resolved ?? false;
+  const winningSide = marketData?.winningSide ?? false; // true = YES, false = NO
+  const isClaimed = userBet.claimed;
+
   // Calculate potential winnings
   const yesPool = marketData ? parseFloat(marketData.yesPool) : market.yesPool;
   const noPool = marketData ? parseFloat(marketData.noPool) : market.noPool;
   const totalPool = yesPool + noPool;
   
-  // Potential payout calculation (simplified)
+  // Potential payout calculation (1% fee, not 3%)
   const yesPotentialWin = hasBetYes && totalPool > 0 
-    ? (yesAmount / yesPool) * totalPool * 0.97 // 3% fee
+    ? (yesAmount / yesPool) * totalPool * 0.99 // 1% fee
     : 0;
   const noPotentialWin = hasBetNo && totalPool > 0
-    ? (noAmount / noPool) * totalPool * 0.97
+    ? (noAmount / noPool) * totalPool * 0.99
     : 0;
   const maxPotentialWin = Math.max(yesPotentialWin, noPotentialWin);
+
+  // Determine if user won
+  const userWon = isResolved && (
+    (winningSide && hasBetYes) || (!winningSide && hasBetNo)
+  );
+  const userLost = isResolved && !userWon && !isClaimed;
+  const actualWinnings = userWon ? (winningSide ? yesPotentialWin : noPotentialWin) : 0;
 
   return (
     <Card
@@ -153,12 +166,55 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
         </div>
       </div>
 
-      {/* Claimed Status */}
-      {userBet.claimed && (
-        <div className="mt-2">
-          <Badge className="w-full justify-center bg-green-100 text-green-700 border-green-300">
-            ✅ Winnings Claimed
-          </Badge>
+      {/* Market Result & Claim Status */}
+      {isResolved && (
+        <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+          {/* Winning Side */}
+          <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+            <span className="text-xs text-gray-600 font-medium">Result:</span>
+            <Badge className={winningSide ? 'bg-green-100 text-green-700 border-green-300' : 'bg-red-100 text-red-700 border-red-300'}>
+              {winningSide ? '✅ YES Won' : '❌ NO Won'}
+            </Badge>
+          </div>
+
+          {/* User's Result */}
+          {userWon && !isClaimed && (
+            <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-300">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-green-700">🎉 You Won!</span>
+                <span className="text-lg font-bold text-green-700">
+                  +{actualWinnings.toFixed(4)} ETH
+                </span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onClaim && market.contractMarketId !== undefined) {
+                    onClaim(market.contractMarketId);
+                  }
+                }}
+                className="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors"
+              >
+                Claim Winnings
+              </button>
+            </div>
+          )}
+
+          {userWon && isClaimed && (
+            <div className="p-2 bg-green-50 rounded-lg border border-green-200">
+              <Badge className="w-full justify-center bg-green-100 text-green-700 border-green-300">
+                ✅ Winnings Claimed ({actualWinnings.toFixed(4)} ETH)
+              </Badge>
+            </div>
+          )}
+
+          {userLost && (
+            <div className="p-2 bg-red-50 rounded-lg border border-red-200">
+              <Badge className="w-full justify-center bg-red-100 text-red-700 border-red-300">
+                😔 Lost this one
+              </Badge>
+            </div>
+          )}
         </div>
       )}
     </Card>
