@@ -733,13 +733,30 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                   <span>Your Bets: {userBet ? formatNumber(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)) : '0'} $DEGEN</span>
                   <span className="text-green-600">Available: {isConnected ? formatNumber(parseFloat(degenBalance)) : '0'}</span>
                 </div>
-                {/* Get Test Tokens Button (Testnet only) */}
-                {isConnected && parseFloat(degenBalance) < 100 && (
+                {/* Get Test Tokens Button (Testnet only) - Always show when balance is low */}
+                {parseFloat(degenBalance) < 100 && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={async () => {
-                      console.log('[TrollBox] Mint button clicked', { address });
+                      console.log('[TrollBox] Mint button clicked', { address, isConnected });
+                      
+                      // If not connected, connect first
+                      if (!isConnected) {
+                        console.log('[TrollBox] Not connected, connecting wallet first...');
+                        try {
+                          connect({ connector: config.connectors[0] });
+                          setBetStatus({ type: 'info', message: 'Connecting wallet...' });
+                          // Wait a bit for connection
+                          await new Promise(resolve => setTimeout(resolve, 2000));
+                        } catch (e) {
+                          console.error('[TrollBox] Connect error:', e);
+                          setBetStatus({ type: 'error', message: 'Please connect wallet first' });
+                          setTimeout(() => setBetStatus(null), 3000);
+                          return;
+                        }
+                      }
+                      
                       if (address) {
                         try {
                           console.log('[TrollBox] Starting mint...');
@@ -756,12 +773,15 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                           setBetStatus({ type: 'error', message: 'Failed to mint tokens' });
                           setTimeout(() => setBetStatus(null), 3000);
                         }
+                      } else {
+                        setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
+                        setTimeout(() => setBetStatus(null), 3000);
                       }
                     }}
                     disabled={isMintPending || isMintConfirming}
-                    className="w-full mt-2 text-xs bg-yellow-50 border-yellow-400 text-yellow-700 hover:bg-yellow-100"
+                    className="w-full mt-2 text-sm font-semibold bg-gradient-to-r from-yellow-400 to-orange-400 border-0 text-white hover:from-yellow-500 hover:to-orange-500 shadow-md"
                   >
-                    {isMintPending || isMintConfirming ? '⏳ Minting...' : '🪙 Get 10,000 Test $DEGEN (Testnet)'}
+                    {isMintPending || isMintConfirming ? '⏳ Minting...' : '🪙 GET FREE TEST TOKENS'}
                   </Button>
                 )}
               </div>
