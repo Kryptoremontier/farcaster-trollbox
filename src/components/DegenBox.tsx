@@ -213,9 +213,9 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       try {
         const response = await fetch(`/api/chat?marketId=${marketIdNum}`);
         if (response.ok) {
-          const data = await response.json();
+          const data = await response.json() as { messages: Array<{ id: string; user: { name: string; avatar: string; bet: string | null }; message: string; timestamp: number }> };
           // Convert timestamp to Date objects
-          const formattedMessages = data.messages.map((msg: any) => ({
+          const formattedMessages = data.messages.map((msg) => ({
             ...msg,
             timestamp: new Date(msg.timestamp)
           }));
