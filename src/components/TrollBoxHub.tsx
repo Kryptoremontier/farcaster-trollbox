@@ -48,7 +48,7 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   const [context, setContext] = useState<FarcasterContext | undefined>(undefined);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTab, setSelectedTab] = useState<"your-bets" | "trending" | "portfolio" | "leaderboard">("trending");
+  const [selectedTab, setSelectedTab] = useState<"main" | "your-bets" | "trending" | "portfolio" | "leaderboard">("main");
   const tabsRef = useRef<HTMLDivElement>(null);
 
   // Initialize Farcaster SDK
@@ -114,17 +114,22 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
       <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo */}
+            {/* Logo - Clickable */}
             <div className="flex items-center gap-3">
-              <img 
-                src="/troll-logo.png" 
-                alt="TrollBox Logo" 
-                className="w-12 h-12 rounded-xl shadow-lg"
-              />
-              <div>
-                <h1 className="font-bold text-xl text-gray-900">TrollBox</h1>
-                <p className="text-xs text-gray-500">Prediction Markets</p>
-              </div>
+              <button 
+                onClick={() => setSelectedTab("main")}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
+                <img 
+                  src="/troll-logo.png" 
+                  alt="TrollBox Logo" 
+                  className="w-12 h-12 rounded-xl shadow-lg"
+                />
+                <div className="text-left">
+                  <h1 className="font-bold text-xl text-gray-900">TrollBox</h1>
+                  <p className="text-xs text-gray-500">Prediction Markets</p>
+                </div>
+              </button>
               <Badge
                 variant="outline"
                 className={cn(
@@ -224,6 +229,18 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
               className="flex gap-2 overflow-x-auto scrollbar-hide flex-1"
             >
               <button
+                onClick={() => setSelectedTab("main")}
+                className={cn(
+                  "px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-2",
+                  selectedTab === "main"
+                    ? "bg-[#9E75FF] text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                )}
+              >
+                🏠 Main
+              </button>
+
+              <button
                 onClick={() => setSelectedTab("your-bets")}
                 className={cn(
                   "px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-2",
@@ -286,8 +303,8 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
             </button>
           </div>
 
-          {/* Search - only show for trending and your-bets */}
-          {(selectedTab === "trending" || selectedTab === "your-bets") && (
+          {/* Search - show for main, trending and your-bets */}
+          {(selectedTab === "main" || selectedTab === "trending" || selectedTab === "your-bets") && (
             <div className="relative mt-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
@@ -305,6 +322,39 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
       {/* Content Area */}
       <div className="flex-1 py-6 px-4">
         <div className="max-w-7xl mx-auto">
+          {/* Main Tab - Same as Trending */}
+          {selectedTab === "main" && (
+            <>
+              {filteredMarkets.length === 0 ? (
+                <div className="text-center py-16 space-y-3">
+                  <div className="text-6xl">🤷</div>
+                  <p className="text-gray-500 font-medium">No markets found</p>
+                  <p className="text-sm text-gray-400">Try adjusting your search</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold text-gray-900">
+                        {filteredMarkets.length}
+                      </span>{" "}
+                      active {filteredMarkets.length === 1 ? "market" : "markets"}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredMarkets.map((market) => (
+                      <MarketCard
+                        key={market.id}
+                        market={market}
+                        onSelect={onMarketSelect}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
           {/* Your Bets Tab */}
           {selectedTab === "your-bets" && (
             <>
