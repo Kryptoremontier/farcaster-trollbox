@@ -1,9 +1,9 @@
 "use client";
 
-import { useUserBet } from "~/hooks/useTrollBet";
+import { useUserBet, useMarketData } from "~/hooks/useTrollBet";
 import type { Address } from "viem";
 import type { Market } from "~/lib/mockMarkets";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Trophy } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 
@@ -18,6 +18,7 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
     market.contractMarketId ?? 0,
     userAddress
   );
+  const { marketData } = useMarketData(market.contractMarketId ?? 0);
 
   // Don't render if no bet or loading
   if (isLoading || !userBet) return null;
@@ -31,6 +32,21 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
 
   const hasBetYes = yesAmount > 0;
   const hasBetNo = noAmount > 0;
+
+  // Calculate potential winnings
+  const yesPool = marketData ? parseFloat(marketData.yesPool) : market.yesPool;
+  const noPool = marketData ? parseFloat(marketData.noPool) : market.noPool;
+  const totalPool = yesPool + noPool;
+  
+  // Potential payout calculation (simplified)
+  const yesPotentialWin = hasBetYes && totalPool > 0 
+    ? (yesAmount / yesPool) * totalPool * 0.97 // 3% fee
+    : 0;
+  const noPotentialWin = hasBetNo && totalPool > 0
+    ? (noAmount / noPool) * totalPool * 0.97
+    : 0;
+  const maxPotentialWin = Math.max(yesPotentialWin, noPotentialWin);
+  const potentialProfit = maxPotentialWin - totalBet;
 
   return (
     <Card
@@ -77,13 +93,29 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
         )}
       </div>
 
-      {/* Total */}
-      <div className="mt-3 pt-3 border-t border-gray-200">
+      {/* Stats */}
+      <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500 font-medium">Total Bet</span>
-          <span className="text-sm font-bold text-[#9E75FF]">
+          <span className="text-sm font-bold text-gray-900">
             {totalBet.toLocaleString()} $DEGEN
           </span>
+        </div>
+        
+        {/* Potential Winnings */}
+        <div className="flex items-center justify-between p-2 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+          <div className="flex items-center gap-1.5">
+            <Trophy className="w-4 h-4 text-yellow-600" />
+            <span className="text-xs text-yellow-700 font-medium">Potential Win</span>
+          </div>
+          <div className="text-right">
+            <div className="text-sm font-bold text-yellow-700">
+              {maxPotentialWin.toLocaleString(undefined, { maximumFractionDigits: 0 })} $DEGEN
+            </div>
+            <div className={`text-xs font-semibold ${potentialProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {potentialProfit > 0 ? '+' : ''}{potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { sdk } from "@farcaster/frame-sdk";
-import { Wallet, Zap, Search } from "lucide-react";
+import { Wallet, Zap, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy } from "lucide-react";
 import { Button } from "~/components/ui/button-component";
 import { Badge } from "~/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -12,7 +12,9 @@ import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { config } from "~/components/providers/WagmiProvider";
 import { MarketCard } from "~/components/MarketCard";
 import { UserBetCard } from "~/components/UserBetCard";
-import { MOCK_MARKETS, type Market } from "~/lib/mockMarkets";
+import { Portfolio } from "~/components/Portfolio";
+import { Leaderboard } from "~/components/Leaderboard";
+import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import type { Address } from "viem";
 
 interface FarcasterUser {
@@ -46,7 +48,8 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   const [context, setContext] = useState<FarcasterContext | undefined>(undefined);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<Market["category"] | "all" | "my-bets">("all");
+  const [selectedTab, setSelectedTab] = useState<"your-bets" | "trending" | "portfolio" | "leaderboard">("trending");
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   // Initialize Farcaster SDK
   useEffect(() => {
@@ -65,34 +68,26 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
     connect({ connector: config.connectors[0] });
   }, [connect]);
 
-  // Filter markets
+  // Filter markets for trending tab
   const filteredMarkets = MOCK_MARKETS.filter((market) => {
     const matchesSearch =
       searchQuery === "" ||
       market.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       market.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // For "Your Bets" tab, only show markets where user has placed bets
-    if (selectedCategory === "my-bets") {
-      // We'll check if user has bets in the rendering logic
-      return matchesSearch && market.status === "active" && market.contractMarketId !== undefined;
-    }
-
-    const matchesCategory =
-      selectedCategory === "all" || market.category === selectedCategory;
-
-    return matchesSearch && matchesCategory && market.status === "active";
+    return matchesSearch && market.status === "active";
   });
 
-  const categories: Array<Market["category"] | "all" | "my-bets"> = [
-    "all",
-    "my-bets",
-    "crypto",
-    "tech",
-    "memes",
-    "politics",
-    "sports",
-  ];
+  // Scroll tabs
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (tabsRef.current) {
+      const scrollAmount = 200;
+      tabsRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   if (!isSDKLoaded) {
     return (
@@ -200,110 +195,177 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
         </div>
       </div>
 
-      {/* Search & Filters */}
+      {/* Tabs Navigation */}
       <div className="bg-white border-b border-gray-200 py-3 px-4 sticky top-[73px] z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto space-y-2">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search markets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-full h-9"
-            />
-          </div>
+        <div className="max-w-7xl mx-auto">
+          {/* Tabs with Arrow Navigation */}
+          <div className="relative flex items-center gap-2">
+            {/* Left Arrow */}
+            <button
+              onClick={() => scrollTabs('left')}
+              className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-4 h-4 text-gray-600" />
+            </button>
 
-          {/* Category Pills - Horizontal Scroll */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
-            {categories.map((category) => (
+            {/* Tabs Container */}
+            <div
+              ref={tabsRef}
+              className="flex gap-2 overflow-x-auto scrollbar-hide flex-1"
+            >
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => setSelectedTab("your-bets")}
                 className={cn(
-                  "px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0",
-                  selectedCategory === category
+                  "px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-2",
+                  selectedTab === "your-bets"
                     ? "bg-[#9E75FF] text-white shadow-md"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 )}
               >
-                {category === "all" 
-                  ? "🏠 All Markets" 
-                  : category === "my-bets"
-                  ? "💰 Your Bets"
-                  : category === "crypto"
-                  ? "₿ Crypto"
-                  : category === "tech"
-                  ? "💻 Tech"
-                  : category === "memes"
-                  ? "😂 Memes"
-                  : category === "politics"
-                  ? "🏛️ Politics"
-                  : "⚽ Sports"}
+                <Wallet className="w-4 h-4" />
+                Your Bets
               </button>
-            ))}
+
+              <button
+                onClick={() => setSelectedTab("trending")}
+                className={cn(
+                  "px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-2",
+                  selectedTab === "trending"
+                    ? "bg-[#9E75FF] text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                )}
+              >
+                <TrendingUpIcon className="w-4 h-4" />
+                Trending
+              </button>
+
+              <button
+                onClick={() => setSelectedTab("portfolio")}
+                className={cn(
+                  "px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-2",
+                  selectedTab === "portfolio"
+                    ? "bg-[#9E75FF] text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                )}
+              >
+                <Briefcase className="w-4 h-4" />
+                Portfolio
+              </button>
+
+              <button
+                onClick={() => setSelectedTab("leaderboard")}
+                className={cn(
+                  "px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-2",
+                  selectedTab === "leaderboard"
+                    ? "bg-[#9E75FF] text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                )}
+              >
+                <Trophy className="w-4 h-4" />
+                Leaderboard
+              </button>
+            </div>
+
+            {/* Right Arrow */}
+            <button
+              onClick={() => scrollTabs('right')}
+              className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-4 h-4 text-gray-600" />
+            </button>
           </div>
+
+          {/* Search - only show for trending and your-bets */}
+          {(selectedTab === "trending" || selectedTab === "your-bets") && (
+            <div className="relative mt-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search markets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-full h-9"
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Market Grid */}
+      {/* Content Area */}
       <div className="flex-1 py-6 px-4">
         <div className="max-w-7xl mx-auto">
-          {selectedCategory === "my-bets" && !isConnected ? (
-            <div className="text-center py-16 space-y-3">
-              <div className="text-6xl">🔒</div>
-              <p className="text-gray-500 font-medium">Connect your wallet</p>
-              <p className="text-sm text-gray-400">Connect to see your active bets</p>
-            </div>
-          ) : filteredMarkets.length === 0 ? (
-            <div className="text-center py-16 space-y-3">
-              <div className="text-6xl">
-                {selectedCategory === "my-bets" ? "📭" : "🤷"}
-              </div>
-              <p className="text-gray-500 font-medium">
-                {selectedCategory === "my-bets" ? "No bets yet" : "No markets found"}
-              </p>
-              <p className="text-sm text-gray-400">
-                {selectedCategory === "my-bets" 
-                  ? "Place your first bet to get started!" 
-                  : "Try adjusting your filters"}
-              </p>
-            </div>
-          ) : (
+          {/* Your Bets Tab */}
+          {selectedTab === "your-bets" && (
             <>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-gray-600">
-                  <span className="font-semibold text-gray-900">
-                    {filteredMarkets.length}
-                  </span>{" "}
-                  active {filteredMarkets.length === 1 ? "market" : "markets"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {selectedCategory === "my-bets" && address ? (
-                  // Show user's bets
-                  filteredMarkets.map((market) => (
-                    <UserBetCard
-                      key={market.id}
-                      market={market}
-                      userAddress={address as Address}
-                      onSelect={onMarketSelect}
-                    />
-                  ))
-                ) : (
-                  // Show all markets
-                  filteredMarkets.map((market) => (
-                    <MarketCard
-                      key={market.id}
-                      market={market}
-                      onSelect={onMarketSelect}
-                    />
-                  ))
-                )}
-              </div>
+              {!isConnected ? (
+                <div className="text-center py-16 space-y-3">
+                  <div className="text-6xl">🔒</div>
+                  <p className="text-gray-500 font-medium">Connect your wallet</p>
+                  <p className="text-sm text-gray-400">Connect to see your active bets</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-gray-900">Your Active Bets</h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {MOCK_MARKETS.filter(m => m.contractMarketId !== undefined).map((market) => (
+                      <UserBetCard
+                        key={market.id}
+                        market={market}
+                        userAddress={address as Address}
+                        onSelect={onMarketSelect}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </>
+          )}
+
+          {/* Trending Tab */}
+          {selectedTab === "trending" && (
+            <>
+              {filteredMarkets.length === 0 ? (
+                <div className="text-center py-16 space-y-3">
+                  <div className="text-6xl">🤷</div>
+                  <p className="text-gray-500 font-medium">No markets found</p>
+                  <p className="text-sm text-gray-400">Try adjusting your search</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold text-gray-900">
+                        {filteredMarkets.length}
+                      </span>{" "}
+                      active {filteredMarkets.length === 1 ? "market" : "markets"}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredMarkets.map((market) => (
+                      <MarketCard
+                        key={market.id}
+                        market={market}
+                        onSelect={onMarketSelect}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Portfolio Tab */}
+          {selectedTab === "portfolio" && (
+            <Portfolio onMarketSelect={onMarketSelect} />
+          )}
+
+          {/* Leaderboard Tab */}
+          {selectedTab === "leaderboard" && (
+            <Leaderboard />
           )}
         </div>
       </div>
