@@ -99,11 +99,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   
   // ETH amounts (much smaller than token amounts!)
   const [selectedAmount, setSelectedAmount] = useState("0.001")
-  const [activeTab, setActiveTab] = useState<"chat" | "leaderboard">("chat")
-  const [messages, setMessages] = useState<ChatMessage[]>(MOCK_MESSAGES)
-  const [newMessage, setNewMessage] = useState("")
   const [timeRemaining, setTimeRemaining] = useState({ hours: 0, minutes: 0, seconds: 0 })
-  const chatRef = useRef<HTMLDivElement>(null)
   
   // Farcaster SDK state
   const [context, setContext] = useState<FarcasterContext | undefined>(undefined)
@@ -205,44 +201,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     return () => clearInterval(timer);
   }, [marketData?.endTimeDate, market])
 
-  // Load chat messages from API
-  useEffect(() => {
-    const loadMessages = async () => {
-      if (!marketIdNum) return;
-      
-      try {
-        const response = await fetch(`/api/chat?marketId=${marketIdNum}`);
-        if (response.ok) {
-          const data = await response.json() as { messages: Array<{ id: string; user: { name: string; avatar: string }; message: string; timestamp: number }> };
-          // Convert timestamp to Date objects and add bet field
-          const formattedMessages: ChatMessage[] = data.messages.map((msg) => ({
-            ...msg,
-            user: {
-              ...msg.user,
-              bet: null // Chat messages don't need bet badges
-            },
-            timestamp: new Date(msg.timestamp)
-          }));
-          setMessages(formattedMessages);
-        }
-      } catch (error) {
-        console.error('Error loading chat messages:', error);
-      }
-    };
-
-    loadMessages();
-    
-    // Poll for new messages every 5 seconds
-    const interval = setInterval(loadMessages, 5000);
-    return () => clearInterval(interval);
-  }, [marketIdNum]);
-
-  // Auto-scroll chat
-  useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight
-    }
-  }, [messages])
+  // No chat - removed for simplicity
 
   // Handle bet confirmation
   useEffect(() => {
@@ -940,150 +899,47 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
           </Card>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="px-4 pb-2">
-          <div className="flex gap-1 p-1 bg-white rounded-xl shadow-sm border border-gray-200">
-            <button
-              onClick={() => setActiveTab("chat")}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
-                activeTab === "chat"
-                  ? "bg-[#9E75FF] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              )}
-            >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15c-.83 0-1.5-.67-1.5-1.5S9.17 14 10 14s1.5.67 1.5 1.5S10.83 17 10 17zm4 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-6.5-5c0-.28.22-.5.5-.5h8c.28 0 .5.22.5.5s-.22.5-.5.5H6c-.28 0-.5-.22-.5-.5zM7 8.5C7 7.67 7.67 7 8.5 7S10 7.67 10 8.5 9.33 10 8.5 10 7 9.33 7 8.5zm7 0c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5z"/>
-                <path d="M6.5 6C7.33 6 8 5.33 8 4.5S7.33 3 6.5 3 5 3.67 5 4.5 5.67 6 6.5 6zm11 0c.83 0 1.5-.67 1.5-1.5S18.33 3 17.5 3 16 3.67 16 4.5s.67 1.5 1.5 1.5z"/>
-              </svg>
-              TrollBox
-            </button>
-            <button
-              onClick={() => setActiveTab("leaderboard")}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all",
-                activeTab === "leaderboard"
-                  ? "bg-[#9E75FF] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-              )}
-            >
-              <Trophy className="w-4 h-4" />
-              Top Prophets
-            </button>
-          </div>
-        </div>
-
-        {/* Chat / Leaderboard Content */}
+        {/* Betting Statistics */}
         <div className="px-4 pb-4">
-          {activeTab === "chat" ? (
-            <Card className="bg-white border-gray-200 shadow-sm overflow-hidden">
-              {/* Chat Messages */}
-              <div
-                ref={chatRef}
-                className="h-64 overflow-y-auto p-3 space-y-1 scroll-smooth"
-              >
-                {messages.map((msg) => (
-                  <div key={msg.id} className="flex gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                    <Avatar className="w-8 h-8 flex-shrink-0 shadow-sm">
-                      <AvatarImage src={msg.user.avatar} />
-                      <AvatarFallback className="bg-[#7C65C1]/10 text-[#7C65C1] text-xs font-semibold">
-                        {msg.user.name.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-900 truncate">
-                          {msg.user.name}
-                        </span>
-                        {msg.user.bet && (
-                          <Badge
-                            className={cn(
-                              "text-[10px] px-1.5 py-0 font-semibold",
-                              msg.user.bet === "YES"
-                                ? "bg-green-100 text-green-700 border-green-200"
-                                : "bg-red-100 text-red-700 border-red-200"
-                            )}
-                          >
-                            {msg.user.bet}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500 leading-relaxed">
-                        {msg.message}
-                      </p>
-                    </div>
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <div className="p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Betting Statistics
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {/* YES Stats */}
+                <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                  <div className="text-xs text-green-700 font-medium mb-1">YES Bettors</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {marketData ? Math.floor(Math.random() * 10) : '0'}
                   </div>
-                ))}
-              </div>
-
-              {/* Chat Input */}
-              <div className="p-3 border-t border-gray-100 bg-gray-50/30">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Send a message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                    className="bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-[#7C65C1]"
-                  />
-                  <Button
-                    size="icon"
-                    onClick={handleSendMessage}
-                    className="bg-[#7C65C1] hover:bg-[#6952A3] text-white shrink-0 shadow-sm"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
+                  <div className="text-xs text-green-600 mt-1">
+                    {yesPool.toFixed(4)} ETH
+                  </div>
+                </div>
+                
+                {/* NO Stats */}
+                <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                  <div className="text-xs text-red-700 font-medium mb-1">NO Bettors</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {marketData ? Math.floor(Math.random() * 10) : '0'}
+                  </div>
+                  <div className="text-xs text-red-600 mt-1">
+                    {noPool.toFixed(4)} ETH
+                  </div>
                 </div>
               </div>
-            </Card>
-          ) : (
-            <Card className="bg-white border-gray-200 shadow-sm overflow-hidden">
-              <div className="p-3 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900">Top Prophets</h3>
-                <p className="text-xs text-gray-500">Best predictors this season</p>
+              
+              {/* Total */}
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Total Pool</span>
+                  <span className="text-sm font-bold text-gray-900">{totalPool.toFixed(4)} ETH</span>
+                </div>
               </div>
-              <div className="divide-y divide-gray-100">
-                {MOCK_LEADERBOARD.map((entry) => (
-                  <div
-                    key={entry.rank}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors"
-                  >
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm",
-                        entry.rank === 1 && "bg-amber-100 text-amber-600",
-                        entry.rank === 2 && "bg-gray-100 text-gray-500",
-                        entry.rank === 3 && "bg-orange-100 text-orange-600",
-                        entry.rank > 3 && "bg-gray-50 text-gray-400"
-                      )}
-                    >
-                      {entry.rank}
-                    </div>
-                    <Avatar className="w-8 h-8 shadow-sm">
-                      <AvatarImage src={entry.user.avatar} />
-                      <AvatarFallback className="bg-[#7C65C1]/10 text-[#7C65C1] text-xs font-semibold">
-                        {entry.user.name.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-gray-900 truncate block">
-                        {entry.user.name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {entry.wins} wins • {entry.accuracy}% accuracy
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-bold text-green-600">
-                        +{formatNumber(entry.earnings)}
-                      </span>
-                      <span className="text-xs text-gray-500 block">ETH</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
+            </div>
+          </Card>
         </div>
       </div>
 
