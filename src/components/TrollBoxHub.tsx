@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import sdk from "@farcaster/miniapp-sdk";
-import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy, UserCog, ChevronDown, ChevronUp } from "lucide-react";
+import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, UserCog, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "~/components/ui/button-component";
 import { Badge } from "~/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
