@@ -30,42 +30,41 @@ export interface Market {
 // When creating new markets, update these timestamps to match the contract
 
 export const MOCK_MARKETS: Market[] = [
-  // MAINNET-SAFE MARKETS (IDs 27-29) - Deployed at 2026-01-23T15:36:10Z
-  // These markets have ENDED - they will show as ended after refresh
+  // MAINNET-SAFE MARKETS (IDs 30-32) - Deployed at 2026-01-23T16:42:29Z
   {
-    id: 'btc-digit-5-test-27',
-    contractMarketId: 27,
+    id: 'market-30',
+    contractMarketId: 30,
     question: '🎲 Will BTC price end with digit 5 in next 10min?',
     description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date('2026-01-23T15:36:10Z'), // FIXED timestamp from contract
+    endTime: new Date('2026-01-23T16:42:29.000Z'), // FIXED timestamp
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'eth-gas-15-test-28',
-    contractMarketId: 28,
+    id: 'market-31',
+    contractMarketId: 31,
     question: '⚡ Will ETH gas be above 15 gwei in 10min?',
     description: '✅ MAINNET-SAFE - Uses Etherscan API for real gas price',
     thumbnail: '⚡',
     category: 'crypto',
-    endTime: new Date('2026-01-23T15:36:10Z'), // FIXED timestamp from contract
+    endTime: new Date('2026-01-23T16:42:29.000Z'), // FIXED timestamp
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'btc-digit-3-test-29',
-    contractMarketId: 29,
+    id: 'market-32',
+    contractMarketId: 32,
     question: '🎲 Will BTC price end with digit 3 in next 10min?',
     description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date('2026-01-23T15:36:10Z'), // FIXED timestamp from contract
+    endTime: new Date('2026-01-23T16:42:29.000Z'), // FIXED timestamp
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,

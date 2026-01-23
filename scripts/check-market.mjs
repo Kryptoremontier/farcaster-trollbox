@@ -95,11 +95,11 @@ async function checkMarket(marketId, userAddress) {
 
 // Check multiple markets
 async function checkAll() {
-  // NEW MAINNET-SAFE MARKETS (27-29)
+  // NEW MAINNET-SAFE MARKETS (30-32)
   const userAddress = getAddress('0x1c0e124228a0a7133f5d2d6b23e2be3f87b1e8b6');
-  await checkMarket(27, userAddress);
-  await checkMarket(28, userAddress);
-  await checkMarket(29, userAddress);
+  await checkMarket(30, userAddress);
+  await checkMarket(31, userAddress);
+  await checkMarket(32, userAddress);
 }
 
 checkAll()
