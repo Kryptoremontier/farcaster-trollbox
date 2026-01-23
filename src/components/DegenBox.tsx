@@ -705,13 +705,21 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
               {/* Market Result */}
               {isResolved && !isInVerificationPeriod && (
                 <div className="space-y-3">
-                  {/* Winning Side */}
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  {/* Winning Side - PROMINENT DISPLAY */}
+                  <div className={cn(
+                    "p-4 rounded-lg border-2",
+                    winningSide 
+                      ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-400" 
+                      : "bg-gradient-to-r from-red-50 to-rose-50 border-red-400"
+                  )}>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 font-medium">Result:</span>
-                      <Badge className={winningSide ? 'bg-green-100 text-green-700 border-green-300' : 'bg-red-100 text-red-700 border-red-300'}>
-                        {winningSide ? '✅ YES Won' : '❌ NO Won'}
-                      </Badge>
+                      <span className="text-sm text-gray-700 font-semibold">🏆 Winner:</span>
+                      <div className={cn(
+                        "text-2xl font-black px-4 py-2 rounded-lg",
+                        winningSide ? "text-green-700 bg-green-100" : "text-red-700 bg-red-100"
+                      )}>
+                        {winningSide ? '✅ YES' : '❌ NO'}
+                      </div>
                     </div>
                   </div>
 
@@ -821,9 +829,33 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                     {isConnected ? parseFloat(ethBalance).toFixed(4) : '0'} ETH
                   </span>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Your Bets: {userBet ? (parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)).toFixed(4) : '0'} ETH</span>
-                  <span className="text-green-600">Available: {isConnected ? parseFloat(ethBalance).toFixed(4) : '0'} ETH</span>
+                {/* Your Current Bets - PROMINENT DISPLAY */}
+                {userBet && (parseFloat(userBet.yesAmount) > 0 || parseFloat(userBet.noAmount) > 0) && (
+                  <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-lg">
+                    <div className="text-xs text-purple-700 font-semibold mb-2">📊 Your Position</div>
+                    <div className="flex gap-2">
+                      {parseFloat(userBet.yesAmount) > 0 && (
+                        <div className="flex-1 bg-green-100 border border-green-300 rounded px-2 py-1">
+                          <div className="text-xs text-green-600 font-medium">YES</div>
+                          <div className="text-sm font-bold text-green-700">{parseFloat(userBet.yesAmount).toFixed(4)} ETH</div>
+                        </div>
+                      )}
+                      {parseFloat(userBet.noAmount) > 0 && (
+                        <div className="flex-1 bg-red-100 border border-red-300 rounded px-2 py-1">
+                          <div className="text-xs text-red-600 font-medium">NO</div>
+                          <div className="text-sm font-bold text-red-700">{parseFloat(userBet.noAmount).toFixed(4)} ETH</div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-purple-600 mt-2 font-semibold">
+                      Total: {(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)).toFixed(4)} ETH
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span className="text-gray-600">Available Balance:</span>
+                  <span className="text-green-600 font-semibold">{isConnected ? parseFloat(ethBalance).toFixed(4) : '0'} ETH</span>
                 </div>
                 {/* Get ETH from faucet */}
                 {parseFloat(ethBalance) < 0.001 && (

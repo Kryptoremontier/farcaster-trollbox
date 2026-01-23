@@ -101,17 +101,14 @@ export function MarketCard({ market, onSelect }: MarketCardProps) {
       <div className="px-3 pb-3 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-2">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
-            <span className="font-medium">{formatPoolAmount(totalPool)}</span>
+            <TrendingUp className="w-3 h-3 text-purple-500" />
+            <span className="font-semibold text-purple-600">{formatPoolAmount(totalPool)}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <Users className="w-3 h-3" />
-            <span className="font-medium">{market.totalBettors}</span>
-          </div>
+          {/* Note: totalBettors removed - contract doesn't track this */}
         </div>
         <div className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          <span className="font-medium">{timeRemaining}</span>
+          <Clock className="w-3 h-3 text-gray-600" />
+          <span className="font-medium text-gray-700">{timeRemaining}</span>
         </div>
       </div>
     </Card>
