@@ -4,7 +4,6 @@ import { Trophy, TrendingUp, Medal, Crown } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
-import { getTierBadge, calculateTier } from "~/lib/pointsSystem";
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 
@@ -209,12 +208,6 @@ export function Leaderboard() {
                           {entry.username === "You" && (
                             <Badge className="text-xs px-1.5 py-0 bg-[#9E75FF] text-white">You</Badge>
                           )}
-                          {/* 🤫 Subtle tier badge - users don't know what it means yet */}
-                          {entry.secretPoints && (
-                            <span className="text-sm" title="Activity level">
-                              {getTierBadge(calculateTier(entry.secretPoints))}
-                            </span>
-                          )}
                         </div>
                         <div className="text-xs text-gray-500">{entry.address}</div>
                       </div>
@@ -263,7 +256,7 @@ export function Leaderboard() {
                     </Badge>
                   </td>
                 </tr>
-              )))}
+              ))}
             </tbody>
           </table>
         </div>
