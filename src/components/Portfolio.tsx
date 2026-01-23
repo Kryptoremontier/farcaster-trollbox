@@ -1,20 +1,63 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { useETHBalance } from "~/hooks/useTrollBetETH";
+import { useETHBalance, useUserBetETH, useMarketDataETH } from "~/hooks/useTrollBetETH";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
 import { Wallet, TrendingUp, Trophy, Activity } from "lucide-react";
 import { Card } from "~/components/ui/card";
+import { useState, useEffect } from "react";
 
 interface PortfolioProps {
   onMarketSelect: (marketId: string) => void;
 }
 
+// Helper component to collect bet stats
+function BetStatsCollector({ 
+  markets, 
+  userAddress, 
+  onStatsUpdate 
+}: { 
+  markets: typeof MOCK_MARKETS, 
+  userAddress: Address,
+  onStatsUpdate: (stats: { activeBets: number, totalWagered: number }) => void 
+}) {
+  const bets = markets.map(market => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { userBet } = useUserBetETH(market.contractMarketId ?? 0, userAddress);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { marketData } = useMarketDataETH(market.contractMarketId ?? 0);
+    return { userBet, marketData, market };
+  });
+
+  useEffect(() => {
+    let activeBets = 0;
+    let totalWagered = 0;
+
+    bets.forEach(({ userBet, marketData }) => {
+      if (userBet) {
+        const yesAmount = parseFloat(userBet.yesAmount);
+        const noAmount = parseFloat(userBet.noAmount);
+        const totalBet = yesAmount + noAmount;
+
+        if (totalBet > 0) {
+          activeBets++;
+          totalWagered += totalBet;
+        }
+      }
+    });
+
+    onStatsUpdate({ activeBets, totalWagered });
+  }, [bets, onStatsUpdate]);
+
+  return null;
+}
+
 export function Portfolio({ onMarketSelect }: PortfolioProps) {
   const { address, isConnected } = useAccount();
   const { balance: ethBalance } = useETHBalance(address as Address | undefined);
+  const [stats, setStats] = useState({ activeBets: 0, totalWagered: 0 });
 
   if (!isConnected || !address) {
     return (
@@ -28,16 +71,20 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
 
   const marketsWithBets = MOCK_MARKETS.filter(m => m.contractMarketId !== undefined);
 
-  // Mock stats - in production, calculate from actual bets
-  const totalBets = 3;
-  const totalWagered = 0.012; // ETH amount
-  const activeBets = 1;
   const wonBets = 0;
   const lostBets = 0;
+  const totalBets = stats.activeBets + wonBets + lostBets;
   const winRate = totalBets > 0 ? ((wonBets / totalBets) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="space-y-6">
+      {/* Hidden stats collector */}
+      <BetStatsCollector 
+        markets={marketsWithBets} 
+        userAddress={address as Address}
+        onStatsUpdate={setStats}
+      />
+
       {/* Portfolio Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Wallet Balance */}
@@ -59,7 +106,7 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
             <span className="text-xs text-blue-700 font-medium">Wagered</span>
           </div>
           <div className="text-xl font-bold text-blue-700">
-            {totalWagered.toFixed(4)}
+            {stats.totalWagered.toFixed(4)}
           </div>
           <div className="text-xs text-blue-600 mt-1">ETH</div>
         </Card>
@@ -71,7 +118,7 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
             <span className="text-xs text-purple-700 font-medium">Active</span>
           </div>
           <div className="text-xl font-bold text-purple-700">
-            {activeBets}
+            {stats.activeBets}
           </div>
           <div className="text-xs text-purple-600 mt-1">markets</div>
         </Card>
