@@ -32,8 +32,7 @@ const ABI = [
       { name: 'yesPool', type: 'uint256' },
       { name: 'noPool', type: 'uint256' },
       { name: 'resolved', type: 'bool' },
-      { name: 'winningSide', type: 'bool' },
-      { name: 'exists', type: 'bool' }
+      { name: 'winningSide', type: 'bool' }
     ],
     stateMutability: 'view'
   },
@@ -219,9 +218,9 @@ async function main() {
         args: [BigInt(i)]
       });
 
-      const [question, endTime, yesPool, noPool, resolved, winningSide, exists] = marketData;
+      const [question, endTime, yesPool, noPool, resolved, winningSide] = marketData;
 
-      if (!exists) continue;
+      // Skip if already resolved or still active
       if (resolved) continue;
       if (now < Number(endTime)) continue;
 
