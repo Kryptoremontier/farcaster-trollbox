@@ -15,7 +15,7 @@
     "@farcaster/mini-app-solana": "1.0.9",
     "@farcaster/miniapp-core": "^0.3.9",
     "@farcaster/miniapp-node": "^0.1.9",
-    "@farcaster/miniapp-sdk": "^0.1.10",
+    "@farcaster/miniapp-sdk": "^0.2.1",
     "@farcaster/miniapp-wagmi-connector": "^1.0.0",
     "@farcaster/quick-auth": "^0.0.2",
     "@radix-ui/react-label": "^2.1.1",
