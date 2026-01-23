@@ -157,7 +157,28 @@ export function Leaderboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {leaderboard.map((entry) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#9E75FF]"></div>
+                      Loading leaderboard...
+                    </div>
+                  </td>
+                </tr>
+              ) : leaderboard.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <Trophy className="w-12 h-12 text-gray-300" />
+                      <div>
+                        <p className="text-lg font-semibold text-gray-700">No players yet!</p>
+                        <p className="text-sm text-gray-500 mt-1">Be the first to place a bet and claim your spot! 🚀</p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : leaderboard.map((entry) => (
                 <tr
                   key={entry.address}
                   className={`hover:bg-gray-50 transition-colors ${
@@ -242,7 +263,7 @@ export function Leaderboard() {
                     </Badge>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
