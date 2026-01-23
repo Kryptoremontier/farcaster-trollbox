@@ -1,10 +1,34 @@
-import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
-import { type Address, parseUnits, formatUnits } from 'viem';
+import { useReadContract, useWaitForTransactionReceipt, useSendTransaction } from 'wagmi';
+import { type Address, parseUnits, formatUnits, encodeFunctionData } from 'viem';
 import { baseSepolia } from 'wagmi/chains';
 import TrollBetABI from '~/lib/abi/TrollBet.json';
 
 // Chain ID for all transactions (Base Sepolia for testnet)
 const CHAIN_ID = baseSepolia.id;
+
+// ERC20 ABI for approve
+const ERC20_ABI = [
+  {
+    type: 'function',
+    name: 'approve',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    name: 'mint',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable'
+  }
+] as const;
 
 // Contract address - TODO: Update this after deployment
 export const TROLLBET_CONTRACT_ADDRESS: Address = '0x26dEe56f85fAa471eFF9210326734389186ac625';
@@ -13,40 +37,43 @@ export const TROLLBET_CONTRACT_ADDRESS: Address = '0x26dEe56f85fAa471eFF92103267
 export const DEGEN_TOKEN_ADDRESS: Address = '0xdDB5C1a86762068485baA1B481FeBeB17d30e002';
 
 /**
- * Hook to place a bet on a market
+ * Hook to place a bet on a market - using useSendTransaction for better Farcaster compatibility
  */
 export function usePlaceBet() {
-  const { data: hash, writeContract, isPending, error } = useWriteContract();
+  const { data: hash, sendTransaction, isPending, error } = useSendTransaction();
 
   const placeBet = async (marketId: number, side: boolean, amount: string) => {
     console.log('[useTrollBet] placeBet called', { marketId, side, amount });
-    // Convert amount to wei (18 decimals for $DEGEN)
     const amountWei = parseUnits(amount, 18);
 
-    console.log('[useTrollBet] calling writeContract for placeBet...', {
-      address: TROLLBET_CONTRACT_ADDRESS,
+    // Encode the function call data
+    const data = encodeFunctionData({
+      abi: TrollBetABI,
+      functionName: 'placeBet',
+      args: [BigInt(marketId), side, amountWei],
+    });
+
+    console.log('[useTrollBet] calling sendTransaction for placeBet...', {
+      to: TROLLBET_CONTRACT_ADDRESS,
       marketId,
       side,
       amountWei: amountWei.toString(),
     });
 
     try {
-      const result = await writeContract({
-        address: TROLLBET_CONTRACT_ADDRESS,
-        abi: TrollBetABI,
-        functionName: 'placeBet',
-        args: [BigInt(marketId), side, amountWei],
+      const result = sendTransaction({
+        to: TROLLBET_CONTRACT_ADDRESS,
+        data,
         chainId: CHAIN_ID,
       });
-      console.log('[useTrollBet] placeBet writeContract result:', result);
+      console.log('[useTrollBet] placeBet sendTransaction result:', result);
       return result;
     } catch (err) {
-      console.error('[useTrollBet] placeBet writeContract error:', err);
+      console.error('[useTrollBet] placeBet sendTransaction error:', err);
       throw err;
     }
   };
 
-  // Log error if it changes
   if (error) {
     console.error('[useTrollBet] placeBet hook error:', error);
   }
@@ -60,17 +87,21 @@ export function usePlaceBet() {
 }
 
 /**
- * Hook to claim winnings from a resolved market
+ * Hook to claim winnings from a resolved market - using useSendTransaction
  */
 export function useClaimWinnings() {
-  const { data: hash, writeContract, isPending, error } = useWriteContract();
+  const { data: hash, sendTransaction, isPending, error } = useSendTransaction();
 
   const claimWinnings = async (marketId: number) => {
-    return writeContract({
-      address: TROLLBET_CONTRACT_ADDRESS,
+    const data = encodeFunctionData({
       abi: TrollBetABI,
       functionName: 'claimWinnings',
       args: [BigInt(marketId)],
+    });
+
+    return sendTransaction({
+      to: TROLLBET_CONTRACT_ADDRESS,
+      data,
       chainId: CHAIN_ID,
     });
   };
@@ -84,55 +115,43 @@ export function useClaimWinnings() {
 }
 
 /**
- * Hook to approve $DEGEN token spending (unlimited approval)
+ * Hook to approve $DEGEN token spending (unlimited approval) - using useSendTransaction
  */
 export function useApproveToken() {
-  const { data: hash, writeContract, isPending, error } = useWriteContract();
+  const { data: hash, sendTransaction, isPending, error } = useSendTransaction();
 
   // Max uint256 for unlimited approval
   const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
   const approve = async (_amount?: string) => {
     console.log('[useTrollBet] approve called');
-    // Always approve unlimited for better UX - user only needs to approve once
-    // The _amount parameter is kept for backwards compatibility but ignored
 
-    // ERC20 approve ABI
-    const erc20ABI = [
-      {
-        type: 'function',
-        name: 'approve',
-        inputs: [
-          { name: 'spender', type: 'address' },
-          { name: 'amount', type: 'uint256' }
-        ],
-        outputs: [{ name: '', type: 'bool' }],
-        stateMutability: 'nonpayable'
-      }
-    ] as const;
+    // Encode the approve call
+    const data = encodeFunctionData({
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
+    });
 
-    console.log('[useTrollBet] calling writeContract for approve...', {
-      address: DEGEN_TOKEN_ADDRESS,
+    console.log('[useTrollBet] calling sendTransaction for approve...', {
+      to: DEGEN_TOKEN_ADDRESS,
       spender: TROLLBET_CONTRACT_ADDRESS,
     });
 
     try {
-      const result = await writeContract({
-        address: DEGEN_TOKEN_ADDRESS,
-        abi: erc20ABI,
-        functionName: 'approve',
-        args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
+      const result = sendTransaction({
+        to: DEGEN_TOKEN_ADDRESS,
+        data,
         chainId: CHAIN_ID,
       });
-      console.log('[useTrollBet] writeContract result:', result);
+      console.log('[useTrollBet] sendTransaction result:', result);
       return result;
     } catch (err) {
-      console.error('[useTrollBet] writeContract error:', err);
+      console.error('[useTrollBet] sendTransaction error:', err);
       throw err;
     }
   };
 
-  // Log error if it changes
   if (error) {
     console.error('[useTrollBet] approve hook error:', error);
   }
@@ -333,52 +352,41 @@ export function useTransactionStatus(hash?: `0x${string}`) {
 }
 
 /**
- * Hook to mint test tokens (only works on testnet with MockDEGEN)
+ * Hook to mint test tokens (only works on testnet with MockDEGEN) - using useSendTransaction
  */
 export function useMintTestTokens() {
-  const { data: hash, writeContract, isPending, error } = useWriteContract();
+  const { data: hash, sendTransaction, isPending, error } = useSendTransaction();
 
   const mintTokens = async (toAddress: Address, amount: string = "10000") => {
     console.log('[useTrollBet] mintTokens called', { toAddress, amount });
     const amountWei = parseUnits(amount, 18);
 
-    // MockDEGEN mint ABI
-    const mintABI = [
-      {
-        type: 'function',
-        name: 'mint',
-        inputs: [
-          { name: 'to', type: 'address' },
-          { name: 'amount', type: 'uint256' }
-        ],
-        outputs: [],
-        stateMutability: 'nonpayable'
-      }
-    ] as const;
+    const data = encodeFunctionData({
+      abi: ERC20_ABI,
+      functionName: 'mint',
+      args: [toAddress, amountWei],
+    });
 
-    console.log('[useTrollBet] calling writeContract for mint...', {
-      address: DEGEN_TOKEN_ADDRESS,
+    console.log('[useTrollBet] calling sendTransaction for mint...', {
+      to: DEGEN_TOKEN_ADDRESS,
       toAddress,
       amountWei: amountWei.toString(),
     });
 
     try {
-      const result = await writeContract({
-        address: DEGEN_TOKEN_ADDRESS,
-        abi: mintABI,
-        functionName: 'mint',
-        args: [toAddress, amountWei],
+      const result = sendTransaction({
+        to: DEGEN_TOKEN_ADDRESS,
+        data,
         chainId: CHAIN_ID,
       });
-      console.log('[useTrollBet] mint writeContract result:', result);
+      console.log('[useTrollBet] mint sendTransaction result:', result);
       return result;
     } catch (err) {
-      console.error('[useTrollBet] mint writeContract error:', err);
+      console.error('[useTrollBet] mint sendTransaction error:', err);
       throw err;
     }
   };
 
-  // Log error if it changes
   if (error) {
     console.error('[useTrollBet] mint hook error:', error);
   }
