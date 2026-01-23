@@ -85,6 +85,46 @@ export const MOCK_MARKETS: Market[] = [
     totalBettors: 0,
     status: 'active',
   },
+  // MAINNET-SAFE TEST MARKETS (IDs 24-26) - Added for final testing
+  {
+    id: 'btc-digit-5-10min',
+    contractMarketId: 24,
+    question: '🎲 Will BTC price end with digit 5 in next 10min?',
+    description: '✅ SAFE - Uses CoinGecko API for real BTC price',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    yesPool: 0,
+    noPool: 0,
+    totalBettors: 0,
+    status: 'active',
+  },
+  {
+    id: 'eth-gas-15-10min',
+    contractMarketId: 25,
+    question: '⚡ Will ETH gas be above 15 gwei in 10min?',
+    description: '✅ SAFE - Uses Etherscan API for real gas price',
+    thumbnail: '⚡',
+    category: 'crypto',
+    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    yesPool: 0,
+    noPool: 0,
+    totalBettors: 0,
+    status: 'active',
+  },
+  {
+    id: 'btc-digit-3-10min',
+    contractMarketId: 26,
+    question: '🎲 Will BTC price end with digit 3 in next 10min?',
+    description: '✅ SAFE - Uses CoinGecko API for real BTC price',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    yesPool: 0,
+    noPool: 0,
+    totalBettors: 0,
+    status: 'active',
+  },
 ];
 
 /**
