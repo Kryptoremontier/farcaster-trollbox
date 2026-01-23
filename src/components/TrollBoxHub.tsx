@@ -386,7 +386,8 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
                 Portfolio
               </button>
 
-              <button
+              {/* LEADERBOARD TEMPORARILY HIDDEN - DEBUGGING IN PROGRESS */}
+              {/* <button
                 onClick={() => setSelectedTab("leaderboard")}
                 className={cn(
                   "px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-2",
@@ -397,7 +398,7 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
               >
                 <Trophy className="w-4 h-4" />
                 Leaderboard
-              </button>
+              </button> */}
             </div>
 
             {/* Right Arrow */}

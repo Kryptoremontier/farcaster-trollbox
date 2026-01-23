@@ -9,8 +9,14 @@ import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load .env.mainnet for production
+dotenv.config({ path: join(__dirname, '..', '.env.mainnet') });
 
 const TROLLBET_ETH_ADDRESS = '0x52ABabe88DE8799B374b11B91EC1b32989779e55';
 
@@ -43,15 +49,17 @@ if (!process.env.DEPLOYER_PRIVATE_KEY) {
 
 const account = privateKeyToAccount(process.env.DEPLOYER_PRIVATE_KEY);
 
+const rpcUrl = process.env.BASE_MAINNET_RPC_URL || 'https://mainnet.base.org';
+
 const publicClient = createPublicClient({
   chain: base,
-  transport: http()
+  transport: http(rpcUrl)
 });
 
 const walletClient = createWalletClient({
   account,
   chain: base,
-  transport: http()
+  transport: http(rpcUrl)
 });
 
 // Helper: Get timestamp N minutes from now

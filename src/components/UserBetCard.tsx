@@ -225,24 +225,26 @@ export function UserBetCard({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('[UserBetCard] Claim button clicked', { 
+                  e.nativeEvent.stopImmediatePropagation();
+                  console.log('[UserBetCard] 🎯 CLAIM BUTTON CLICKED!', { 
                     hasOnClaim: !!onClaim, 
                     marketId: market.contractMarketId,
                     isClaimPending,
-                    isClaimConfirming
+                    isClaimConfirming,
+                    disabled: isClaimPending || isClaimConfirming
                   });
                   if (onClaim && market.contractMarketId !== undefined) {
-                    console.log('[UserBetCard] Calling onClaim with marketId:', market.contractMarketId);
+                    console.log('[UserBetCard] ✅ Calling onClaim with marketId:', market.contractMarketId);
                     onClaim(market.contractMarketId);
                   } else {
-                    console.error('[UserBetCard] Cannot claim:', { 
+                    console.error('[UserBetCard] ❌ Cannot claim:', { 
                       hasOnClaim: !!onClaim, 
                       marketId: market.contractMarketId 
                     });
                   }
                 }}
                 disabled={isClaimPending || isClaimConfirming}
-                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md active:scale-95 transition-transform"
+                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isClaimPending || isClaimConfirming ? (
                   <>

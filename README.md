@@ -315,7 +315,7 @@ const newOdds = bettingEngine.calculateOdds('YES')
 ### Reactive Updates
 ```typescript
 // Subscribe to engine changes
-useEffect(() => {
+  useEffect(() => {
   const unsubscribe = bettingEngine.subscribe((newState) => {
     setEngineState(newState); // Triggers re-render
   });
