@@ -74,6 +74,13 @@ export function UserBetCard({
   const hasBetYes = yesAmount > 0;
   const hasBetNo = noAmount > 0;
 
+  // Grace period for verification (5 minutes after market ends)
+  const VERIFICATION_GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+  const marketEnded = timeRemaining === 'Ended';
+  const isInVerificationPeriod = marketEnded && marketData?.endTimeDate && 
+    !marketData?.resolved &&
+    (Date.now() - marketData.endTimeDate.getTime()) < VERIFICATION_GRACE_PERIOD_MS;
+  
   // Market status from contract
   const isResolved = marketData?.resolved ?? false;
   const winningSide = marketData?.winningSide ?? false; // true = YES, false = NO
@@ -176,8 +183,23 @@ export function UserBetCard({
         </div>
       </div>
 
+      {/* Verification Period */}
+      {isInVerificationPeriod && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-300">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-yellow-600" />
+              <span className="text-sm font-semibold text-yellow-700">🔍 Verifying...</span>
+            </div>
+            <p className="text-xs text-yellow-600 mt-1">
+              Bot is checking the result. Please wait 1-5 minutes.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Market Result & Claim Status */}
-      {isResolved && (
+      {isResolved && !isInVerificationPeriod && (
         <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
           {/* Winning Side */}
           <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">

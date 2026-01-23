@@ -1,4 +1,4 @@
-import { createPublicClient, http, formatEther } from 'viem';
+import { createPublicClient, http, formatEther, getAddress } from 'viem';
 import { baseSepolia } from 'viem/chains';
 
 const TROLLBET_ADDRESS = '0xc629e67E221db99CF2A6e0468907bBcFb7D5f5A3';
@@ -95,9 +95,11 @@ async function checkMarket(marketId, userAddress) {
 
 // Check multiple markets
 async function checkAll() {
-  await checkMarket(19, '0xfb7Ed318EA0E4ea699d7FB8Ae5AB8F9f3FEca76C');
-  await checkMarket(20, '0xfb7Ed318EA0E4ea699d7FB8Ae5AB8F9f3FEca76C');
-  await checkMarket(21, '0xfb7Ed318EA0E4ea699d7FB8Ae5AB8F9f3FEca76C');
+  // NEW MAINNET-SAFE MARKETS (24-26)
+  const userAddress = getAddress('0x1c0e124228a0a7133f5d2d6b23e2be3f87b1e8b6');
+  await checkMarket(24, userAddress);
+  await checkMarket(25, userAddress);
+  await checkMarket(26, userAddress);
 }
 
 checkAll()

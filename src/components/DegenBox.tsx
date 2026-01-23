@@ -443,6 +443,13 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     ? (parseFloat(marketData?.yesPool || "0") / totalPool) * 100 
     : 50;
 
+  // Grace period for verification (5 minutes after market ends)
+  const VERIFICATION_GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+  const marketEnded = timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0;
+  const isInVerificationPeriod = marketEnded && marketData?.endTimeDate && 
+    !marketData?.resolved &&
+    (Date.now() - marketData.endTimeDate.getTime()) < VERIFICATION_GRACE_PERIOD_MS;
+  
   // Check if user won
   const isResolved = marketData?.resolved ?? false;
   const winningSide = marketData?.winningSide ?? false; // true = YES, false = NO
@@ -598,7 +605,12 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                   <Clock className="w-4 h-4 text-[#7C65C1]" />
                   <span className="text-sm text-gray-500">Time Left</span>
                 </div>
-                {timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0 ? (
+                {isInVerificationPeriod ? (
+                  <div className="font-mono text-lg font-bold text-yellow-600 flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    VERIFYING...
+                  </div>
+                ) : timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0 ? (
                   <div className="font-mono text-lg font-bold text-red-600">
                     ENDED
                   </div>
@@ -674,8 +686,23 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
 
               {/* NOTE: No approval status needed with Native ETH! 🎉 */}
 
+              {/* Verification Period */}
+              {isInVerificationPeriod && (
+                <div className="p-4 bg-yellow-50 rounded-lg border-2 border-yellow-300">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-yellow-600" />
+                    <div>
+                      <div className="font-semibold text-yellow-800">🔍 Verifying Result...</div>
+                      <div className="text-sm text-yellow-700 mt-1">
+                        Our bot is checking external data sources to determine the winner. This usually takes 1-5 minutes.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Market Result */}
-              {isResolved && (
+              {isResolved && !isInVerificationPeriod && (
                 <div className="space-y-3">
                   {/* Winning Side */}
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -739,7 +766,12 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
               {/* NOTE: No approval needed with Native ETH! Single transaction betting 🎉 */}
 
               {/* Bet Buttons with Odds */}
-              {timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0 ? (
+              {isInVerificationPeriod ? (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                  <p className="text-yellow-600 font-semibold">🔍 Verifying...</p>
+                  <p className="text-sm text-yellow-600 mt-1">Waiting for bot to resolve the market</p>
+                </div>
+              ) : timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0 ? (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
                   <p className="text-red-600 font-semibold">Market has ended</p>
                   <p className="text-sm text-red-500 mt-1">No more bets accepted</p>
