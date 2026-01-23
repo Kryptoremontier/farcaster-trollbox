@@ -6,13 +6,13 @@
  */
 
 import { createPublicClient, createWalletClient, http, parseEther } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const TROLLBET_ETH_ADDRESS = '0xc629e67E221db99CF2A6e0468907bBcFb7D5f5A3';
+const TROLLBET_ETH_ADDRESS = '0x52ABabe88DE8799B374b11B91EC1b32989779e55';
 
 // Full ABI
 const TROLLBET_ABI = [
@@ -44,13 +44,13 @@ if (!process.env.DEPLOYER_PRIVATE_KEY) {
 const account = privateKeyToAccount(process.env.DEPLOYER_PRIVATE_KEY);
 
 const publicClient = createPublicClient({
-  chain: baseSepolia,
+  chain: base,
   transport: http()
 });
 
 const walletClient = createWalletClient({
   account,
-  chain: baseSepolia,
+  chain: base,
   transport: http()
 });
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract, useAccount, useBalance } from 'wagmi';
 import { type Address, parseEther, formatEther } from 'viem';
-import { baseSepolia } from 'wagmi/chains';
+import { base } from 'wagmi/chains';
 import { fromSolidityTimestamp } from '~/lib/utils';
 
 // TrollBetETH ABI (Native ETH version - no token approval needed!)
@@ -88,12 +88,10 @@ const TrollBetETH_ABI = [
   }
 ] as const;
 
-// Contract address - UPDATE THIS after deploying TrollBetETH!
-// TODO: Deploy TrollBetETH via Remix and paste address here
-export const TROLLBET_ETH_ADDRESS: Address = '0xc629e67E221db99CF2A6e0468907bBcFb7D5f5A3';
-
-// ⚠️ IMPORTANT: After deploying TrollBetETH via Remix, update the address above!
-// Example: export const TROLLBET_ETH_ADDRESS: Address = '0x1234...5678';
+// Contract address - BASE MAINNET
+// Deployed: 2026-01-23
+// Verified on BaseScan: https://basescan.org/address/0x52ABabe88DE8799B374b11B91EC1b32989779e55
+export const TROLLBET_ETH_ADDRESS: Address = '0x52ABabe88DE8799B374b11B91EC1b32989779e55';
 
 /**
  * Hook to place a bet using Native ETH
@@ -127,7 +125,7 @@ export function usePlaceBetETH() {
       functionName: 'placeBet',
       args: [BigInt(marketId), side],
       value: valueWei, // ETH sent with transaction
-      chainId: baseSepolia.id,
+      chainId: base.id,
     });
     
     console.log('[TrollBetETH] placeBet writeContract called');
@@ -164,7 +162,7 @@ export function useClaimWinningsETH() {
       abi: TrollBetETH_ABI,
       functionName: 'claimWinnings',
       args: [BigInt(marketId)],
-      chainId: baseSepolia.id,
+      chainId: base.id,
     });
   };
 
@@ -182,7 +180,7 @@ export function useClaimWinningsETH() {
 export function useETHBalance(userAddress?: Address) {
   const { data, isLoading, error, refetch } = useBalance({
     address: userAddress,
-    chainId: baseSepolia.id,
+    chainId: base.id,
   });
 
   const balance = data ? formatEther(data.value) : '0';
@@ -206,7 +204,7 @@ export function useMarketDataETH(marketId: number) {
     abi: TrollBetETH_ABI,
     functionName: 'getMarket',
     args: [BigInt(marketId)],
-    chainId: baseSepolia.id,
+    chainId: base.id,
   });
 
   const marketData = data ? {
@@ -236,7 +234,7 @@ export function useUserBetETH(marketId: number, userAddress?: Address) {
     abi: TrollBetETH_ABI,
     functionName: 'getUserBet',
     args: userAddress ? [BigInt(marketId), userAddress] : undefined,
-    chainId: baseSepolia.id,
+    chainId: base.id,
     query: {
       enabled: !!userAddress && marketId !== undefined,
       refetchInterval: 5000, // Every 5 seconds
@@ -281,7 +279,7 @@ export function useCalculatePayoutETH(marketId: number, side: boolean, amountETH
     abi: TrollBetETH_ABI,
     functionName: 'calculatePayout',
     args: [BigInt(marketId), side, amountWei],
-    chainId: baseSepolia.id,
+    chainId: base.id,
   });
 
   const payout = data ? {
@@ -305,7 +303,7 @@ export function useTotalPoolETH(marketId: number) {
     abi: TrollBetETH_ABI,
     functionName: 'getTotalPool',
     args: [BigInt(marketId)],
-    chainId: baseSepolia.id,
+    chainId: base.id,
   });
 
   const totalPool = data ? formatEther(data) : '0';
@@ -325,7 +323,7 @@ export function useMarketCount() {
     address: TROLLBET_ETH_ADDRESS,
     abi: TrollBetETH_ABI,
     functionName: 'marketCount',
-    chainId: baseSepolia.id,
+    chainId: base.id,
   });
 
   return {

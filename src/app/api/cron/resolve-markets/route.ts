@@ -19,14 +19,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, createWalletClient, http, formatEther } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 
 export const runtime = "edge";
 export const maxDuration = 60; // 60 seconds max execution time
 
-// TrollBetETH Contract
-const TROLLBET_ETH_ADDRESS = '0xc629e67E221db99CF2A6e0468907bBcFb7D5f5A3';
+// TrollBetETH Contract - BASE MAINNET
+const TROLLBET_ETH_ADDRESS = '0x52ABabe88DE8799B374b11B91EC1b32989779e55';
 
 // Full ABI for reading and resolving markets
 const TROLLBET_ABI = [
@@ -195,10 +195,10 @@ export async function GET(req: NextRequest) {
     
     // Use public RPC endpoint to avoid Cloudflare blocking
     // Alternative: Use Alchemy/Infura with API key for better reliability
-    const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
+    const rpcUrl = process.env.BASE_MAINNET_RPC_URL || 'https://mainnet.base.org';
     
     const publicClient = createPublicClient({
-      chain: baseSepolia,
+      chain: base,
       transport: http(rpcUrl, {
         timeout: 30_000, // 30 second timeout
         retryCount: 3,
@@ -208,7 +208,7 @@ export async function GET(req: NextRequest) {
 
     const walletClient = createWalletClient({
       account,
-      chain: baseSepolia,
+      chain: base,
       transport: http(rpcUrl, {
         timeout: 30_000,
         retryCount: 3,
