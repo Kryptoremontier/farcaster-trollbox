@@ -18,7 +18,7 @@ contract TrollBetETH {
 
     // ============ Constants ============
     
-    uint256 public constant PROTOCOL_FEE_BPS = 250; // 2.5% fee
+    uint256 public PROTOCOL_FEE_BPS = 250; // 2.5% fee (modifiable by owner)
     uint256 public constant BPS_DENOMINATOR = 10000;
 
     // ============ State Variables ============
@@ -39,6 +39,7 @@ contract TrollBetETH {
         bool resolved;
         bool winningSide;
         bool exists;
+        bool cancelled; // Market can be cancelled by owner
     }
 
     struct UserBet {
@@ -62,6 +63,8 @@ contract TrollBetETH {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event Paused(address indexed by);
     event Unpaused(address indexed by);
+    event MarketCancelled(uint256 indexed marketId);
+    event FeeUpdated(uint256 oldFee, uint256 newFee);
 
     // ============ Modifiers ============
 
@@ -129,12 +132,56 @@ contract TrollBetETH {
         
         require(market.exists, "Market does not exist");
         require(!market.resolved, "Already resolved");
+        require(!market.cancelled, "Market cancelled");
         require(block.timestamp >= market.endTime, "Market still active");
+
+        // CRITICAL: Check if winning side has any bets
+        uint256 winningPool = winningSide ? market.yesPool : market.noPool;
+        require(winningPool > 0, "No bets on winning side - cannot resolve");
 
         market.resolved = true;
         market.winningSide = winningSide;
 
         emit MarketResolved(marketId, winningSide, market.yesPool + market.noPool);
+    }
+
+    /**
+     * @notice Cancel a market (allows users to get refunds)
+     * @dev Can only cancel unresolved markets. Users get 100% refund.
+     */
+    function cancelMarket(uint256 marketId) external onlyOwner {
+        Market storage market = markets[marketId];
+        
+        require(market.exists, "Market does not exist");
+        require(!market.resolved, "Already resolved");
+        require(!market.cancelled, "Already cancelled");
+
+        market.cancelled = true;
+
+        emit MarketCancelled(marketId);
+    }
+
+    /**
+     * @notice Claim refund from cancelled market
+     * @dev Returns 100% of user's bet (no fees)
+     */
+    function claimRefund(uint256 marketId) external nonReentrant {
+        Market storage market = markets[marketId];
+        UserBet storage userBet = userBets[marketId][msg.sender];
+
+        require(market.exists, "Market does not exist");
+        require(market.cancelled, "Market not cancelled");
+        require(!userBet.claimed, "Already claimed");
+
+        uint256 refundAmount = userBet.yesAmount + userBet.noAmount;
+        require(refundAmount > 0, "No bet to refund");
+
+        userBet.claimed = true;
+
+        (bool sent, ) = msg.sender.call{value: refundAmount}("");
+        require(sent, "Transfer failed");
+
+        emit WinningsClaimed(marketId, msg.sender, refundAmount);
     }
 
     /**
@@ -305,6 +352,17 @@ contract TrollBetETH {
         uint256 balance = address(this).balance;
         (bool sent, ) = owner.call{value: balance}("");
         require(sent, "Transfer failed");
+    }
+
+    /**
+     * @notice Update protocol fee (owner only)
+     * @dev Fee cannot exceed 10% (1000 basis points)
+     */
+    function setFee(uint256 _newFeeBps) external onlyOwner {
+        require(_newFeeBps <= 1000, "Fee too high (max 10%)");
+        uint256 oldFee = PROTOCOL_FEE_BPS;
+        PROTOCOL_FEE_BPS = _newFeeBps;
+        emit FeeUpdated(oldFee, _newFeeBps);
     }
 
     // Receive ETH

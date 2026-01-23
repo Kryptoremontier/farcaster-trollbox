@@ -15,8 +15,8 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
 
     // ============ Constants ============
     
-    /// @notice Protocol fee in basis points (2.5% = 250 bp)
-    uint256 public constant PROTOCOL_FEE_BPS = 250;
+    /// @notice Protocol fee in basis points (2.5% = 250 bp, modifiable by owner)
+    uint256 public PROTOCOL_FEE_BPS = 250;
     uint256 public constant BPS_DENOMINATOR = 10000;
 
     // ============ Structs ============
@@ -29,6 +29,7 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
         bool resolved;             // Whether market has been resolved
         bool winningSide;          // true = YES won, false = NO won
         bool exists;               // Whether market exists
+        bool cancelled;            // Market can be cancelled by owner
     }
 
     struct UserBet {
@@ -88,6 +89,8 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
 
     event Paused(address indexed by);
     event Unpaused(address indexed by);
+    event MarketCancelled(uint256 indexed marketId);
+    event FeeUpdated(uint256 oldFee, uint256 newFee);
 
     // ============ Errors ============
 
@@ -162,7 +165,12 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
         
         if (!market.exists) revert MarketDoesNotExist();
         if (market.resolved) revert MarketAlreadyResolved();
+        if (market.cancelled) revert MarketDoesNotExist(); // Cancelled markets can't be resolved
         if (block.timestamp < market.endTime) revert MarketStillActive();
+
+        // CRITICAL: Check if winning side has any bets
+        uint256 winningPool = winningSide ? market.yesPool : market.noPool;
+        if (winningPool == 0) revert NotAWinner(); // Reuse existing error
 
         market.resolved = true;
         market.winningSide = winningSide;
@@ -376,6 +384,45 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
     // ============ Emergency Functions ============
 
     /**
+     * @notice Cancel a market (allows users to get refunds)
+     * @dev Can only cancel unresolved markets. Users get 100% refund.
+     */
+    function cancelMarket(uint256 marketId) external onlyOwner {
+        Market storage market = markets[marketId];
+        
+        if (!market.exists) revert MarketDoesNotExist();
+        if (market.resolved) revert MarketAlreadyResolved();
+        if (market.cancelled) revert MarketDoesNotExist(); // Already cancelled
+
+        market.cancelled = true;
+
+        emit MarketCancelled(marketId);
+    }
+
+    /**
+     * @notice Claim refund from cancelled market
+     * @dev Returns 100% of user's bet (no fees)
+     */
+    function claimRefund(uint256 marketId) external nonReentrant {
+        Market storage market = markets[marketId];
+        UserBet storage userBet = userBets[marketId][msg.sender];
+
+        if (!market.exists) revert MarketDoesNotExist();
+        if (!market.cancelled) revert MarketNotResolved(); // Reuse error
+        if (userBet.claimed) revert AlreadyClaimed();
+
+        uint256 refundAmount = userBet.yesAmount + userBet.noAmount;
+        if (refundAmount == 0) revert NoBetPlaced();
+
+        userBet.claimed = true;
+
+        (bool sent, ) = msg.sender.call{value: refundAmount}("");
+        if (!sent) revert TransferFailed();
+
+        emit WinningsClaimed(marketId, msg.sender, refundAmount);
+    }
+
+    /**
      * @notice Pause the contract (emergency stop)
      * @dev Only owner can pause. Prevents new bets but allows claims.
      */
@@ -403,6 +450,17 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
         uint256 balance = address(this).balance;
         (bool sent, ) = owner().call{value: balance}("");
         if (!sent) revert TransferFailed();
+    }
+
+    /**
+     * @notice Update protocol fee (owner only)
+     * @dev Fee cannot exceed 10% (1000 basis points)
+     */
+    function setFee(uint256 _newFeeBps) external onlyOwner {
+        if (_newFeeBps > 1000) revert InvalidAmount(); // Reuse error
+        uint256 oldFee = PROTOCOL_FEE_BPS;
+        PROTOCOL_FEE_BPS = _newFeeBps;
+        emit FeeUpdated(oldFee, _newFeeBps);
     }
 
     /**
