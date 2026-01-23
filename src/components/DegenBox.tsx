@@ -861,14 +861,14 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 {/* Get ETH from faucet */}
                 {parseFloat(ethBalance) < 0.001 && (
                   <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-center">
-                    <p className="text-xs text-yellow-800">💡 Need testnet ETH?</p>
+                    <p className="text-xs text-yellow-800">💡 Need ETH on Base?</p>
                     <a 
-                      href="https://www.alchemy.com/faucets/base-sepolia" 
+                      href="https://www.coinbase.com/how-to-buy/base" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-xs text-blue-600 underline hover:text-blue-800"
                     >
-                      Get Base ETH →
+                      Buy Base ETH →
                     </a>
                   </div>
                 )}
