@@ -240,7 +240,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
 
   // Handle bet confirmation
   useEffect(() => {
-    if (isBetConfirmed) {
+    if (isBetConfirmed && address && selectedSide) {
       setBetStatus({
         type: 'success',
         message: `Bet placed successfully! 🎉`
@@ -249,26 +249,55 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       refetchUserBet();
       refetchBalance();
       refetchAllowance();
-      setSelectedSide(null);
+      
+      // Record bet and update points
+      const recordBetAsync = async () => {
+        if (!market) return;
+        
+        try {
+          const response = await fetch('/api/record-bet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              address: address,
+              marketId: market.contractMarketId ?? 0,
+              amount: selectedAmount,
+              side: selectedSide === 'YES',
+              fid: context?.user?.fid,
+              username: context?.user?.username,
+            }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Points recorded:', data.points);
+          } else {
+            console.error('❌ Failed to record points');
+          }
+        } catch (error) {
+          console.error('❌ Error recording bet:', error);
+        }
+      };
+      
+      recordBetAsync();
       
       // Add message to chat
-      if (selectedSide) {
-        const betMessage: ChatMessage = {
-          id: Date.now().toString(),
-          user: { 
-            name: context?.user?.displayName || context?.user?.username || "You", 
-            avatar: context?.user?.pfpUrl || "/avatars/user.png", 
-            bet: selectedSide 
-          },
-          message: `Bet ${selectedAmount} $DEGEN on ${selectedSide}! 🎲`,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, betMessage]);
-      }
+      const betMessage: ChatMessage = {
+        id: Date.now().toString(),
+        user: { 
+          name: context?.user?.displayName || context?.user?.username || "You", 
+          avatar: context?.user?.pfpUrl || "/avatars/user.png", 
+          bet: selectedSide 
+        },
+        message: `Bet ${selectedAmount} $DEGEN on ${selectedSide}! 🎲`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, betMessage]);
       
+      setSelectedSide(null);
       setTimeout(() => setBetStatus(null), 5000);
     }
-  }, [isBetConfirmed, selectedSide, selectedAmount, context, refetchMarket, refetchUserBet, refetchBalance, refetchAllowance]);
+  }, [isBetConfirmed, selectedSide, selectedAmount, context, address, market, refetchMarket, refetchUserBet, refetchBalance, refetchAllowance]);
 
   // Handle claim confirmation
   useEffect(() => {

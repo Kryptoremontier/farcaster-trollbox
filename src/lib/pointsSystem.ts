@@ -26,59 +26,63 @@ export interface UserPoints {
 
 /**
  * POINTS CALCULATION RULES
+ * 🎯 Designed to reward early adopters and active traders heavily
  */
 export const POINTS_CONFIG = {
-  // Base points per action
-  BET_PLACED: 10,                    // 10 points per bet
-  VOLUME_PER_1K_DEGEN: 5,           // 5 points per 1,000 $DEGEN wagered
-  WIN_MULTIPLIER: 2,                 // 2x points if bet wins
-  LOSS_CONSOLATION: 0.5,            // 0.5x points if bet loses
+  // Base points per action (INCREASED for early phase)
+  BET_PLACED: 100,                   // 100 points per bet (10x boost for launch)
+  VOLUME_PER_1K_DEGEN: 50,          // 50 points per 1,000 $DEGEN wagered (10x boost)
+  WIN_MULTIPLIER: 2.5,               // 2.5x points if bet wins
+  LOSS_CONSOLATION: 0.8,            // 0.8x points if bet loses (still rewarded!)
   
-  // Streak bonuses
+  // Streak bonuses (MASSIVE rewards for consistency)
   WIN_STREAK_BONUS: {
-    3: 50,    // 3 wins in a row: +50 points
-    5: 150,   // 5 wins in a row: +150 points
-    10: 500,  // 10 wins in a row: +500 points
-    20: 2000, // 20 wins in a row: +2000 points
+    3: 500,     // 3 wins in a row: +500 points
+    5: 2000,    // 5 wins in a row: +2,000 points
+    10: 10000,  // 10 wins in a row: +10,000 points
+    20: 50000,  // 20 wins in a row: +50,000 points
   },
   
-  // Early adopter bonuses (by user ID)
+  // Early adopter bonuses (HUGE incentive for first users)
   EARLY_ADOPTER: {
-    FIRST_10: 10000,      // First 10 users: 10k points
-    FIRST_100: 5000,      // First 100 users: 5k points
-    FIRST_1000: 1000,     // First 1,000 users: 1k points
-    FIRST_10000: 100,     // First 10,000 users: 100 points
+    FIRST_10: 100000,     // First 10 users: 100k points 🚀
+    FIRST_50: 50000,      // First 50 users: 50k points
+    FIRST_100: 25000,     // First 100 users: 25k points
+    FIRST_500: 10000,     // First 500 users: 10k points
+    FIRST_1000: 5000,     // First 1,000 users: 5k points
+    FIRST_5000: 1000,     // First 5,000 users: 1k points
   },
   
   // Social engagement
-  CHAT_MESSAGE: 1,              // 1 point per message
-  MARKET_CREATED: 500,          // 500 points for creating market
-  REFERRAL: 1000,               // 1,000 points per referral
+  CHAT_MESSAGE: 5,              // 5 points per message
+  MARKET_CREATED: 5000,         // 5,000 points for creating market
+  REFERRAL: 10000,              // 10,000 points per referral (HUGE!)
   
-  // Consistency bonuses
-  DAILY_ACTIVE: 20,             // 20 points for daily activity
-  WEEKLY_STREAK: 200,           // 200 points for 7-day streak
-  MONTHLY_STREAK: 1000,         // 1,000 points for 30-day streak
+  // Consistency bonuses (Reward daily users)
+  DAILY_ACTIVE: 100,            // 100 points for daily activity
+  WEEKLY_STREAK: 1000,          // 1,000 points for 7-day streak
+  MONTHLY_STREAK: 10000,        // 10,000 points for 30-day streak
   
-  // Volume milestones
+  // Volume milestones (Progressive rewards)
   VOLUME_MILESTONES: {
-    10000: 100,      // 10k $DEGEN: +100 points
-    50000: 500,      // 50k $DEGEN: +500 points
-    100000: 1500,    // 100k $DEGEN: +1,500 points
-    500000: 10000,   // 500k $DEGEN: +10,000 points
-    1000000: 25000,  // 1M $DEGEN: +25,000 points
+    10000: 1000,      // 10k $DEGEN: +1,000 points
+    50000: 5000,      // 50k $DEGEN: +5,000 points
+    100000: 15000,    // 100k $DEGEN: +15,000 points
+    500000: 100000,   // 500k $DEGEN: +100,000 points
+    1000000: 300000,  // 1M $DEGEN: +300,000 points 🎉
   },
 };
 
 /**
  * TIER THRESHOLDS
+ * 🏆 Achievable but aspirational
  */
 export const TIER_THRESHOLDS = {
   bronze: 0,
-  silver: 1000,
-  gold: 5000,
-  diamond: 25000,
-  legendary: 100000,
+  silver: 5000,      // ~50 bets or 100k $DEGEN volume
+  gold: 25000,       // ~250 bets or 500k $DEGEN volume
+  diamond: 100000,   // ~1000 bets or 2M $DEGEN volume
+  legendary: 500000, // Elite traders only 👑
 };
 
 /**
@@ -144,9 +148,11 @@ export function getTierMultiplier(tier: UserPoints['tier']): number {
  */
 export function calculateEarlyAdopterBonus(userIndex: number): number {
   if (userIndex <= 10) return POINTS_CONFIG.EARLY_ADOPTER.FIRST_10;
+  if (userIndex <= 50) return POINTS_CONFIG.EARLY_ADOPTER.FIRST_50;
   if (userIndex <= 100) return POINTS_CONFIG.EARLY_ADOPTER.FIRST_100;
+  if (userIndex <= 500) return POINTS_CONFIG.EARLY_ADOPTER.FIRST_500;
   if (userIndex <= 1000) return POINTS_CONFIG.EARLY_ADOPTER.FIRST_1000;
-  if (userIndex <= 10000) return POINTS_CONFIG.EARLY_ADOPTER.FIRST_10000;
+  if (userIndex <= 5000) return POINTS_CONFIG.EARLY_ADOPTER.FIRST_5000;
   return 0;
 }
 
