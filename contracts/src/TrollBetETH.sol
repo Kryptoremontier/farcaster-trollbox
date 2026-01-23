@@ -15,8 +15,8 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
 
     // ============ Constants ============
     
-    /// @notice Protocol fee in basis points (1% = 100 bp)
-    uint256 public constant PROTOCOL_FEE_BPS = 100;
+    /// @notice Protocol fee in basis points (2.5% = 250 bp)
+    uint256 public constant PROTOCOL_FEE_BPS = 250;
     uint256 public constant BPS_DENOMINATOR = 10000;
 
     // ============ Structs ============

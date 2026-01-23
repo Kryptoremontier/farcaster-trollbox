@@ -70,7 +70,7 @@ Skrypt:
 - Stawianie zakładów
 - Rozwiązywanie marketów
 - Wypłatę wygranych
-- Twój zarobek (1% fee)
+- Twój zarobek (2.5% fee)
 
 ### Markety Prawdziwe:
 - $DEGEN price (7 dni)
@@ -100,7 +100,7 @@ Skrypt:
    resolveMarket(marketId: 1, winningSide: true)
    ```
 5. **Odbierz wygrane** w aplikacji (przycisk "Claim Winnings")
-6. **Sprawdź swój wallet** - powinieneś dostać 1% fee
+6. **Sprawdź swój wallet** - powinieneś dostać 2.5% fee
 
 ### Sprawdź Fee:
 

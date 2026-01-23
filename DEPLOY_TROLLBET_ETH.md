@@ -89,7 +89,7 @@ After deploying, call `createMarket()` with:
 ### Admin Functions (Owner only)
 - `createMarket(question, endTime)` - Create new market
 - `resolveMarket(marketId, winningSide)` - Resolve market
-- `withdrawFees()` - Withdraw accumulated 1% fees
+- `withdrawFees()` - Withdraw accumulated 2.5% fees
 
 ---
 

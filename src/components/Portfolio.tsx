@@ -84,13 +84,13 @@ function BetStatsCollector({
             
             if (userWon) {
               wonBets++;
-              // Calculate winnings (1% fee)
+              // Calculate winnings (2.5% fee)
               const yesPool = parseFloat(marketData.yesPool);
               const noPool = parseFloat(marketData.noPool);
               const totalPool = yesPool + noPool;
               const winnings = winningSide 
-                ? (yesAmount / yesPool) * totalPool * 0.99
-                : (noAmount / noPool) * totalPool * 0.99;
+                ? (yesAmount / yesPool) * totalPool * 0.975
+                : (noAmount / noPool) * totalPool * 0.975;
               totalWinnings += winnings;
             } else {
               lostBets++;

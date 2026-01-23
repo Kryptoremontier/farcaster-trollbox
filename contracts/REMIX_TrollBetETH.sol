@@ -18,7 +18,7 @@ contract TrollBetETH {
 
     // ============ Constants ============
     
-    uint256 public constant PROTOCOL_FEE_BPS = 100; // 1% fee
+    uint256 public constant PROTOCOL_FEE_BPS = 250; // 2.5% fee
     uint256 public constant BPS_DENOMINATOR = 10000;
 
     // ============ State Variables ============

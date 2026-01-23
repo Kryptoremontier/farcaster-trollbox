@@ -462,13 +462,13 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   );
   const userLost = isResolved && !userWon && (userYesAmount > 0 || userNoAmount > 0);
   
-  // Calculate potential winnings (1% fee)
+  // Calculate potential winnings (2.5% fee)
   const yesPool = parseFloat(marketData?.yesPool || "0");
   const noPool = parseFloat(marketData?.noPool || "0");
   const userWinnings = userWon ? (
     winningSide 
-      ? (userYesAmount / yesPool) * totalPool * 0.99
-      : (userNoAmount / noPool) * totalPool * 0.99
+      ? (userYesAmount / yesPool) * totalPool * 0.975
+      : (userNoAmount / noPool) * totalPool * 0.975
   ) : 0;
   
   const yesOdds = totalPool > 0 && parseFloat(marketData?.yesPool || "0") > 0

@@ -92,12 +92,12 @@ export function UserBetCard({
   const noPool = marketData ? parseFloat(marketData.noPool) : market.noPool;
   const totalPool = yesPool + noPool;
   
-  // Potential payout calculation (1% fee, not 3%)
+  // Potential payout calculation (2.5% fee)
   const yesPotentialWin = hasBetYes && totalPool > 0 
-    ? (yesAmount / yesPool) * totalPool * 0.99 // 1% fee
+    ? (yesAmount / yesPool) * totalPool * 0.975 // 2.5% fee
     : 0;
   const noPotentialWin = hasBetNo && totalPool > 0
-    ? (noAmount / noPool) * totalPool * 0.99
+    ? (noAmount / noPool) * totalPool * 0.975
     : 0;
   const maxPotentialWin = Math.max(yesPotentialWin, noPotentialWin);
 

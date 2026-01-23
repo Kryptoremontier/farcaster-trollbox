@@ -53,7 +53,7 @@
 
 ### Protocol Fee
 - **Fee**: 1% (100 basis points)
-- **Calculation**: `PROTOCOL_FEE_BPS / BPS_DENOMINATOR = 100 / 10000 = 1%`
+- **Calculation**: `PROTOCOL_FEE_BPS / BPS_DENOMINATOR = 250 / 10000 = 2.5%`
 - **Distribution**: Deducted from winner's payout, accumulated in contract
 - **Withdrawal**: Owner can withdraw via `withdrawFees()`
 
