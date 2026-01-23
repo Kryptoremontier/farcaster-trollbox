@@ -5,6 +5,8 @@ import { Card } from "~/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { getTierBadge, calculateTier } from "~/lib/pointsSystem";
+import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
 
 interface LeaderboardEntry {
   rank: number;
@@ -100,6 +102,56 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
 ];
 
 export function Leaderboard() {
+  const { address } = useAccount();
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(MOCK_LEADERBOARD);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/leaderboard?limit=20');
+        const data = await response.json();
+        
+        if (data.success && data.leaderboard) {
+          // Convert API data to LeaderboardEntry format
+          const entries: LeaderboardEntry[] = data.leaderboard.map((entry: {
+            address: string;
+            points: number;
+            username?: string;
+            fid?: number;
+            betsPlaced?: number;
+            volumeTraded?: number;
+          }, index: number) => ({
+            rank: index + 1,
+            address: entry.address,
+            username: entry.username || `User ${entry.address.slice(0, 6)}`,
+            avatar: getAvatarUrl(entry.username || entry.address),
+            totalWagered: entry.volumeTraded || 0,
+            totalWon: 0, // TODO: Calculate from contract
+            totalLost: 0, // TODO: Calculate from contract
+            pnl: 0, // TODO: Calculate from contract
+            roi: 0, // TODO: Calculate from contract
+            winRate: 0, // TODO: Calculate from contract
+            activeBets: entry.betsPlaced || 0,
+            secretPoints: entry.points || 0,
+          }));
+          setLeaderboard(entries);
+        }
+      } catch (error) {
+        console.error('Failed to fetch leaderboard:', error);
+        // Keep existing data on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchLeaderboard, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -130,28 +182,30 @@ export function Leaderboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="p-3 text-center bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
           <div className="text-2xl font-bold text-yellow-700">
-            {MOCK_LEADERBOARD.length}
+            {isLoading ? '...' : leaderboard.length}
           </div>
           <div className="text-xs text-yellow-600 mt-1">Total Players</div>
         </Card>
 
         <Card className="p-3 text-center bg-gradient-to-br from-green-50 to-green-100 border-green-200">
           <div className="text-2xl font-bold text-green-700">
-            {MOCK_LEADERBOARD.reduce((sum, e) => sum + e.totalWagered, 0).toLocaleString()}
+            {isLoading ? '...' : leaderboard.reduce((sum, e) => sum + e.totalWagered, 0).toFixed(4)}
           </div>
-          <div className="text-xs text-green-600 mt-1">Total Volume</div>
+          <div className="text-xs text-green-600 mt-1">Total Volume (ETH)</div>
         </Card>
 
         <Card className="p-3 text-center bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <div className="text-2xl font-bold text-blue-700">
-            {MOCK_LEADERBOARD.reduce((sum, e) => sum + e.activeBets, 0)}
+            {isLoading ? '...' : leaderboard.reduce((sum, e) => sum + e.activeBets, 0)}
           </div>
-          <div className="text-xs text-blue-600 mt-1">Active Bets</div>
+          <div className="text-xs text-blue-600 mt-1">Total Bets</div>
         </Card>
 
         <Card className="p-3 text-center bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
           <div className="text-2xl font-bold text-purple-700">
-            {(MOCK_LEADERBOARD.reduce((sum, e) => sum + e.winRate, 0) / MOCK_LEADERBOARD.length).toFixed(1)}%
+            {isLoading ? '...' : leaderboard.length > 0 
+              ? (leaderboard.reduce((sum, e) => sum + e.winRate, 0) / leaderboard.length).toFixed(1) + '%'
+              : '0.0%'}
           </div>
           <div className="text-xs text-purple-600 mt-1">Avg Win Rate</div>
         </Card>
@@ -173,11 +227,11 @@ export function Leaderboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {MOCK_LEADERBOARD.map((entry) => (
+              {leaderboard.map((entry) => (
                 <tr
                   key={entry.address}
                   className={`hover:bg-gray-50 transition-colors ${
-                    entry.username === "You" ? "bg-[#9E75FF]/5" : ""
+                    entry.address.toLowerCase() === address?.toLowerCase() ? "bg-[#9E75FF]/5" : ""
                   }`}
                 >
                   {/* Rank */}

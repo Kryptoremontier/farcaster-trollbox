@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { useETHBalance, useUserBetETH, useClaimWinningsETH } from "~/hooks/useTrollBetETH";
+import { useETHBalance, useUserBetETH, useClaimWinningsETH, useMarketDataETH, useTransactionStatusETH } from "~/hooks/useTrollBetETH";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
@@ -21,12 +21,20 @@ function BetStatsCollector({
 }: { 
   markets: typeof MOCK_MARKETS, 
   userAddress: Address,
-  onStatsUpdate: (stats: { activeBets: number, totalWagered: number }) => void 
+  onStatsUpdate: (stats: { 
+    activeBets: number, 
+    totalWagered: number,
+    wonBets: number,
+    lostBets: number,
+    totalWinnings: number
+  }) => void 
 }) {
   const bets = markets.map(market => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const { userBet, isLoading } = useUserBetETH(market.contractMarketId ?? 0, userAddress);
-    return { userBet, isLoading, marketId: market.contractMarketId };
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { marketData } = useMarketDataETH(market.contractMarketId ?? 0);
+    return { userBet, isLoading, marketData, marketId: market.contractMarketId };
   });
 
   // Serialize bet data for dependency tracking
@@ -56,28 +64,60 @@ function BetStatsCollector({
 
     let activeBets = 0;
     let totalWagered = 0;
+    let wonBets = 0;
+    let lostBets = 0;
+    let totalWinnings = 0;
 
-    bets.forEach(({ userBet, marketId }) => {
+    bets.forEach(({ userBet, marketData, marketId }) => {
       if (userBet) {
         const yesAmount = parseFloat(userBet.yesAmount);
         const noAmount = parseFloat(userBet.noAmount);
         const totalBet = yesAmount + noAmount;
 
         if (totalBet > 0) {
-          console.log('[BetStatsCollector] Found active bet', {
-            marketId,
-            yesAmount,
-            noAmount,
-            totalBet,
-          });
-          activeBets++;
           totalWagered += totalBet;
+
+          // Check if market is resolved
+          if (marketData?.resolved) {
+            const winningSide = marketData.winningSide;
+            const userWon = (winningSide && yesAmount > 0) || (!winningSide && noAmount > 0);
+            
+            if (userWon) {
+              wonBets++;
+              // Calculate winnings (1% fee)
+              const yesPool = parseFloat(marketData.yesPool);
+              const noPool = parseFloat(marketData.noPool);
+              const totalPool = yesPool + noPool;
+              const winnings = winningSide 
+                ? (yesAmount / yesPool) * totalPool * 0.99
+                : (noAmount / noPool) * totalPool * 0.99;
+              totalWinnings += winnings;
+            } else {
+              lostBets++;
+            }
+          } else {
+            // Market still active
+            activeBets++;
+          }
+
+          console.log('[BetStatsCollector] Found bet', {
+            marketId,
+            totalBet,
+            resolved: marketData?.resolved,
+            won: marketData?.resolved && ((marketData.winningSide && yesAmount > 0) || (!marketData.winningSide && noAmount > 0))
+          });
         }
       }
     });
 
-    console.log('[BetStatsCollector] Final stats', { activeBets, totalWagered });
-    onStatsUpdate({ activeBets, totalWagered });
+    console.log('[BetStatsCollector] Final stats', { 
+      activeBets, 
+      totalWagered, 
+      wonBets, 
+      lostBets,
+      totalWinnings 
+    });
+    onStatsUpdate({ activeBets, totalWagered, wonBets, lostBets, totalWinnings });
   }, [betDataString, onStatsUpdate, bets]);
 
   return null;
@@ -86,10 +126,23 @@ function BetStatsCollector({
 export function Portfolio({ onMarketSelect }: PortfolioProps) {
   const { address, isConnected, isConnecting } = useAccount();
   const { balance: ethBalance } = useETHBalance(address as Address | undefined);
-  const { claimWinnings } = useClaimWinningsETH();
-  const [stats, setStats] = useState({ activeBets: 0, totalWagered: 0 });
+  const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH();
+  const { isConfirming: isClaimConfirming } = useTransactionStatusETH(claimHash);
+  const [stats, setStats] = useState({ 
+    activeBets: 0, 
+    totalWagered: 0,
+    wonBets: 0,
+    lostBets: 0,
+    totalWinnings: 0
+  });
 
-  const handleStatsUpdate = useCallback((newStats: { activeBets: number, totalWagered: number }) => {
+  const handleStatsUpdate = useCallback((newStats: { 
+    activeBets: number, 
+    totalWagered: number,
+    wonBets: number,
+    lostBets: number,
+    totalWinnings: number
+  }) => {
     setStats(newStats);
   }, []);
 
@@ -116,10 +169,13 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
 
   const marketsWithBets = MOCK_MARKETS.filter(m => m.contractMarketId !== undefined);
 
-  const wonBets = 0;
-  const lostBets = 0;
-  const totalBets = stats.activeBets + wonBets + lostBets;
-  const winRate = totalBets > 0 ? ((wonBets / totalBets) * 100).toFixed(1) : '0.0';
+  const totalBets = stats.activeBets + stats.wonBets + stats.lostBets;
+  const winRate = (stats.wonBets + stats.lostBets) > 0 
+    ? ((stats.wonBets / (stats.wonBets + stats.lostBets)) * 100).toFixed(1) 
+    : '0.0';
+  const roi = stats.totalWagered > 0
+    ? (((stats.totalWinnings - stats.totalWagered) / stats.totalWagered) * 100).toFixed(1)
+    : '0.0';
 
   return (
     <div className="space-y-6">
@@ -178,7 +234,7 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
             {winRate}%
           </div>
           <div className="text-xs text-yellow-600 mt-1">
-            {wonBets}W / {lostBets}L
+            {stats.wonBets}W / {stats.lostBets}L
           </div>
         </Card>
       </div>
@@ -192,18 +248,24 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
         <div className="grid grid-cols-3 gap-4">
           <div>
             <div className="text-xs text-gray-500 mb-1">Total P&L</div>
-            <div className="text-lg font-bold text-gray-900">+0 ETH</div>
-            <div className="text-xs text-gray-400">0.0% ROI</div>
+            <div className={`text-lg font-bold ${parseFloat(roi) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {parseFloat(roi) >= 0 ? '+' : ''}{(stats.totalWinnings - stats.totalWagered).toFixed(4)} ETH
+            </div>
+            <div className="text-xs text-gray-400">{roi}% ROI</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 mb-1">Best Win</div>
-            <div className="text-lg font-bold text-green-600">+0</div>
-            <div className="text-xs text-gray-400">No wins yet</div>
+            <div className="text-xs text-gray-500 mb-1">Total Winnings</div>
+            <div className="text-lg font-bold text-green-600">
+              {stats.totalWinnings.toFixed(4)} ETH
+            </div>
+            <div className="text-xs text-gray-400">{stats.wonBets} wins</div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 mb-1">Worst Loss</div>
-            <div className="text-lg font-bold text-red-600">-0</div>
-            <div className="text-xs text-gray-400">No losses yet</div>
+            <div className="text-xs text-gray-500 mb-1">Total Wagered</div>
+            <div className="text-lg font-bold text-gray-900">
+              {stats.totalWagered.toFixed(4)} ETH
+            </div>
+            <div className="text-xs text-gray-400">{totalBets} bets</div>
           </div>
         </div>
       </Card>
@@ -223,6 +285,8 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
               userAddress={address as Address}
               onSelect={onMarketSelect}
               onClaim={claimWinnings}
+              isClaimPending={isClaimPending}
+              isClaimConfirming={isClaimConfirming}
             />
           ))}
         </div>

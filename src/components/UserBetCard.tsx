@@ -5,18 +5,28 @@ import { useUserBetETH, useMarketDataETH } from "~/hooks/useTrollBetETH";
 import type { Address } from "viem";
 import type { Market } from "~/lib/mockMarkets";
 import { getTimeRemaining } from "~/lib/mockMarkets";
-import { TrendingUp, TrendingDown, Trophy, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, Trophy, Clock, Loader2 } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button-component";
 
 interface UserBetCardProps {
   market: Market;
   userAddress: Address;
   onSelect: (marketId: string) => void;
   onClaim?: (marketId: number) => void;
+  isClaimPending?: boolean;
+  isClaimConfirming?: boolean;
 }
 
-export function UserBetCard({ market, userAddress, onSelect, onClaim }: UserBetCardProps) {
+export function UserBetCard({ 
+  market, 
+  userAddress, 
+  onSelect, 
+  onClaim,
+  isClaimPending = false,
+  isClaimConfirming = false
+}: UserBetCardProps) {
   const { userBet, isLoading } = useUserBetETH(
     market.contractMarketId ?? 0,
     userAddress
@@ -186,17 +196,28 @@ export function UserBetCard({ market, userAddress, onSelect, onClaim }: UserBetC
                   +{actualWinnings.toFixed(4)} ETH
                 </span>
               </div>
-              <button
+              <Button
                 onClick={(e) => {
                   e.stopPropagation();
                   if (onClaim && market.contractMarketId !== undefined) {
                     onClaim(market.contractMarketId);
                   }
                 }}
-                className="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors"
+                disabled={isClaimPending || isClaimConfirming}
+                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md"
               >
-                Claim Winnings
-              </button>
+                {isClaimPending || isClaimConfirming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Claiming...
+                  </>
+                ) : (
+                  <>
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Claim Winnings
+                  </>
+                )}
+              </Button>
             </div>
           )}
 
