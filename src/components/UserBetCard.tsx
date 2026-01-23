@@ -40,6 +40,9 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
     );
   }
 
+  // TypeScript guard: userBet must exist at this point
+  if (!userBet) return null;
+
   const hasBetYes = yesAmount > 0;
   const hasBetNo = noAmount > 0;
 
