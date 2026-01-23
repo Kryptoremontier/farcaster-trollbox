@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Clock, Users, TrendingUp } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -11,6 +12,7 @@ import {
   formatPoolAmount,
   getCategoryColor,
 } from "~/lib/mockMarkets";
+import { useMarketDataETH } from "~/hooks/useTrollBetETH";
 
 interface MarketCardProps {
   market: Market;
@@ -18,9 +20,25 @@ interface MarketCardProps {
 }
 
 export function MarketCard({ market, onSelect }: MarketCardProps) {
+  const { marketData } = useMarketDataETH(market.contractMarketId ?? 0);
+  
+  // Use real endTime from contract, fallback to mock data
+  const endTime = marketData?.endTimeDate ?? market.endTime;
+  
+  // Time remaining state (updates every minute)
+  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(endTime));
+
+  useEffect(() => {
+    // Update time remaining every minute
+    const interval = setInterval(() => {
+      setTimeRemaining(getTimeRemaining(endTime));
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [endTime]);
+
   const yesPercentage = getYesPercentage(market);
   const totalPool = market.yesPool + market.noPool;
-  const timeRemaining = getTimeRemaining(market.endTime);
 
   return (
     <Card 

@@ -22,17 +22,20 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
   );
   const { marketData } = useMarketDataETH(market.contractMarketId ?? 0);
 
+  // Use real endTime from contract, fallback to mock data
+  const endTime = marketData?.endTimeDate ?? market.endTime;
+
   // Time remaining state (updates every minute) - MUST be before any returns!
-  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(market.endTime));
+  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(endTime));
 
   useEffect(() => {
     // Update time remaining every minute
     const interval = setInterval(() => {
-      setTimeRemaining(getTimeRemaining(market.endTime));
+      setTimeRemaining(getTimeRemaining(endTime));
     }, 60000); // 60 seconds
 
     return () => clearInterval(interval);
-  }, [market.endTime]);
+  }, [endTime]);
 
   // Don't render if no bet data (but allow loading state to pass through)
   if (!isLoading && !userBet) return null;
