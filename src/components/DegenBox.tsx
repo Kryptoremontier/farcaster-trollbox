@@ -205,33 +205,8 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     return () => clearInterval(timer);
   }, [marketData?.endTimeDate, market])
 
-  // Simulate live chat
-  useEffect(() => {
-    const newMessages = [
-      "This is too easy, Peter never misses",
-      "All in on YES, let's gooo",
-      "NO gang rise up!",
-      "Imagine betting against Peter tweeting",
-      "He's probably typing right now lol",
-    ]
-    
-    const interval = setInterval(() => {
-      const randomMessage = newMessages[Math.floor(Math.random() * newMessages.length)]
-      const newMsg: ChatMessage = {
-        id: Date.now().toString(),
-        user: {
-          name: `Degen${Math.floor(Math.random() * 1000)}`,
-          avatar: getAvatarUrl(`Degen${Math.floor(Math.random() * 1000)}`),
-          bet: Math.random() > 0.4 ? "YES" : "NO",
-        },
-        message: randomMessage,
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev.slice(-20), newMsg])
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [])
+  // ⚠️ REAL CHAT ONLY - No fake messages on Mainnet!
+  // Chat messages will come from real users via API/blockchain events
 
   // Auto-scroll chat
   useEffect(() => {
