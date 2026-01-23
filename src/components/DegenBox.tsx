@@ -293,9 +293,18 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
+    
+    // Use Farcaster user data if available
+    const userName = context?.user?.displayName || context?.user?.username || "Anonymous";
+    const userAvatar = context?.user?.pfpUrl || getAvatarUrl(userName);
+    
     const msg: ChatMessage = {
       id: Date.now().toString(),
-      user: { name: "You", avatar: getAvatarUrl("You"), bet: null },
+      user: { 
+        name: userName, 
+        avatar: userAvatar, 
+        bet: null 
+      },
       message: newMessage,
       timestamp: new Date(),
     }
