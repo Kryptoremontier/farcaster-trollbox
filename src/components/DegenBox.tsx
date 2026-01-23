@@ -128,7 +128,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const [activeTab, setActiveTab] = useState<"chat" | "leaderboard">("chat")
   const [messages, setMessages] = useState<ChatMessage[]>(MOCK_MESSAGES)
   const [newMessage, setNewMessage] = useState("")
-  const [timeRemaining, setTimeRemaining] = useState({ hours: 18, minutes: 42, seconds: 33 })
+  const [timeRemaining, setTimeRemaining] = useState({ hours: 0, minutes: 0, seconds: 0 })
   const chatRef = useRef<HTMLDivElement>(null)
   
   // Farcaster SDK state
@@ -189,21 +189,47 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   }, [refetchMarket, refetchUserBet, address]);
 
   // Countdown timer
+  // Calculate real time remaining from contract data
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 }
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 }
-        } else if (prev.hours > 0) {
-          return { hours: prev.hours - 1, minutes: 59, seconds: 59 }
+    const calculateTimeRemaining = () => {
+      if (!marketData?.endTimeDate) {
+        // Fallback to mock market endTime if contract data not loaded yet
+        if (market) {
+          const diff = market.endTime.getTime() - Date.now();
+          if (diff <= 0) {
+            setTimeRemaining({ hours: 0, minutes: 0, seconds: 0 });
+            return;
+          }
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setTimeRemaining({ hours, minutes, seconds });
         }
-        return prev
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
+        return;
+      }
+
+      const diff = marketData.endTimeDate.getTime() - Date.now();
+      
+      if (diff <= 0) {
+        setTimeRemaining({ hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setTimeRemaining({ hours, minutes, seconds });
+    };
+
+    // Calculate immediately
+    calculateTimeRemaining();
+
+    // Update every second
+    const timer = setInterval(calculateTimeRemaining, 1000);
+    
+    return () => clearInterval(timer);
+  }, [marketData?.endTimeDate, market])
 
   // Simulate live chat
   useEffect(() => {
@@ -553,11 +579,17 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                   <Clock className="w-4 h-4 text-[#7C65C1]" />
                   <span className="text-sm text-gray-500">Time Left</span>
                 </div>
-                <div className="font-mono text-lg font-bold text-gray-900">
-                  {String(timeRemaining.hours).padStart(2, "0")}:
-                  {String(timeRemaining.minutes).padStart(2, "0")}:
-                  {String(timeRemaining.seconds).padStart(2, "0")}
-                </div>
+                {timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0 ? (
+                  <div className="font-mono text-lg font-bold text-red-600">
+                    ENDED
+                  </div>
+                ) : (
+                  <div className="font-mono text-lg font-bold text-gray-900">
+                    {String(timeRemaining.hours).padStart(2, "0")}:
+                    {String(timeRemaining.minutes).padStart(2, "0")}:
+                    {String(timeRemaining.seconds).padStart(2, "0")}
+                  </div>
+                )}
               </div>
 
               {/* Progress Bar */}
@@ -647,30 +679,37 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
               {/* NOTE: No approval needed with Native ETH! Single transaction betting 🎉 */}
 
               {/* Bet Buttons with Odds */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => handlePlaceBet('YES')}
-                  disabled={isBetPending || isBetConfirming || !isConnected || parseFloat(selectedAmount) <= 0}
-                  className="h-16 bg-green-500 hover:bg-green-600 text-white font-bold text-base shadow-md active:scale-95 transition-transform flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    <span>YES</span>
-                  </div>
-                  <span className="text-xs font-normal opacity-90">{yesOdds.toFixed(2)}x odds</span>
-                </Button>
-                <Button
-                  onClick={() => handlePlaceBet('NO')}
-                  disabled={isBetPending || isBetConfirming || !isConnected || parseFloat(selectedAmount) <= 0}
-                  className="h-16 bg-red-500 hover:bg-red-600 text-white font-bold text-base shadow-md active:scale-95 transition-transform flex flex-col items-center justify-center gap-1"
-                >
-                  <div className="flex items-center gap-2">
-                    <ChevronUp className="w-5 h-5 rotate-180" />
-                    <span>NO</span>
-                  </div>
-                  <span className="text-xs font-normal opacity-90">{noOdds.toFixed(2)}x odds</span>
-                </Button>
-              </div>
+              {timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0 ? (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-center">
+                  <p className="text-red-600 font-semibold">Market has ended</p>
+                  <p className="text-sm text-red-500 mt-1">No more bets accepted</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => handlePlaceBet('YES')}
+                    disabled={isBetPending || isBetConfirming || !isConnected || parseFloat(selectedAmount) <= 0}
+                    className="h-16 bg-green-500 hover:bg-green-600 text-white font-bold text-base shadow-md active:scale-95 transition-transform flex flex-col items-center justify-center gap-1"
+                  >
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      <span>YES</span>
+                    </div>
+                    <span className="text-xs font-normal opacity-90">{yesOdds.toFixed(2)}x odds</span>
+                  </Button>
+                  <Button
+                    onClick={() => handlePlaceBet('NO')}
+                    disabled={isBetPending || isBetConfirming || !isConnected || parseFloat(selectedAmount) <= 0}
+                    className="h-16 bg-red-500 hover:bg-red-600 text-white font-bold text-base shadow-md active:scale-95 transition-transform flex flex-col items-center justify-center gap-1"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChevronUp className="w-5 h-5 rotate-180" />
+                      <span>NO</span>
+                    </div>
+                    <span className="text-xs font-normal opacity-90">{noOdds.toFixed(2)}x odds</span>
+                  </Button>
+                </div>
+              )}
 
               {/* Wallet Balance */}
               <div className="p-3 bg-gradient-to-br from-green-500/5 to-green-500/10 rounded-lg border border-green-500/20">
