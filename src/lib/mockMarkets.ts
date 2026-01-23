@@ -21,50 +21,51 @@ export interface Market {
 // ⚠️ CRITICAL: When deploying new markets to contract:
 // 1. REMOVE all old/ended markets from this array
 // 2. Add ONLY the newly deployed markets
-// 3. Use FRESH endTime calculated at runtime (Date.now() + duration)
+// 3. Use FIXED endTime matching the contract deployment (NOT Date.now()!)
 // 4. Match contractMarketId with actual on-chain IDs
-// 5. NEVER copy-paste old market objects - they carry stale timestamps!
+// 5. Get the exact endTime from the contract or deployment script output
 
-// Calculate fresh timestamp for 10-minute markets
-const TEN_MINUTES_MS = 10 * 60 * 1000;
-const FRESH_END_TIME = new Date(Date.now() + TEN_MINUTES_MS);
+// ⚠️ IMPORTANT: These endTimes are FIXED timestamps from contract deployment
+// They will NOT change on page refresh, ensuring ended markets stay ended
+// When creating new markets, update these timestamps to match the contract
 
 export const MOCK_MARKETS: Market[] = [
-  // MAINNET-SAFE MARKETS (IDs 27-29) - Deployed at 2026-01-23T16:26:10Z
+  // MAINNET-SAFE MARKETS (IDs 27-29) - Deployed at 2026-01-23T15:36:10Z
+  // These markets have ENDED - they will show as ended after refresh
   {
-    id: 'btc-digit-5-test-' + Date.now(),
+    id: 'btc-digit-5-test-27',
     contractMarketId: 27,
     question: '🎲 Will BTC price end with digit 5 in next 10min?',
     description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: FRESH_END_TIME,
+    endTime: new Date('2026-01-23T15:36:10Z'), // FIXED timestamp from contract
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'eth-gas-15-test-' + Date.now(),
+    id: 'eth-gas-15-test-28',
     contractMarketId: 28,
     question: '⚡ Will ETH gas be above 15 gwei in 10min?',
     description: '✅ MAINNET-SAFE - Uses Etherscan API for real gas price',
     thumbnail: '⚡',
     category: 'crypto',
-    endTime: FRESH_END_TIME,
+    endTime: new Date('2026-01-23T15:36:10Z'), // FIXED timestamp from contract
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'btc-digit-3-test-' + Date.now(),
+    id: 'btc-digit-3-test-29',
     contractMarketId: 29,
     question: '🎲 Will BTC price end with digit 3 in next 10min?',
     description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: FRESH_END_TIME,
+    endTime: new Date('2026-01-23T15:36:10Z'), // FIXED timestamp from contract
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,

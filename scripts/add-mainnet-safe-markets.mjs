@@ -156,18 +156,34 @@ async function addMarkets() {
 
     if (successCount > 0) {
       console.log('🎯 Next Steps:');
-      console.log('   1. Refresh the app to see new markets');
-      console.log('   2. Place test bets on each market');
-      console.log('   3. Wait 10 minutes for markets to end');
-      console.log('   4. Cron bot will auto-resolve (or run manually)');
-      console.log('   5. Claim winnings and verify payouts\n');
+      console.log('   1. Update mockMarkets.ts with the code below');
+      console.log('   2. Refresh the app to see new markets');
+      console.log('   3. Place test bets on each market');
+      console.log('   4. Wait 10 minutes for markets to end');
+      console.log('   5. Cron bot will auto-resolve (or run manually)');
+      console.log('   6. Claim winnings and verify payouts\n');
       
-      console.log('📝 Update mockMarkets.ts with these IDs:');
+      console.log('📝 Copy this to mockMarkets.ts:');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+      
       for (let i = 0; i < successCount; i++) {
         const marketId = Number(currentCount) + i;
-        console.log(`   contractMarketId: ${marketId} // "${MARKETS[i].question}"`);
+        const market = MARKETS[i];
+        const endTimeISO = new Date(market.endTime * 1000).toISOString();
+        
+        console.log(`  {`);
+        console.log(`    id: 'market-${marketId}',`);
+        console.log(`    contractMarketId: ${marketId},`);
+        console.log(`    question: '${market.question}',`);
+        console.log(`    description: '${market.note}',`);
+        console.log(`    thumbnail: '${market.question.split(' ')[0]}',`);
+        console.log(`    category: 'crypto',`);
+        console.log(`    endTime: new Date('${endTimeISO}'), // FIXED timestamp`);
+        console.log(`    yesPool: 0, noPool: 0, totalBettors: 0, status: 'active',`);
+        console.log(`  },`);
       }
-      console.log('');
+      
+      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     }
 
   } catch (error) {

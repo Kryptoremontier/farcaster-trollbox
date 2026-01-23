@@ -97,13 +97,10 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   }, [connect]);
 
   // Helper to check if market is ended
-  // NOTE: We can't reliably use market.endTime from mockMarkets because it's calculated at runtime
-  // For now, we'll rely on the contract's resolved status which is fetched in real-time
-  // This is a temporary solution until we fetch all market data from the contract
+  // Now uses FIXED timestamps from mockMarkets.ts that match contract deployment
+  // This ensures ended markets stay ended after page refresh
   const isMarketEnded = useCallback((market: typeof MOCK_MARKETS[0]) => {
-    // For now, keep markets in "active" until they're resolved
-    // The individual components will show the correct countdown/ended state
-    return false; // Will be replaced with contract data fetch
+    return market.endTime < new Date();
   }, []);
 
   // Separate active and ended markets
