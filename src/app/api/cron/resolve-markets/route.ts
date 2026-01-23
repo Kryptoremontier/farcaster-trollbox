@@ -1,6 +1,20 @@
 /**
  * Vercel Cron Job - Auto-resolve ended markets
  * Runs every 10 minutes to check and resolve markets
+ * 
+ * ⚠️ MAINNET SAFETY WARNING ⚠️
+ * 
+ * SAFE FOR MAINNET (Fully Automated):
+ * ✅ BTC Price Digit - Uses CoinGecko API
+ * ✅ ETH Gas Price - Uses Etherscan API
+ * 
+ * UNSAFE FOR MAINNET (Mock Oracles):
+ * ❌ Whale Movements - Hardcoded to NO
+ * ❌ BTC/ETH Ratio - Hardcoded to NO  
+ * ❌ Base Activity - Hardcoded to YES
+ * 
+ * DO NOT create markets with mock oracles on mainnet!
+ * Users will lose money if bot resolves incorrectly.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -109,22 +123,27 @@ async function getMarketResult(question: string): Promise<boolean | null> {
     return gasPrice > threshold;
   }
 
+  // ⚠️ WARNING: MOCK ORACLES - DO NOT USE ON MAINNET ⚠️
+  
   // Whale movement check (mock for now)
   if (question.includes("whale move >")) {
-    console.log(`      🐋 Whale check: Defaulting to NO (needs Etherscan API)`);
-    return false; // Default to NO
+    console.log(`      🐋 Whale check: ⚠️ MOCK - Defaulting to NO`);
+    console.log(`      ⚠️  WARNING: This is a MOCK oracle - DO NOT use on mainnet!`);
+    return false; // Default to NO - UNSAFE FOR MAINNET
   }
 
   // BTC/ETH ratio check
   if (question.includes("BTC/ETH ratio increase")) {
-    console.log(`      📈 Ratio check: Needs historical data, defaulting to NO`);
-    return false; // Needs historical comparison
+    console.log(`      📈 Ratio check: ⚠️ MOCK - Defaulting to NO`);
+    console.log(`      ⚠️  WARNING: This is a MOCK oracle - DO NOT use on mainnet!`);
+    return false; // Needs historical comparison - UNSAFE FOR MAINNET
   }
 
   // Base network activity (mock for now)
   if (question.includes("Base have >")) {
-    console.log(`      🔗 Base activity: Defaulting to YES (needs BaseScan API)`);
-    return true; // Default to YES
+    console.log(`      🔗 Base activity: ⚠️ MOCK - Defaulting to YES`);
+    console.log(`      ⚠️  WARNING: This is a MOCK oracle - DO NOT use on mainnet!`);
+    return true; // Default to YES - UNSAFE FOR MAINNET
   }
 
   // Unknown pattern
