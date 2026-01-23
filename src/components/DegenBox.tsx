@@ -205,8 +205,33 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     return () => clearInterval(timer);
   }, [marketData?.endTimeDate, market])
 
-  // ⚠️ REAL CHAT ONLY - No fake messages on Mainnet!
-  // Chat messages will come from real users via API/blockchain events
+  // Load chat messages from API
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!marketIdNum) return;
+      
+      try {
+        const response = await fetch(`/api/chat?marketId=${marketIdNum}`);
+        if (response.ok) {
+          const data = await response.json();
+          // Convert timestamp to Date objects
+          const formattedMessages = data.messages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+          setMessages(formattedMessages);
+        }
+      } catch (error) {
+        console.error('Error loading chat messages:', error);
+      }
+    };
+
+    loadMessages();
+    
+    // Poll for new messages every 5 seconds
+    const interval = setInterval(loadMessages, 5000);
+    return () => clearInterval(interval);
+  }, [marketIdNum]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -291,15 +316,17 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   // NOTE: No approval needed with Native ETH! 🎉
   // NOTE: No mint/faucet needed - users bring their own ETH!
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !marketIdNum) return
     
     // Use Farcaster user data if available
     const userName = context?.user?.displayName || context?.user?.username || "Anonymous";
     const userAvatar = context?.user?.pfpUrl || getAvatarUrl(userName);
+    const fid = context?.user?.fid;
     
-    const msg: ChatMessage = {
-      id: Date.now().toString(),
+    // Optimistically add message to UI
+    const tempMsg: ChatMessage = {
+      id: `temp-${Date.now()}`,
       user: { 
         name: userName, 
         avatar: userAvatar, 
@@ -308,8 +335,25 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       message: newMessage,
       timestamp: new Date(),
     }
-    setMessages((prev) => [...prev, msg])
+    setMessages((prev) => [...prev, tempMsg])
     setNewMessage("")
+    
+    // Save to API
+    try {
+      await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          marketId: marketIdNum,
+          userName,
+          userAvatar,
+          message: newMessage,
+          fid
+        })
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   }
 
   const formatNumber = (num: number) => {
