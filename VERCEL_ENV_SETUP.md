@@ -16,9 +16,11 @@ For the Cron Job to automatically resolve markets every 10 minutes, you **MUST**
 - Click on **Settings** (top menu)
 - Click on **Environment Variables** (left sidebar)
 
-### 3. Add DEPLOYER_PRIVATE_KEY
+### 3. Add Required Environment Variables
 
-Click **Add New** and enter:
+Click **Add New** for each variable:
+
+#### A. DEPLOYER_PRIVATE_KEY (Required)
 
 **Name:**
 ```
@@ -39,6 +41,36 @@ DEPLOYER_PRIVATE_KEY
 - This should be the SAME private key you use in your local `.env` file
 - This is the wallet that deployed the TrollBetETH contract
 - This wallet needs a small amount of ETH on Base Sepolia for gas fees (~$5-10 worth)
+
+#### B. BASE_SEPOLIA_RPC_URL (Recommended)
+
+**Name:**
+```
+BASE_SEPOLIA_RPC_URL
+```
+
+**Value (choose one):**
+
+**Option 1: Alchemy (Recommended)**
+```
+https://base-sepolia.g.alchemy.com/v2/YOUR_API_KEY
+```
+Get free API key at: https://www.alchemy.com/
+
+**Option 2: Public RPC (May have rate limits)**
+```
+https://base-sepolia-rpc.publicnode.com
+```
+
+**Environments:**
+- ✅ Production
+- ✅ Preview
+- ✅ Development
+
+**Why this is needed:**
+- The default RPC endpoint (`https://sepolia.base.org/`) is protected by Cloudflare
+- Vercel's IP addresses may be blocked by Cloudflare's bot protection
+- Using Alchemy or a public RPC avoids this issue
 
 ### 4. Redeploy the Application
 

@@ -193,15 +193,27 @@ export async function GET(req: NextRequest) {
     // Setup clients
     const account = privateKeyToAccount(process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`);
     
+    // Use public RPC endpoint to avoid Cloudflare blocking
+    // Alternative: Use Alchemy/Infura with API key for better reliability
+    const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
+    
     const publicClient = createPublicClient({
       chain: baseSepolia,
-      transport: http()
+      transport: http(rpcUrl, {
+        timeout: 30_000, // 30 second timeout
+        retryCount: 3,
+        retryDelay: 1000
+      })
     });
 
     const walletClient = createWalletClient({
       account,
       chain: baseSepolia,
-      transport: http()
+      transport: http(rpcUrl, {
+        timeout: 30_000,
+        retryCount: 3,
+        retryDelay: 1000
+      })
     });
 
     console.log(`   🤖 Bot address: ${account.address}`);
