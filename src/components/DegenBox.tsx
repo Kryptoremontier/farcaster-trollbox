@@ -442,6 +442,25 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const yesPercentage = totalPool > 0 
     ? (parseFloat(marketData?.yesPool || "0") / totalPool) * 100 
     : 50;
+
+  // Check if user won
+  const isResolved = marketData?.resolved ?? false;
+  const winningSide = marketData?.winningSide ?? false; // true = YES, false = NO
+  const userYesAmount = userBet ? parseFloat(userBet.yesAmount) : 0;
+  const userNoAmount = userBet ? parseFloat(userBet.noAmount) : 0;
+  const userWon = isResolved && (
+    (winningSide && userYesAmount > 0) || (!winningSide && userNoAmount > 0)
+  );
+  const userLost = isResolved && !userWon && (userYesAmount > 0 || userNoAmount > 0);
+  
+  // Calculate potential winnings (1% fee)
+  const yesPool = parseFloat(marketData?.yesPool || "0");
+  const noPool = parseFloat(marketData?.noPool || "0");
+  const userWinnings = userWon ? (
+    winningSide 
+      ? (userYesAmount / yesPool) * totalPool * 0.99
+      : (userNoAmount / noPool) * totalPool * 0.99
+  ) : 0;
   
   const yesOdds = totalPool > 0 && parseFloat(marketData?.yesPool || "0") > 0
     ? totalPool / parseFloat(marketData?.yesPool || "1")
@@ -655,25 +674,66 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
 
               {/* NOTE: No approval status needed with Native ETH! 🎉 */}
 
-              {/* Claim Button */}
-              {marketData?.resolved && userBet && !userBet.claimed && (
-                <Button
-                  onClick={handleClaimWinnings}
-                  disabled={isClaimPending || isClaimConfirming}
-                  className="w-full h-12 bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow-md active:scale-95 transition-transform"
-                >
-                  {isClaimPending || isClaimConfirming ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Claiming...
-                    </>
-                  ) : (
-                    <>
-                      <Trophy className="w-4 h-4 mr-2" />
-                      Claim Winnings
-                    </>
+              {/* Market Result */}
+              {isResolved && (
+                <div className="space-y-3">
+                  {/* Winning Side */}
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 font-medium">Result:</span>
+                      <Badge className={winningSide ? 'bg-green-100 text-green-700 border-green-300' : 'bg-red-100 text-red-700 border-red-300'}>
+                        {winningSide ? '✅ YES Won' : '❌ NO Won'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* User Won */}
+                  {userWon && !userBet?.claimed && (
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-300">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold text-green-700">🎉 You Won!</span>
+                        <span className="text-xl font-bold text-green-700">
+                          +{userWinnings.toFixed(4)} ETH
+                        </span>
+                      </div>
+                      <Button
+                        onClick={handleClaimWinnings}
+                        disabled={isClaimPending || isClaimConfirming}
+                        className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md active:scale-95 transition-transform"
+                      >
+                        {isClaimPending || isClaimConfirming ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Claiming...
+                          </>
+                        ) : (
+                          <>
+                            <Trophy className="w-4 h-4 mr-2" />
+                            Claim Winnings
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   )}
-                </Button>
+
+                  {/* User Won & Claimed */}
+                  {userWon && userBet?.claimed && (
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                      <Badge className="w-full justify-center bg-green-100 text-green-700 border-green-300">
+                        ✅ Winnings Claimed ({userWinnings.toFixed(4)} ETH)
+                      </Badge>
+                    </div>
+                  )}
+
+                  {/* User Lost */}
+                  {userLost && (
+                    <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                      <Badge className="w-full justify-center bg-red-100 text-red-700 border-red-300">
+                        😔 Lost this one
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* NOTE: No approval needed with Native ETH! Single transaction betting 🎉 */}
