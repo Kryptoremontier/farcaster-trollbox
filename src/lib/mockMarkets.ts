@@ -18,108 +18,53 @@ export interface Market {
   result?: 'YES' | 'NO';
 }
 
+// ⚠️ CRITICAL: When deploying new markets to contract:
+// 1. REMOVE all old/ended markets from this array
+// 2. Add ONLY the newly deployed markets
+// 3. Use FRESH endTime calculated at runtime (Date.now() + duration)
+// 4. Match contractMarketId with actual on-chain IDs
+// 5. NEVER copy-paste old market objects - they carry stale timestamps!
+
+// Calculate fresh timestamp for 10-minute markets
+const TEN_MINUTES_MS = 10 * 60 * 1000;
+const FRESH_END_TIME = new Date(Date.now() + TEN_MINUTES_MS);
+
 export const MOCK_MARKETS: Market[] = [
-  // TEST MARKETS - 10 minutes (IDs 19-23)
+  // MAINNET-SAFE MARKETS (IDs 24-26) - Deployed at ${new Date().toISOString()}
   {
-    id: 'btc-digit-7-10min',
-    contractMarketId: 19,
-    question: '🎲 Will BTC price end with digit 7 in next 10min?',
-    description: 'Quick test market for payout testing',
-    thumbnail: '🎲',
-    category: 'crypto',
-    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'eth-gas-20-10min',
-    contractMarketId: 20,
-    question: '⚡ Will ETH gas be above 20 gwei in 10min?',
-    description: 'Quick test market for payout testing',
-    thumbnail: '⚡',
-    category: 'crypto',
-    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'whale-move-500-10min',
-    contractMarketId: 21,
-    question: '🐋 Will any whale move >500 ETH in next 10min?',
-    description: 'Quick test market for payout testing',
-    thumbnail: '🐋',
-    category: 'crypto',
-    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'btc-eth-ratio-10min',
-    contractMarketId: 22,
-    question: '📈 Will BTC/ETH ratio increase in next 10min?',
-    description: 'Quick test market for payout testing',
-    thumbnail: '📈',
-    category: 'crypto',
-    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'base-txs-100-10min',
-    contractMarketId: 23,
-    question: '🎯 Will Base have >100 txs in next 10min?',
-    description: 'Quick test market for payout testing',
-    thumbnail: '🎯',
-    category: 'crypto',
-    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  // MAINNET-SAFE TEST MARKETS (IDs 24-26) - Added for final testing
-  {
-    id: 'btc-digit-5-10min',
+    id: 'btc-digit-5-mainnet-safe-' + Date.now(),
     contractMarketId: 24,
     question: '🎲 Will BTC price end with digit 5 in next 10min?',
-    description: '✅ SAFE - Uses CoinGecko API for real BTC price',
+    description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    endTime: FRESH_END_TIME,
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'eth-gas-15-10min',
+    id: 'eth-gas-15-mainnet-safe-' + Date.now(),
     contractMarketId: 25,
     question: '⚡ Will ETH gas be above 15 gwei in 10min?',
-    description: '✅ SAFE - Uses Etherscan API for real gas price',
+    description: '✅ MAINNET-SAFE - Uses Etherscan API for real gas price',
     thumbnail: '⚡',
     category: 'crypto',
-    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    endTime: FRESH_END_TIME,
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'btc-digit-3-10min',
+    id: 'btc-digit-3-mainnet-safe-' + Date.now(),
     contractMarketId: 26,
     question: '🎲 Will BTC price end with digit 3 in next 10min?',
-    description: '✅ SAFE - Uses CoinGecko API for real BTC price',
+    description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    endTime: FRESH_END_TIME,
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
