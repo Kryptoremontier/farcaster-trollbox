@@ -644,14 +644,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 </Button>
               )}
 
-              {/* Auto-approve info */}
-              {needsApproval && isConnected && (
-                <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-xs text-blue-700 text-center">
-                    ℹ️ First bet will auto-approve tokens (2 transactions)
-                  </p>
-                </div>
-              )}
+              {/* NOTE: No approval needed with Native ETH! Single transaction betting 🎉 */}
 
               {/* Bet Buttons with Odds */}
               <div className="grid grid-cols-2 gap-3">
