@@ -1,0 +1,323 @@
+/**
+ * Vercel Cron Job - Auto-resolve ended markets
+ * Runs every 10 minutes to check and resolve markets
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { createPublicClient, createWalletClient, http, formatEther } from 'viem';
+import { baseSepolia } from 'viem/chains';
+import { privateKeyToAccount } from 'viem/accounts';
+
+export const runtime = "edge";
+export const maxDuration = 60; // 60 seconds max execution time
+
+// TrollBetETH Contract
+const TROLLBET_ETH_ADDRESS = '0xc629e67E221db99CF2A6e0468907bBcFb7D5f5A3';
+
+// Full ABI for reading and resolving markets
+const TROLLBET_ABI = [
+  {
+    "inputs": [],
+    "name": "marketCount",
+    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+    "name": "markets",
+    "outputs": [
+      {"internalType": "string", "name": "question", "type": "string"},
+      {"internalType": "uint256", "name": "endTime", "type": "uint256"},
+      {"internalType": "uint256", "name": "yesPool", "type": "uint256"},
+      {"internalType": "uint256", "name": "noPool", "type": "uint256"},
+      {"internalType": "bool", "name": "resolved", "type": "bool"},
+      {"internalType": "bool", "name": "winningSide", "type": "bool"},
+      {"internalType": "bool", "name": "exists", "type": "bool"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"internalType": "uint256", "name": "marketId", "type": "uint256"},
+      {"internalType": "bool", "name": "winningSide", "type": "bool"}
+    ],
+    "name": "resolveMarket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const;
+
+// Oracle functions
+async function fetchCryptoPrice(symbol: string): Promise<number> {
+  try {
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=usd`
+    );
+    const data = await response.json();
+    return data[symbol]?.usd || 0;
+  } catch (error) {
+    console.error(`Failed to fetch ${symbol} price:`, error);
+    return 0;
+  }
+}
+
+async function fetchEthGasPrice(): Promise<number> {
+  try {
+    const response = await fetch(
+      'https://api.etherscan.io/api?module=gastracker&action=gasoracle'
+    );
+    const data = await response.json();
+    return parseInt(data.result?.ProposeGasPrice || '0');
+  } catch (error) {
+    console.error('Failed to fetch gas price:', error);
+    return 0;
+  }
+}
+
+// Determine market result based on question
+async function getMarketResult(question: string): Promise<boolean | null> {
+  console.log(`   📊 Analyzing: "${question}"`);
+
+  // BTC price digit check
+  if (question.includes("BTC price end with digit")) {
+    const btcPrice = await fetchCryptoPrice('bitcoin');
+    const match = question.match(/digit (\d)/);
+    if (!match) return null;
+    
+    const targetDigit = parseInt(match[1]);
+    const lastDigit = Math.floor(btcPrice * 100) % 10;
+    
+    console.log(`      💰 BTC Price: $${btcPrice.toFixed(2)}`);
+    console.log(`      🎲 Last digit: ${lastDigit}, Target: ${targetDigit}`);
+    
+    return lastDigit === targetDigit;
+  }
+
+  // ETH gas price check
+  if (question.includes("ETH gas be above")) {
+    const gasPrice = await fetchEthGasPrice();
+    const match = question.match(/above (\d+) gwei/);
+    if (!match) return null;
+    
+    const threshold = parseInt(match[1]);
+    
+    console.log(`      ⛽ Current gas: ${gasPrice} gwei, Threshold: ${threshold} gwei`);
+    
+    return gasPrice > threshold;
+  }
+
+  // Whale movement check (mock for now)
+  if (question.includes("whale move >")) {
+    console.log(`      🐋 Whale check: Defaulting to NO (needs Etherscan API)`);
+    return false; // Default to NO
+  }
+
+  // BTC/ETH ratio check
+  if (question.includes("BTC/ETH ratio increase")) {
+    console.log(`      📈 Ratio check: Needs historical data, defaulting to NO`);
+    return false; // Needs historical comparison
+  }
+
+  // Base network activity (mock for now)
+  if (question.includes("Base have >")) {
+    console.log(`      🔗 Base activity: Defaulting to YES (needs BaseScan API)`);
+    return true; // Default to YES
+  }
+
+  // Unknown pattern
+  console.log(`      ❓ Unknown question pattern - needs manual resolution`);
+  return null;
+}
+
+export async function GET(req: NextRequest) {
+  const startTime = Date.now();
+  
+  try {
+    console.log('🤖 [CRON] Auto-resolve markets started');
+
+    // Verify cron secret (security)
+    const authHeader = req.headers.get('authorization');
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      console.log('❌ [CRON] Unauthorized request');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if bot wallet is configured
+    if (!process.env.DEPLOYER_PRIVATE_KEY) {
+      console.log('❌ [CRON] Bot wallet not configured');
+      return NextResponse.json({ 
+        error: 'Bot wallet not configured',
+        hint: 'Add DEPLOYER_PRIVATE_KEY to environment variables'
+      }, { status: 500 });
+    }
+
+    // Setup clients
+    const account = privateKeyToAccount(process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`);
+    
+    const publicClient = createPublicClient({
+      chain: baseSepolia,
+      transport: http()
+    });
+
+    const walletClient = createWalletClient({
+      account,
+      chain: baseSepolia,
+      transport: http()
+    });
+
+    console.log(`   🤖 Bot address: ${account.address}`);
+
+    // Get market count
+    const marketCount = await publicClient.readContract({
+      address: TROLLBET_ETH_ADDRESS,
+      abi: TROLLBET_ABI,
+      functionName: 'marketCount'
+    });
+
+    console.log(`   📊 Total markets: ${marketCount}`);
+
+    const results = {
+      checked: 0,
+      resolved: 0,
+      skipped: 0,
+      failed: 0,
+      details: [] as Array<{
+        marketId: number;
+        question?: string;
+        result?: string;
+        txHash?: string;
+        status: string;
+        reason?: string;
+        error?: string;
+      }>
+    };
+
+    // Check each market
+    for (let i = 0; i < Number(marketCount); i++) {
+      try {
+        const market = await publicClient.readContract({
+          address: TROLLBET_ETH_ADDRESS,
+          abi: TROLLBET_ABI,
+          functionName: 'markets',
+          args: [BigInt(i)]
+        });
+
+        const [question, endTime, yesPool, noPool, resolved, , exists] = market;
+
+        if (!exists) continue;
+        
+        results.checked++;
+
+        // Skip if already resolved
+        if (resolved) {
+          results.skipped++;
+          continue;
+        }
+
+        // Check if market has ended
+        const now = Math.floor(Date.now() / 1000);
+        if (Number(endTime) > now) {
+          results.skipped++;
+          continue;
+        }
+
+        console.log(`\n   🎯 Market #${i} needs resolution:`);
+        console.log(`      Question: "${question}"`);
+        console.log(`      Ended: ${new Date(Number(endTime) * 1000).toISOString()}`);
+        console.log(`      Pools: ${formatEther(yesPool)} YES / ${formatEther(noPool)} NO`);
+
+        // Get result from oracle
+        const result = await getMarketResult(question);
+
+        if (result === null) {
+          console.log(`      ⚠️  Cannot auto-resolve - needs manual intervention`);
+          results.details.push({
+            marketId: i,
+            question,
+            status: 'needs_manual',
+            reason: 'Unknown question pattern'
+          });
+          results.skipped++;
+          continue;
+        }
+
+        console.log(`      ✅ Result determined: ${result ? 'YES' : 'NO'}`);
+
+        // Resolve market
+        const hash = await walletClient.writeContract({
+          address: TROLLBET_ETH_ADDRESS,
+          abi: TROLLBET_ABI,
+          functionName: 'resolveMarket',
+          args: [BigInt(i), result]
+        });
+
+        console.log(`      📤 TX sent: ${hash}`);
+
+        // Wait for confirmation
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+        if (receipt.status === 'success') {
+          console.log(`      ✅ Market #${i} resolved successfully!`);
+          results.resolved++;
+          results.details.push({
+            marketId: i,
+            question,
+            result: result ? 'YES' : 'NO',
+            txHash: hash,
+            status: 'resolved'
+          });
+        } else {
+          console.log(`      ❌ TX failed for market #${i}`);
+          results.failed++;
+          results.details.push({
+            marketId: i,
+            question,
+            status: 'failed',
+            txHash: hash
+          });
+        }
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`   ❌ Error processing market #${i}:`, errorMessage);
+        results.failed++;
+        results.details.push({
+          marketId: i,
+          status: 'error',
+          error: errorMessage
+        });
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    
+    console.log(`\n✅ [CRON] Auto-resolve completed in ${duration}ms`);
+    console.log(`   📊 Stats: ${results.resolved} resolved, ${results.skipped} skipped, ${results.failed} failed`);
+
+    return NextResponse.json({
+      success: true,
+      duration,
+      stats: {
+        checked: results.checked,
+        resolved: results.resolved,
+        skipped: results.skipped,
+        failed: results.failed
+      },
+      details: results.details
+    });
+
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ [CRON] Fatal error:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: errorMessage,
+      duration
+    }, { status: 500 });
+  }
+}
