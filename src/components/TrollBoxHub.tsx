@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { sdk } from "@farcaster/frame-sdk";
+import sdk from "@farcaster/miniapp-sdk";
 import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy, UserCog } from "lucide-react";
 import { Button } from "~/components/ui/button-component";
 import { Badge } from "~/components/ui/badge";
@@ -55,12 +55,11 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   // Check if user is admin
   const isAdmin = context?.user?.username === "kryptoremontier";
 
-  // Initialize Farcaster SDK
+  // Load Farcaster context (sdk.actions.ready() is called in app.tsx)
   useEffect(() => {
     const load = async () => {
       const context = await sdk.context;
       setContext(context);
-      sdk.actions.ready({});
     };
     if (sdk && !isSDKLoaded) {
       setIsSDKLoaded(true);

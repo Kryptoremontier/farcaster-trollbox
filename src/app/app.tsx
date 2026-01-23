@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import ReactDOM from "react-dom";
-import { sdk } from "@farcaster/frame-sdk";
+import sdk from "@farcaster/miniapp-sdk";
 import { TrollBoxHub } from "~/components/TrollBoxHub";
 
 const DegenBox = dynamic(() => import("~/components/DegenBox"), {

@@ -22,6 +22,10 @@ interface LeaderboardEntry {
   secretPoints?: number;
 }
 
+// Helper to generate avatar URL (DiceBear API for unique avatars)
+const getAvatarUrl = (name: string) => 
+  `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}&backgroundColor=9E75FF`;
+
 // Mock data - in production, fetch from contract/API
 // 🤫 Secret points calculated based on activity
 const MOCK_LEADERBOARD: LeaderboardEntry[] = [
@@ -29,7 +33,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     rank: 1,
     address: "0x1234...5678",
     username: "DegenKing",
-    avatar: "/avatars/1.png",
+    avatar: getAvatarUrl("DegenKing"),
     totalWagered: 50000,
     totalWon: 35000,
     totalLost: 10000,
@@ -43,7 +47,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     rank: 2,
     address: "0xabcd...ef01",
     username: "CryptoMaxi",
-    avatar: "/avatars/2.png",
+    avatar: getAvatarUrl("CryptoMaxi"),
     totalWagered: 42000,
     totalWon: 28000,
     totalLost: 12000,
@@ -57,7 +61,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     rank: 3,
     address: "0x9876...4321",
     username: "MoonBoi",
-    avatar: "/avatars/3.png",
+    avatar: getAvatarUrl("MoonBoi"),
     totalWagered: 38000,
     totalWon: 24000,
     totalLost: 11000,
