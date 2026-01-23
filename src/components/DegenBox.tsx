@@ -413,7 +413,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     }
   }, [placeBet, marketIdNum, selectedAmount, isConnected, address, connect, ethBalance]);
 
-  const handleClaimWinnings = useCallback(async () => {
+  const handleClaimWinnings = useCallback(() => {
     if (!isConnected) {
       setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
       setTimeout(() => setBetStatus(null), 3000);
@@ -421,16 +421,17 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     }
 
     try {
-      setBetStatus({ type: 'info', message: 'Claiming winnings...' });
-      await claimWinnings(marketIdNum);
+      console.log('[DegenBox] Claiming winnings for market', marketIdNum);
+      setBetStatus({ type: 'info', message: '⚠️ CONFIRM claim in your wallet' });
+      claimWinnings(marketIdNum);
     } catch (error) {
       console.error('Claim error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to claim winnings';
       setBetStatus({ 
         type: 'error', 
-        message: errorMessage
+        message: errorMessage.includes('rejected') ? '❌ Transaction rejected by user' : `❌ ${errorMessage}`
       });
-      setTimeout(() => setBetStatus(null), 3000);
+      setTimeout(() => setBetStatus(null), 5000);
     }
   }, [claimWinnings, marketIdNum, isConnected]);
 
