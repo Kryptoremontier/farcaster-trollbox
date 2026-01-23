@@ -27,11 +27,14 @@ export interface UserPoints {
 /**
  * POINTS CALCULATION RULES
  * 🎯 Designed to reward early adopters and active traders heavily
+ * 
+ * NOTE: Now using Native ETH for betting (not $DEGEN tokens)
+ * Volume calculations adjusted for ETH amounts
  */
 export const POINTS_CONFIG = {
   // Base points per action (INCREASED for early phase)
   BET_PLACED: 100,                   // 100 points per bet (10x boost for launch)
-  VOLUME_PER_1K_DEGEN: 50,          // 50 points per 1,000 $DEGEN wagered (10x boost)
+  VOLUME_PER_0_01_ETH: 50,          // 50 points per 0.01 ETH wagered (10x boost)
   WIN_MULTIPLIER: 2.5,               // 2.5x points if bet wins
   LOSS_CONSOLATION: 0.8,            // 0.8x points if bet loses (still rewarded!)
   
@@ -63,13 +66,13 @@ export const POINTS_CONFIG = {
   WEEKLY_STREAK: 1000,          // 1,000 points for 7-day streak
   MONTHLY_STREAK: 10000,        // 10,000 points for 30-day streak
   
-  // Volume milestones (Progressive rewards)
+  // Volume milestones in ETH (Progressive rewards)
   VOLUME_MILESTONES: {
-    10000: 1000,      // 10k $DEGEN: +1,000 points
-    50000: 5000,      // 50k $DEGEN: +5,000 points
-    100000: 15000,    // 100k $DEGEN: +15,000 points
-    500000: 100000,   // 500k $DEGEN: +100,000 points
-    1000000: 300000,  // 1M $DEGEN: +300,000 points 🎉
+    0.1: 1000,       // 0.1 ETH: +1,000 points
+    0.5: 5000,       // 0.5 ETH: +5,000 points
+    1: 15000,        // 1 ETH: +15,000 points
+    5: 100000,       // 5 ETH: +100,000 points
+    10: 300000,      // 10 ETH: +300,000 points 🎉
   },
 };
 
@@ -79,9 +82,9 @@ export const POINTS_CONFIG = {
  */
 export const TIER_THRESHOLDS = {
   bronze: 0,
-  silver: 5000,      // ~50 bets or 100k $DEGEN volume
-  gold: 25000,       // ~250 bets or 500k $DEGEN volume
-  diamond: 100000,   // ~1000 bets or 2M $DEGEN volume
+  silver: 5000,      // ~50 bets or 1 ETH volume
+  gold: 25000,       // ~250 bets or 5 ETH volume
+  diamond: 100000,   // ~1000 bets or 20 ETH volume
   legendary: 500000, // Elite traders only 👑
 };
 
@@ -98,6 +101,7 @@ export const TIER_MULTIPLIERS = {
 
 /**
  * Calculate points for placing a bet
+ * @param amount - Bet amount in ETH
  */
 export function calculateBetPoints(
   amount: number,
@@ -106,8 +110,8 @@ export function calculateBetPoints(
 ): number {
   let points = POINTS_CONFIG.BET_PLACED;
   
-  // Volume bonus
-  points += (amount / 1000) * POINTS_CONFIG.VOLUME_PER_1K_DEGEN;
+  // Volume bonus (per 0.01 ETH)
+  points += (amount / 0.01) * POINTS_CONFIG.VOLUME_PER_0_01_ETH;
   
   // Win/loss multiplier
   if (won) {

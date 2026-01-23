@@ -39,7 +39,7 @@ interface UserPoints {
   username?: string;
   totalPoints: number;
   betsPlaced: number;
-  volumeTraded: number; // in $DEGEN
+  volumeTraded: number; // in ETH
   winsCount: number;
   lossesCount: number;
   currentStreak: number;

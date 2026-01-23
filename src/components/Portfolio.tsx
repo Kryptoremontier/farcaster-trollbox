@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { useDegenBalance } from "~/hooks/useTrollBet";
+import { useETHBalance } from "~/hooks/useTrollBetETH";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
@@ -14,7 +14,7 @@ interface PortfolioProps {
 
 export function Portfolio({ onMarketSelect }: PortfolioProps) {
   const { address, isConnected } = useAccount();
-  const { balance: degenBalance } = useDegenBalance(address as Address | undefined);
+  const { balance: ethBalance } = useETHBalance(address as Address | undefined);
 
   if (!isConnected || !address) {
     return (
@@ -30,7 +30,7 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
 
   // Mock stats - in production, calculate from actual bets
   const totalBets = 3;
-  const totalWagered = 1256; // From screenshot
+  const totalWagered = 0.012; // ETH amount
   const activeBets = 1;
   const wonBets = 0;
   const lostBets = 0;
@@ -47,9 +47,9 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
             <span className="text-xs text-green-700 font-medium">Balance</span>
           </div>
           <div className="text-xl font-bold text-green-700">
-            {parseFloat(degenBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            {parseFloat(ethBalance).toFixed(4)}
           </div>
-          <div className="text-xs text-green-600 mt-1">$DEGEN</div>
+          <div className="text-xs text-green-600 mt-1">ETH</div>
         </Card>
 
         {/* Total Wagered */}
@@ -59,9 +59,9 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
             <span className="text-xs text-blue-700 font-medium">Wagered</span>
           </div>
           <div className="text-xl font-bold text-blue-700">
-            {totalWagered.toLocaleString()}
+            {totalWagered.toFixed(4)}
           </div>
-          <div className="text-xs text-blue-600 mt-1">$DEGEN</div>
+          <div className="text-xs text-blue-600 mt-1">ETH</div>
         </Card>
 
         {/* Active Bets */}
@@ -100,7 +100,7 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
         <div className="grid grid-cols-3 gap-4">
           <div>
             <div className="text-xs text-gray-500 mb-1">Total P&L</div>
-            <div className="text-lg font-bold text-gray-900">+0 $DEGEN</div>
+            <div className="text-lg font-bold text-gray-900">+0 ETH</div>
             <div className="text-xs text-gray-400">0.0% ROI</div>
           </div>
           <div>

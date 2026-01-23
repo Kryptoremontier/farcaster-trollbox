@@ -14,16 +14,13 @@ import { config } from "~/components/providers/WagmiProvider"
 import { getMarketById } from "~/lib/mockMarkets"
 import { ArrowLeft } from "lucide-react"
 import { 
-  usePlaceBet, 
-  useClaimWinnings, 
-  useMarketData, 
-  useUserBet, 
-  useTransactionStatus,
-  useApproveToken,
-  useDegenBalance,
-  useDegenAllowance,
-  useMintTestTokens
-} from "~/hooks/useTrollBet"
+  usePlaceBetETH, 
+  useClaimWinningsETH, 
+  useMarketDataETH, 
+  useUserBetETH, 
+  useTransactionStatusETH,
+  useETHBalance
+} from "~/hooks/useTrollBetETH"
 import type { Address } from "viem"
 
 interface FarcasterUser {
@@ -126,7 +123,8 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   // Check if we're on the correct network (Base Sepolia)
   const isCorrectNetwork = chain?.id === 84532;
   
-  const [selectedAmount, setSelectedAmount] = useState("100")
+  // ETH amounts (much smaller than token amounts!)
+  const [selectedAmount, setSelectedAmount] = useState("0.001")
   const [activeTab, setActiveTab] = useState<"chat" | "leaderboard">("chat")
   const [messages, setMessages] = useState<ChatMessage[]>(MOCK_MESSAGES)
   const [newMessage, setNewMessage] = useState("")
@@ -139,38 +137,23 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
 
   // Contract hooks - get contract market ID from market data
   const marketIdNum = market?.contractMarketId ?? 0;
-  const { marketData, refetch: refetchMarket } = useMarketData(marketIdNum)
-  const { userBet, refetch: refetchUserBet } = useUserBet(marketIdNum, address as Address | undefined)
+  const { marketData, refetch: refetchMarket } = useMarketDataETH(marketIdNum)
+  const { userBet, refetch: refetchUserBet } = useUserBetETH(marketIdNum, address as Address | undefined)
   
-  // Balance hooks
-  const { balance: degenBalance, refetch: refetchBalance } = useDegenBalance(address as Address | undefined)
-  const { allowance: degenAllowance, refetch: refetchAllowance } = useDegenAllowance(address as Address | undefined)
+  // ETH Balance hook - NO token approval needed! 🎉
+  const { balance: ethBalance, refetch: refetchBalance } = useETHBalance(address as Address | undefined)
   
-  // Transaction hooks
-  const { placeBet, hash: betHash, isPending: isBetPending } = usePlaceBet()
-  const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinnings()
-  const { approve, hash: approveHash, isPending: isApprovePending } = useApproveToken()
-  const { mintTokens, hash: mintHash, isPending: isMintPending } = useMintTestTokens()
+  // Transaction hooks - NO approve hook needed!
+  const { placeBet, hash: betHash, isPending: isBetPending } = usePlaceBetETH()
+  const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH()
   
-  // Transaction status tracking
-  const { isConfirming: isBetConfirming, isConfirmed: isBetConfirmed } = useTransactionStatus(betHash)
-  const { isConfirming: isClaimConfirming, isConfirmed: isClaimConfirmed } = useTransactionStatus(claimHash)
-  const { isConfirming: isApproveConfirming, isConfirmed: isApproveConfirmed } = useTransactionStatus(approveHash)
-  const { isConfirming: isMintConfirming, isConfirmed: isMintConfirmed } = useTransactionStatus(mintHash)
+  // Transaction status tracking - NO approve tracking needed!
+  const { isConfirming: isBetConfirming, isConfirmed: isBetConfirmed } = useTransactionStatusETH(betHash)
+  const { isConfirming: isClaimConfirming, isConfirmed: isClaimConfirmed } = useTransactionStatusETH(claimHash)
   
-  // UI state
+  // UI state - NO approval state needed!
   const [betStatus, setBetStatus] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null)
-  const [needsApproval, setNeedsApproval] = useState(true)
   const [selectedSide, setSelectedSide] = useState<'YES' | 'NO' | null>(null)
-
-  // Check if approval is needed based on allowance
-  useEffect(() => {
-    if (degenAllowance && selectedAmount) {
-      const allowanceNum = parseFloat(degenAllowance);
-      const amountNum = parseFloat(selectedAmount);
-      setNeedsApproval(allowanceNum < amountNum);
-    }
-  }, [degenAllowance, selectedAmount]);
 
   // Load Farcaster context and auto-connect wallet
   useEffect(() => {
@@ -267,7 +250,6 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       refetchMarket();
       refetchUserBet();
       refetchBalance();
-      refetchAllowance();
       
       // Record bet and update points
       const recordBetAsync = async () => {
@@ -308,7 +290,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
           avatar: context?.user?.pfpUrl || getAvatarUrl("You"), 
           bet: selectedSide 
         },
-        message: `Bet ${selectedAmount} $DEGEN on ${selectedSide}! 🎲`,
+        message: `Bet ${selectedAmount} ETH on ${selectedSide}! 🎲`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, betMessage]);
@@ -316,7 +298,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       setSelectedSide(null);
       setTimeout(() => setBetStatus(null), 5000);
     }
-  }, [isBetConfirmed, selectedSide, selectedAmount, context, address, market, refetchMarket, refetchUserBet, refetchBalance, refetchAllowance]);
+  }, [isBetConfirmed, selectedSide, selectedAmount, context, address, market, refetchMarket, refetchUserBet, refetchBalance]);
 
   // Handle claim confirmation
   useEffect(() => {
@@ -331,30 +313,8 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     }
   }, [isClaimConfirmed, refetchMarket, refetchUserBet]);
 
-  // Handle approval confirmation
-  useEffect(() => {
-    if (isApproveConfirmed) {
-      setNeedsApproval(false);
-      refetchAllowance();
-      setBetStatus({
-        type: 'success',
-        message: `Token approval successful! You can now place bets.`
-      });
-      setTimeout(() => setBetStatus(null), 3000);
-    }
-  }, [isApproveConfirmed, refetchAllowance]);
-
-  // Handle mint confirmation
-  useEffect(() => {
-    if (isMintConfirmed) {
-      refetchBalance();
-      setBetStatus({
-        type: 'success',
-        message: `🎉 Test tokens minted successfully!`
-      });
-      setTimeout(() => setBetStatus(null), 3000);
-    }
-  }, [isMintConfirmed, refetchBalance]);
+  // NOTE: No approval needed with Native ETH! 🎉
+  // NOTE: No mint/faucet needed - users bring their own ETH!
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
@@ -376,107 +336,56 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     connect({ connector: config.connectors[0] })
   }, [connect])
 
-  // State for pending bet after approval
-  const [pendingBetSide, setPendingBetSide] = useState<'YES' | 'NO' | null>(null);
+  // NOTE: No pendingBetSide state needed - direct ETH betting! 🎉
 
-  // When approval is confirmed, automatically place the pending bet
-  useEffect(() => {
-    if (isApproveConfirmed && pendingBetSide && !needsApproval) {
-      console.log('[TrollBox] Approval confirmed, now placing bet...', { pendingBetSide });
-      setBetStatus({ type: 'info', message: 'Step 2/2: Placing bet...' });
-      
-      try {
-        placeBet(marketIdNum, pendingBetSide === 'YES', selectedAmount);
-        console.log('[TrollBox] Bet transaction sent');
-      } catch (err) {
-        console.error('[TrollBox] Bet error after approval:', err);
-        setBetStatus({ type: 'error', message: 'Failed to place bet' });
-        setPendingBetSide(null);
-        setTimeout(() => setBetStatus(null), 3000);
-      }
-    }
-  }, [isApproveConfirmed, pendingBetSide, needsApproval, placeBet, marketIdNum, selectedAmount]);
-
+  // Simplified handlePlaceBet - NO APPROVAL NEEDED with Native ETH! 🎉
   const handlePlaceBet = useCallback(async (side: 'YES' | 'NO') => {
-    console.log('[TrollBox] handlePlaceBet called', { side, isConnected, address, needsApproval, selectedAmount });
+    console.log('[TrollBoxETH] handlePlaceBet called', { side, isConnected, address, selectedAmount });
     
     if (!isConnected) {
-      console.log('[TrollBox] Not connected, connecting wallet...');
+      console.log('[TrollBoxETH] Not connected, connecting wallet...');
       setBetStatus({ type: 'info', message: 'Connecting wallet...' });
       try {
         connect({ connector: config.connectors[0] });
-        // Wait for connection and retry
-        setTimeout(() => {
-          setBetStatus(null);
-        }, 2000);
+        setTimeout(() => setBetStatus(null), 2000);
       } catch (e) {
-        console.error('[TrollBox] Connect error:', e);
+        console.error('[TrollBoxETH] Connect error:', e);
         setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
         setTimeout(() => setBetStatus(null), 3000);
       }
       return;
     }
 
+    // Check if user has enough ETH
+    const betAmountNum = parseFloat(selectedAmount);
+    const balanceNum = parseFloat(ethBalance);
+    if (betAmountNum > balanceNum) {
+      setBetStatus({ type: 'error', message: `❌ Insufficient balance. You have ${balanceNum.toFixed(4)} ETH` });
+      setTimeout(() => setBetStatus(null), 5000);
+      return;
+    }
+
     try {
       setSelectedSide(side);
-
-      // If approval is needed, do approval first
-      if (needsApproval) {
-        console.log('[TrollBox] Needs approval, starting approve...');
-        setPendingBetSide(side); // Save the side for after approval
-        setBetStatus({ type: 'info', message: '⚠️ Step 1/2: APPROVE tokens in your Farcaster wallet (check notification)' });
-        
-        try {
-          console.log('[TrollBox] Calling approve...');
-          approve(selectedAmount);
-          console.log('[TrollBox] Approve transaction sent, waiting for confirmation...');
-          // The useEffect above will handle placing the bet after confirmation
-        } catch (approveError) {
-          console.error('[TrollBox] Approve error:', approveError);
-          setPendingBetSide(null);
-          // Check if user rejected
-          const errorMsg = approveError instanceof Error ? approveError.message : String(approveError);
-          if (errorMsg.includes('rejected') || errorMsg.includes('denied')) {
-            setBetStatus({ type: 'error', message: '❌ Transaction rejected. Please try again and approve in your wallet.' });
-          } else {
-            throw approveError;
-          }
-          setTimeout(() => setBetStatus(null), 5000);
-          return;
-        }
-        return; // Exit - the useEffect will continue after approval
-      }
-
-      // No approval needed - place the bet directly
-      console.log('[TrollBox] Placing bet...', { marketIdNum, side, selectedAmount });
-      setBetStatus({ type: 'info', message: '⚠️ CONFIRM bet in your Farcaster wallet (check notification)' });
       
-      try {
-        placeBet(marketIdNum, side === 'YES', selectedAmount);
-        console.log('[TrollBox] Bet transaction sent');
-      } catch (betError) {
-        console.error('[TrollBox] Bet error:', betError);
-        // Check if user rejected
-        const errorMsg = betError instanceof Error ? betError.message : String(betError);
-        if (errorMsg.includes('rejected') || errorMsg.includes('denied')) {
-          setBetStatus({ type: 'error', message: '❌ Transaction rejected. Please try again and confirm in your wallet.' });
-          setTimeout(() => setBetStatus(null), 5000);
-          return;
-        }
-        throw betError;
-      }
+      // Direct ETH bet - NO approval step needed!
+      console.log('[TrollBoxETH] Placing bet with ETH...', { marketIdNum, side, selectedAmount });
+      setBetStatus({ type: 'info', message: `⚠️ CONFIRM ${selectedAmount} ETH bet in your wallet` });
+      
+      placeBet(marketIdNum, side === 'YES', selectedAmount);
+      console.log('[TrollBoxETH] Bet transaction sent');
+      
     } catch (error) {
-      console.error('[TrollBox] Full error:', error);
+      console.error('[TrollBoxETH] Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to place bet';
       setBetStatus({ 
         type: 'error', 
         message: errorMessage.includes('rejected') ? '❌ Transaction rejected by user' : `❌ ${errorMessage}`
       });
       setSelectedSide(null);
-      setPendingBetSide(null);
       setTimeout(() => setBetStatus(null), 5000);
     }
-  }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval, approve, address, connect]);
+  }, [placeBet, marketIdNum, selectedAmount, isConnected, address, connect, ethBalance]);
 
   const handleClaimWinnings = useCallback(async () => {
     if (!isConnected) {
@@ -668,8 +577,8 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>{formatNumber(parseFloat(marketData?.yesPool || "0"))} $DEGEN</span>
-                  <span>{formatNumber(parseFloat(marketData?.noPool || "0"))} $DEGEN</span>
+                  <span>{parseFloat(marketData?.yesPool || "0").toFixed(4)} ETH</span>
+                  <span>{parseFloat(marketData?.noPool || "0").toFixed(4)} ETH</span>
                 </div>
               </div>
             </div>
@@ -789,65 +698,28 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 )}
                 
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs text-gray-600 font-medium">💰 Wallet Balance</span>
+                  <span className="text-xs text-gray-600 font-medium">💰 ETH Balance</span>
                   <span className="text-lg font-bold text-green-600 font-mono">
-                    {isConnected ? formatNumber(parseFloat(degenBalance)) : '0'} $DEGEN
+                    {isConnected ? parseFloat(ethBalance).toFixed(4) : '0'} ETH
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>Your Bets: {userBet ? formatNumber(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)) : '0'} $DEGEN</span>
-                  <span className="text-green-600">Available: {isConnected ? formatNumber(parseFloat(degenBalance)) : '0'}</span>
+                  <span>Your Bets: {userBet ? (parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)).toFixed(4) : '0'} ETH</span>
+                  <span className="text-green-600">Available: {isConnected ? parseFloat(ethBalance).toFixed(4) : '0'} ETH</span>
                 </div>
-                {/* Get Test Tokens Button (Testnet only) - Always show when balance is low */}
-                {parseFloat(degenBalance) < 100 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      console.log('[TrollBox] Mint button clicked', { address, isConnected });
-                      
-                      // If not connected, connect first
-                      if (!isConnected) {
-                        console.log('[TrollBox] Not connected, connecting wallet first...');
-                        try {
-                          connect({ connector: config.connectors[0] });
-                          setBetStatus({ type: 'info', message: 'Connecting wallet...' });
-                          // Wait a bit for connection
-                          await new Promise(resolve => setTimeout(resolve, 2000));
-                        } catch (e) {
-                          console.error('[TrollBox] Connect error:', e);
-                          setBetStatus({ type: 'error', message: 'Please connect wallet first' });
-                          setTimeout(() => setBetStatus(null), 3000);
-                          return;
-                        }
-                      }
-                      
-                      if (address) {
-                        try {
-                          console.log('[TrollBox] Starting mint...');
-                          setBetStatus({ type: 'info', message: '⚠️ CONFIRM mint in your Farcaster wallet (check notification)' });
-                          mintTokens(address, "10000");
-                          console.log('[TrollBox] Mint transaction sent');
-                        } catch (mintError) {
-                          console.error('[TrollBox] Mint error:', mintError);
-                          const errorMsg = mintError instanceof Error ? mintError.message : String(mintError);
-                          if (errorMsg.includes('rejected') || errorMsg.includes('denied')) {
-                            setBetStatus({ type: 'error', message: '❌ Mint rejected. Please try again and confirm in your wallet.' });
-                          } else {
-                            setBetStatus({ type: 'error', message: `❌ Failed to mint: ${errorMsg}` });
-                          }
-                          setTimeout(() => setBetStatus(null), 5000);
-                        }
-                      } else {
-                        setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
-                        setTimeout(() => setBetStatus(null), 3000);
-                      }
-                    }}
-                    disabled={isMintPending || isMintConfirming}
-                    className="w-full mt-2 text-sm font-semibold bg-gradient-to-r from-yellow-400 to-orange-400 border-0 text-white hover:from-yellow-500 hover:to-orange-500 shadow-md"
-                  >
-                    {isMintPending || isMintConfirming ? '⏳ Minting...' : '🪙 GET FREE TEST TOKENS'}
-                  </Button>
+                {/* Get ETH from faucet */}
+                {parseFloat(ethBalance) < 0.001 && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-center">
+                    <p className="text-xs text-yellow-800">💡 Need testnet ETH?</p>
+                    <a 
+                      href="https://www.alchemy.com/faucets/base-sepolia" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 underline hover:text-blue-800"
+                    >
+                      Get free Base Sepolia ETH →
+                    </a>
+                  </div>
                 )}
               </div>
 
@@ -855,7 +727,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500 font-medium">Bet Amount</span>
-                  <span className="text-xs text-gray-400">Amount in $DEGEN</span>
+                  <span className="text-xs text-gray-400">Amount in ETH</span>
                 </div>
                 
                 {/* Custom Input with MAX button */}
@@ -864,39 +736,39 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                     type="number"
                     value={selectedAmount}
                     onChange={(e) => setSelectedAmount(e.target.value)}
-                    placeholder="Enter amount"
+                    placeholder="0.01"
                     className="flex-1 font-mono text-base"
                     min="0"
-                    step="100"
+                    step="0.001"
                   />
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setSelectedAmount(degenBalance)}
-                    disabled={!isConnected || parseFloat(degenBalance) === 0}
+                    onClick={() => setSelectedAmount(ethBalance)}
+                    disabled={!isConnected || parseFloat(ethBalance) === 0}
                     className="px-4 font-bold text-green-600 border-green-500 hover:bg-green-50"
                   >
                     MAX
                   </Button>
                 </div>
 
-                {/* Quick Select Buttons */}
+                {/* Quick Select Buttons - ETH amounts */}
                 <div className="flex gap-2">
-                  {[100, 500, 1000, 5000].map((amount) => (
+                  {["0.001", "0.005", "0.01", "0.05"].map((amount) => (
                     <Button
                       key={amount}
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedAmount(amount.toString())}
+                      onClick={() => setSelectedAmount(amount)}
                       disabled={false}
                       className={cn(
                         "flex-1 font-mono font-medium transition-all text-xs",
-                        selectedAmount === amount.toString()
+                        selectedAmount === amount
                           ? "bg-white border-[#9E75FF] text-[#9E75FF] border-2 shadow-sm"
                           : "bg-white border-gray-200 text-gray-500 hover:text-[#9E75FF] hover:border-[#9E75FF]/50"
                       )}
                     >
-                      {amount >= 1000 ? `${amount/1000}k` : amount}
+                      {amount}
                     </Button>
                   ))}
                 </div>
@@ -1042,7 +914,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                       <span className="text-sm font-bold text-green-600">
                         +{formatNumber(entry.earnings)}
                       </span>
-                      <span className="text-xs text-gray-500 block">$DEGEN</span>
+                      <span className="text-xs text-gray-500 block">ETH</span>
                     </div>
                   </div>
                 ))}

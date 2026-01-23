@@ -221,6 +221,17 @@ export function getYesPercentage(market: Market): number {
  * Format pool amount
  */
 export function formatPoolAmount(amount: number): string {
+  // For ETH amounts (small numbers), show with appropriate decimals
+  if (amount < 1) {
+    return `${amount.toFixed(4)} ETH`;
+  }
+  if (amount < 10) {
+    return `${amount.toFixed(3)} ETH`;
+  }
+  if (amount < 1000) {
+    return `${amount.toFixed(2)} ETH`;
+  }
+  // Legacy support for large mock values (will be replaced by contract data)
   if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
   if (amount >= 1000) return `${(amount / 1000).toFixed(0)}K`;
   return amount.toString();

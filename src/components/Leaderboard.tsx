@@ -221,7 +221,7 @@ export function Leaderboard() {
                     <div className="text-sm font-medium text-gray-900">
                       {entry.totalWagered.toLocaleString()}
                     </div>
-                    <div className="text-xs text-gray-500">$DEGEN</div>
+                    <div className="text-xs text-gray-500">ETH</div>
                   </td>
 
                   {/* P&L */}

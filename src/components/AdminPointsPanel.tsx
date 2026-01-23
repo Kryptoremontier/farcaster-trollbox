@@ -174,8 +174,8 @@ export function AdminPointsPanel({ userAddress }: AdminPointsPanelProps) {
               <div className="font-bold text-gray-900">{POINTS_CONFIG.BET_PLACED} pts</div>
             </div>
             <div>
-              <div className="text-gray-500 mb-1">Per 1k $DEGEN</div>
-              <div className="font-bold text-gray-900">{POINTS_CONFIG.VOLUME_PER_1K_DEGEN} pts</div>
+              <div className="text-gray-500 mb-1">Per 0.01 ETH</div>
+              <div className="font-bold text-gray-900">{POINTS_CONFIG.VOLUME_PER_0_01_ETH} pts</div>
             </div>
             <div>
               <div className="text-gray-500 mb-1">Win Multiplier</div>

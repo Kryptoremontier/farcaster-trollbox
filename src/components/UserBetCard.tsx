@@ -1,6 +1,6 @@
 "use client";
 
-import { useUserBet, useMarketData } from "~/hooks/useTrollBet";
+import { useUserBetETH, useMarketDataETH } from "~/hooks/useTrollBetETH";
 import type { Address } from "viem";
 import type { Market } from "~/lib/mockMarkets";
 import { TrendingUp, TrendingDown, Trophy } from "lucide-react";
@@ -14,11 +14,11 @@ interface UserBetCardProps {
 }
 
 export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps) {
-  const { userBet, isLoading } = useUserBet(
+  const { userBet, isLoading } = useUserBetETH(
     market.contractMarketId ?? 0,
     userAddress
   );
-  const { marketData } = useMarketData(market.contractMarketId ?? 0);
+  const { marketData } = useMarketDataETH(market.contractMarketId ?? 0);
 
   // Don't render if loading
   if (isLoading) return null;
@@ -77,7 +77,7 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
               <span className="text-sm font-medium text-green-700">YES</span>
             </div>
             <span className="text-sm font-bold text-green-700">
-              {yesAmount.toLocaleString()} $DEGEN
+              {yesAmount.toFixed(4)} ETH
             </span>
           </div>
         )}
@@ -89,7 +89,7 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
               <span className="text-sm font-medium text-red-700">NO</span>
             </div>
             <span className="text-sm font-bold text-red-700">
-              {noAmount.toLocaleString()} $DEGEN
+              {noAmount.toFixed(4)} ETH
             </span>
           </div>
         )}
@@ -100,7 +100,7 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500 font-medium">Total Bet</span>
           <span className="text-sm font-bold text-gray-900">
-            {totalBet.toLocaleString()} $DEGEN
+            {totalBet.toFixed(4)} ETH
           </span>
         </div>
         
@@ -112,7 +112,7 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
           </div>
           <div className="text-right">
             <div className="text-sm font-bold text-yellow-700">
-              {maxPotentialWin.toLocaleString(undefined, { maximumFractionDigits: 0 })} $DEGEN
+              {maxPotentialWin.toFixed(4)} ETH
             </div>
           </div>
         </div>
