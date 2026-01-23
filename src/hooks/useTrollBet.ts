@@ -58,13 +58,17 @@ export function useClaimWinnings() {
 }
 
 /**
- * Hook to approve $DEGEN token spending
+ * Hook to approve $DEGEN token spending (unlimited approval)
  */
 export function useApproveToken() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const approve = async (amount: string) => {
-    const amountWei = parseUnits(amount, 18);
+  // Max uint256 for unlimited approval
+  const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+
+  const approve = async (_amount?: string) => {
+    // Always approve unlimited for better UX - user only needs to approve once
+    // The _amount parameter is kept for backwards compatibility but ignored
 
     // ERC20 approve ABI
     const erc20ABI = [
@@ -84,7 +88,7 @@ export function useApproveToken() {
       address: DEGEN_TOKEN_ADDRESS,
       abi: erc20ABI,
       functionName: 'approve',
-      args: [TROLLBET_CONTRACT_ADDRESS, amountWei],
+      args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
     });
   };
 
