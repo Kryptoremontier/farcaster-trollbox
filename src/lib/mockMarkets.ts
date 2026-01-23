@@ -27,10 +27,22 @@ export interface Market {
 
 // ⚠️ MAINNET MARKET - BASE MAINNET
 // Contract: 0x52ABabe88DE8799B374b11B91EC1b32989779e55
-// 🔄 READY FOR NEW MARKET - Deploy script will update this
+// Deployed: 2026-01-23 21:53:32 UTC (Market #4)
 
 export const MOCK_MARKETS: Market[] = [
-  // 🚀 NEW MARKET WILL BE ADDED HERE BY SCRIPT
+  {
+    id: 'market-4',
+    contractMarketId: 4,
+    question: '🎲 Will BTC price end with digit 5 in next 30min?',
+    description: '✅ MAINNET LAUNCH - CoinGecko Oracle',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date('2026-01-23T21:23:32.000Z'), // FIXED timestamp - Ends 22:23:32 CET
+    yesPool: 0, 
+    noPool: 0, 
+    totalBettors: 0, 
+    status: 'active',
+  },
 ];
 
 /**
