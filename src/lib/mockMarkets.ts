@@ -25,19 +25,33 @@ export interface Market {
 // 4. Match contractMarketId with actual on-chain IDs
 // 5. Get the exact endTime from the contract or deployment script output
 
-// ⚠️ MAINNET MARKET - BASE MAINNET
+// ⚠️ MAINNET MARKETS - BASE MAINNET
 // Contract: 0x52ABabe88DE8799B374b11B91EC1b32989779e55
-// Deployed: 2026-01-23 21:53:32 UTC (Market #4)
+// Deployed: 2026-01-23 23:16:24 UTC (Markets #5 & #6)
+// Duration: 12 hours (ends 2026-01-24 11:16 CET)
 
 export const MOCK_MARKETS: Market[] = [
   {
-    id: 'market-4',
-    contractMarketId: 4,
-    question: '🎲 Will BTC price end with digit 5 in next 30min?',
-    description: '✅ MAINNET LAUNCH - CoinGecko Oracle',
+    id: 'market-5',
+    contractMarketId: 5,
+    question: '🎲 Will BTC price last digit be EVEN (0,2,4,6,8) at resolution?',
+    description: '✅ CoinGecko Oracle - 50/50 Fair Game',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date('2026-01-23T21:23:32.000Z'), // FIXED timestamp - Ends 22:23:32 CET
+    endTime: new Date('2026-01-24T10:16:24.000Z'), // FIXED timestamp - 12h test
+    yesPool: 0, 
+    noPool: 0, 
+    totalBettors: 0, 
+    status: 'active',
+  },
+  {
+    id: 'market-6',
+    contractMarketId: 6,
+    question: '🚀 Will ETH price touch $3,000 before resolution?',
+    description: '✅ CoinGecko Oracle - Psychological Barrier',
+    thumbnail: '🚀',
+    category: 'crypto',
+    endTime: new Date('2026-01-24T10:16:52.000Z'), // FIXED timestamp - 12h test
     yesPool: 0, 
     noPool: 0, 
     totalBettors: 0, 
