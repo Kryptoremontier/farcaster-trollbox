@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { sdk } from "@farcaster/frame-sdk";
-import { Wallet, Zap, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy } from "lucide-react";
+import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy } from "lucide-react";
 import { Button } from "~/components/ui/button-component";
 import { Badge } from "~/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -116,9 +116,11 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9E75FF] to-[#7E55DF] flex items-center justify-center shadow-lg">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
+              <img 
+                src="/troll-logo.png" 
+                alt="TrollBox Logo" 
+                className="w-12 h-12 rounded-xl shadow-lg"
+              />
               <div>
                 <h1 className="font-bold text-xl text-gray-900">TrollBox</h1>
                 <p className="text-xs text-gray-500">Prediction Markets</p>
@@ -187,11 +189,18 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
 
       {/* Compact Hero Section */}
       <div className="bg-gradient-to-r from-[#9E75FF] to-[#7E55DF] text-white py-4 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-xl font-bold">Bet on anything 🎲</h2>
-          <p className="text-sm text-white/80 mt-1">
-            Powered by Farcaster • Built on Base
-          </p>
+        <div className="max-w-7xl mx-auto text-center flex items-center justify-center gap-3">
+          <img 
+            src="/troll-logo.png" 
+            alt="TrollBox" 
+            className="w-10 h-10 rounded-lg shadow-lg"
+          />
+          <div>
+            <h2 className="text-xl font-bold">Bet on anything 🎲</h2>
+            <p className="text-sm text-white/80">
+              Powered by Farcaster • Built on Base
+            </p>
+          </div>
         </div>
       </div>
 
