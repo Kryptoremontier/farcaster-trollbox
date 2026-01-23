@@ -26,6 +26,7 @@ contract TrollBetETH {
     address public owner;
     uint256 public marketCount;
     uint256 public accumulatedFees;
+    bool public paused; // Emergency pause
     bool private locked; // Reentrancy guard
 
     // ============ Structs ============
@@ -59,6 +60,8 @@ contract TrollBetETH {
     event WinningsClaimed(uint256 indexed marketId, address indexed user, uint256 payout);
     event FeesWithdrawn(address indexed owner, uint256 amount);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event Paused(address indexed by);
+    event Unpaused(address indexed by);
 
     // ============ Modifiers ============
 
@@ -72,6 +75,11 @@ contract TrollBetETH {
         locked = true;
         _;
         locked = false;
+    }
+
+    modifier whenNotPaused() {
+        require(!paused, "Contract paused");
+        _;
     }
 
     // ============ Constructor ============
@@ -162,7 +170,7 @@ contract TrollBetETH {
      * @param side true = YES, false = NO
      * @dev Send ETH with the transaction (msg.value is the bet amount)
      */
-    function placeBet(uint256 marketId, bool side) external payable nonReentrant {
+    function placeBet(uint256 marketId, bool side) external payable nonReentrant whenNotPaused {
         Market storage market = markets[marketId];
         
         require(market.exists, "Market does not exist");
@@ -265,6 +273,38 @@ contract TrollBetETH {
         Market storage market = markets[marketId];
         require(market.exists, "Market does not exist");
         return market.yesPool + market.noPool;
+    }
+
+    // ============ Emergency Functions ============
+
+    /**
+     * @notice Pause the contract (emergency stop)
+     * @dev Only owner can pause. Prevents new bets but allows claims.
+     */
+    function pause() external onlyOwner {
+        paused = true;
+        emit Paused(msg.sender);
+    }
+
+    /**
+     * @notice Unpause the contract
+     * @dev Only owner can unpause.
+     */
+    function unpause() external onlyOwner {
+        paused = false;
+        emit Unpaused(msg.sender);
+    }
+
+    /**
+     * @notice Emergency withdraw all ETH from contract
+     * @dev Only callable when paused. Last resort if contract is compromised.
+     * @dev Users should be refunded manually off-chain if this is used.
+     */
+    function emergencyWithdraw() external onlyOwner {
+        require(paused, "Must be paused first");
+        uint256 balance = address(this).balance;
+        (bool sent, ) = owner.call{value: balance}("");
+        require(sent, "Transfer failed");
     }
 
     // Receive ETH
