@@ -506,6 +506,7 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
                         market={market}
                         userAddress={address as Address}
                         onSelect={onMarketSelect}
+                        onClaim={null}
                       />
                     ))}
                   </div>
