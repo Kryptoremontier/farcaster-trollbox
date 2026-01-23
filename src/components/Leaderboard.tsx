@@ -4,6 +4,7 @@ import { Trophy, TrendingUp, Medal, Crown } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
+import { getTierBadge, calculateTier } from "~/lib/pointsSystem";
 
 interface LeaderboardEntry {
   rank: number;
@@ -17,9 +18,12 @@ interface LeaderboardEntry {
   roi: number;
   winRate: number;
   activeBets: number;
+  // 🤫 Secret points for future airdrop
+  secretPoints?: number;
 }
 
 // Mock data - in production, fetch from contract/API
+// 🤫 Secret points calculated based on activity
 const MOCK_LEADERBOARD: LeaderboardEntry[] = [
   {
     rank: 1,
@@ -33,6 +37,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     roi: 50.0,
     winRate: 77.8,
     activeBets: 5,
+    secretPoints: 125000, // 🤫 Legendary tier
   },
   {
     rank: 2,
@@ -46,6 +51,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     roi: 38.1,
     winRate: 70.0,
     activeBets: 3,
+    secretPoints: 85000, // 🤫 Diamond tier
   },
   {
     rank: 3,
@@ -59,6 +65,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     roi: 34.2,
     winRate: 68.6,
     activeBets: 7,
+    secretPoints: 45000, // 🤫 Diamond tier
   },
   {
     rank: 4,
@@ -71,6 +78,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     roi: 0,
     winRate: 0,
     activeBets: 1,
+    secretPoints: 150, // 🤫 Bronze tier (just started)
   },
   {
     rank: 5,
@@ -83,6 +91,7 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
     roi: 28.0,
     winRate: 65.2,
     activeBets: 2,
+    secretPoints: 18000, // 🤫 Gold tier
   },
 ];
 
@@ -190,6 +199,12 @@ export function Leaderboard() {
                           {entry.username || entry.address}
                           {entry.username === "You" && (
                             <Badge className="text-xs px-1.5 py-0 bg-[#9E75FF] text-white">You</Badge>
+                          )}
+                          {/* 🤫 Subtle tier badge - users don't know what it means yet */}
+                          {entry.secretPoints && (
+                            <span className="text-sm" title="Activity level">
+                              {getTierBadge(calculateTier(entry.secretPoints))}
+                            </span>
                           )}
                         </div>
                         <div className="text-xs text-gray-500">{entry.address}</div>
