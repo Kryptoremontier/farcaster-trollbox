@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { useETHBalance, useUserBetETH, useMarketDataETH } from "~/hooks/useTrollBetETH";
+import { useETHBalance, useUserBetETH } from "~/hooks/useTrollBetETH";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
