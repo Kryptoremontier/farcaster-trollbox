@@ -725,7 +725,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                             refetchBalance();
                             setBetStatus(null);
                           }, 3000);
-                        } catch (error) {
+                        } catch {
                           setBetStatus({ type: 'error', message: 'Failed to mint tokens' });
                           setTimeout(() => setBetStatus(null), 3000);
                         }
