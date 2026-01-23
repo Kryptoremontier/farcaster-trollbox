@@ -1,24 +1,22 @@
 export async function GET() {
-  const appUrl = process.env.NEXT_PUBLIC_URL;
+  const appUrl = process.env.NEXT_PUBLIC_URL || "https://v0-farcaster-troll-box-app.vercel.app";
 
   const config = {
     accountAssociation: {
       header:
-        "eyJmaWQiOjM2MjEsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgyY2Q4NWEwOTMyNjFmNTkyNzA4MDRBNkVBNjk3Q2VBNENlQkVjYWZFIn0",
-      payload: "eyJkb21haW4iOiJmcmFtZXMtdjIudmVyY2VsLmFwcCJ9",
+        "eyJmaWQiOjM0NDExMSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDJiNzkxOGZGNGNDNDBhNzU2M2Q1NzdmQ0I0YzREMkEzRkUxMzEwMjEifQ",
+      payload: "eyJkb21haW4iOiJ2MC1mYXJjYXN0ZXItdHJvbGwtYm94LWFwcC52ZXJjZWwuYXBwIn0",
       signature:
-        "MHhiNDIwMzQ1MGZkNzgzYTExZjRiOTllZTFlYjA3NmMwOTdjM2JkOTY1NGM2ODZjYjkyZTAyMzk2Y2Q0YjU2MWY1MjY5NjI5ZGQ5NTliYjU0YzEwOGI4OGVmNjdjMTVlZTdjZDc2YTRiMGU5NzkzNzA3YzkxYzFkOWFjNTg0YmQzNjFi",
+        "BJaZWJ43x19ee7M8ei06sjlmRrqyAAkaO62xO0rKIZ18M5AAP2LWN4UgGO7M3l1vjCLLfpK/QYVsk1MN/aT/rxw=",
     },
     frame: {
-      version: "1",
-      name: "Frames v2 Demo",
+      version: "next",
+      name: "TrollBox",
       iconUrl: `${appUrl}/icon.png`,
       homeUrl: appUrl,
-      imageUrl: `${appUrl}/frames/hello/opengraph-image`,
-      buttonTitle: "Launch Frame",
+      imageUrl: `${appUrl}/troll-banner.png`,
       splashImageUrl: `${appUrl}/splash.png`,
-      splashBackgroundColor: "#f7f7f7",
-      webhookUrl: `${appUrl}/api/webhook`,
+      splashBackgroundColor: "#9E75FF",
     },
   };
 
