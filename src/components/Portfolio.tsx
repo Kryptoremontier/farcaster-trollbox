@@ -126,7 +126,7 @@ function BetStatsCollector({
 export function Portfolio({ onMarketSelect }: PortfolioProps) {
   const { address, isConnected, isConnecting } = useAccount();
   const { balance: ethBalance } = useETHBalance(address as Address | undefined);
-  const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH();
+  const { claimWinnings: claimWinningsHook, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH();
   const { isConfirming: isClaimConfirming } = useTransactionStatusETH(claimHash);
   const [showEndedBets, setShowEndedBets] = useState(false);
   const [stats, setStats] = useState({ 
@@ -136,6 +136,22 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
     lostBets: 0,
     totalWinnings: 0
   });
+
+  // Wrapper for claimWinnings with logging
+  const claimWinnings = useCallback((marketId: number) => {
+    console.log('[Portfolio] claimWinnings called with marketId:', marketId);
+    console.log('[Portfolio] isConnected:', isConnected, 'address:', address);
+    if (!isConnected || !address) {
+      console.error('[Portfolio] Cannot claim: not connected');
+      return;
+    }
+    try {
+      claimWinningsHook(marketId);
+      console.log('[Portfolio] claimWinningsHook called successfully');
+    } catch (error) {
+      console.error('[Portfolio] Error calling claimWinningsHook:', error);
+    }
+  }, [claimWinningsHook, isConnected, address]);
 
   const handleStatsUpdate = useCallback((newStats: { 
     activeBets: number, 

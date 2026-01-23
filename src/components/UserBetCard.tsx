@@ -222,8 +222,20 @@ export function UserBetCard({
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
+                  console.log('[UserBetCard] Claim button clicked', { 
+                    hasOnClaim: !!onClaim, 
+                    marketId: market.contractMarketId,
+                    isClaimPending,
+                    isClaimConfirming
+                  });
                   if (onClaim && market.contractMarketId !== undefined) {
+                    console.log('[UserBetCard] Calling onClaim with marketId:', market.contractMarketId);
                     onClaim(market.contractMarketId);
+                  } else {
+                    console.error('[UserBetCard] Cannot claim:', { 
+                      hasOnClaim: !!onClaim, 
+                      marketId: market.contractMarketId 
+                    });
                   }
                 }}
                 disabled={isClaimPending || isClaimConfirming}
