@@ -1,10 +1,44 @@
-import { useReadContract, useWaitForTransactionReceipt, useSendTransaction } from 'wagmi';
-import { type Address, parseUnits, formatUnits, encodeFunctionData } from 'viem';
+import { useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { type Address, parseUnits, formatUnits, encodeFunctionData, Hex } from 'viem';
 import { baseSepolia } from 'wagmi/chains';
+import { useState, useCallback } from 'react';
+import sdk from '@farcaster/miniapp-sdk';
 import TrollBetABI from '~/lib/abi/TrollBet.json';
 
 // Chain ID for all transactions (Base Sepolia for testnet)
 const CHAIN_ID = baseSepolia.id;
+
+/**
+ * Helper to send transaction directly via Farcaster SDK
+ * This bypasses wagmi and talks directly to the Farcaster wallet
+ */
+async function sendViaFarcasterSDK(params: {
+  to: Address;
+  data: Hex;
+  chainId: number;
+}): Promise<string> {
+  console.log('[sendViaFarcasterSDK] Getting provider...');
+  
+  const provider = await sdk.wallet.getEthereumProvider();
+  if (!provider) {
+    throw new Error('No Farcaster wallet provider available');
+  }
+  
+  console.log('[sendViaFarcasterSDK] Provider obtained, sending transaction...', params);
+  
+  // Use eth_sendTransaction directly
+  const txHash = await provider.request({
+    method: 'eth_sendTransaction',
+    params: [{
+      to: params.to,
+      data: params.data,
+      // Farcaster wallet should handle gas estimation
+    }],
+  }) as string;
+  
+  console.log('[sendViaFarcasterSDK] Transaction sent:', txHash);
+  return txHash;
+}
 
 // ERC20 ABI for approve
 const ERC20_ABI = [
@@ -37,46 +71,52 @@ export const TROLLBET_CONTRACT_ADDRESS: Address = '0x26dEe56f85fAa471eFF92103267
 export const DEGEN_TOKEN_ADDRESS: Address = '0xdDB5C1a86762068485baA1B481FeBeB17d30e002';
 
 /**
- * Hook to place a bet on a market - using useSendTransaction for better Farcaster compatibility
+ * Hook to place a bet on a market - using Farcaster SDK directly
  */
 export function usePlaceBet() {
-  const { data: hash, sendTransaction, isPending, error } = useSendTransaction();
+  const [hash, setHash] = useState<`0x${string}` | undefined>();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  const placeBet = async (marketId: number, side: boolean, amount: string) => {
+  const placeBet = useCallback(async (marketId: number, side: boolean, amount: string) => {
     console.log('[useTrollBet] placeBet called', { marketId, side, amount });
-    const amountWei = parseUnits(amount, 18);
-
-    // Encode the function call data
-    const data = encodeFunctionData({
-      abi: TrollBetABI,
-      functionName: 'placeBet',
-      args: [BigInt(marketId), side, amountWei],
-    });
-
-    console.log('[useTrollBet] calling sendTransaction for placeBet...', {
-      to: TROLLBET_CONTRACT_ADDRESS,
-      marketId,
-      side,
-      amountWei: amountWei.toString(),
-    });
-
+    setIsPending(true);
+    setError(null);
+    
     try {
-      const result = sendTransaction({
+      const amountWei = parseUnits(amount, 18);
+
+      // Encode the function call data
+      const data = encodeFunctionData({
+        abi: TrollBetABI,
+        functionName: 'placeBet',
+        args: [BigInt(marketId), side, amountWei],
+      });
+
+      console.log('[useTrollBet] calling Farcaster SDK for placeBet...', {
         to: TROLLBET_CONTRACT_ADDRESS,
-        data,
+        marketId,
+        side,
+        amountWei: amountWei.toString(),
+      });
+
+      const txHash = await sendViaFarcasterSDK({
+        to: TROLLBET_CONTRACT_ADDRESS,
+        data: data as Hex,
         chainId: CHAIN_ID,
       });
-      console.log('[useTrollBet] placeBet sendTransaction result:', result);
-      return result;
+      
+      setHash(txHash as `0x${string}`);
+      console.log('[useTrollBet] placeBet success:', txHash);
+      return txHash;
     } catch (err) {
-      console.error('[useTrollBet] placeBet sendTransaction error:', err);
+      console.error('[useTrollBet] placeBet error:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
       throw err;
+    } finally {
+      setIsPending(false);
     }
-  };
-
-  if (error) {
-    console.error('[useTrollBet] placeBet hook error:', error);
-  }
+  }, []);
 
   return {
     placeBet,
@@ -87,24 +127,42 @@ export function usePlaceBet() {
 }
 
 /**
- * Hook to claim winnings from a resolved market - using useSendTransaction
+ * Hook to claim winnings from a resolved market - using Farcaster SDK directly
  */
 export function useClaimWinnings() {
-  const { data: hash, sendTransaction, isPending, error } = useSendTransaction();
+  const [hash, setHash] = useState<`0x${string}` | undefined>();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  const claimWinnings = async (marketId: number) => {
-    const data = encodeFunctionData({
-      abi: TrollBetABI,
-      functionName: 'claimWinnings',
-      args: [BigInt(marketId)],
-    });
+  const claimWinnings = useCallback(async (marketId: number) => {
+    console.log('[useTrollBet] claimWinnings called', { marketId });
+    setIsPending(true);
+    setError(null);
 
-    return sendTransaction({
-      to: TROLLBET_CONTRACT_ADDRESS,
-      data,
-      chainId: CHAIN_ID,
-    });
-  };
+    try {
+      const data = encodeFunctionData({
+        abi: TrollBetABI,
+        functionName: 'claimWinnings',
+        args: [BigInt(marketId)],
+      });
+
+      const txHash = await sendViaFarcasterSDK({
+        to: TROLLBET_CONTRACT_ADDRESS,
+        data: data as Hex,
+        chainId: CHAIN_ID,
+      });
+      
+      setHash(txHash as `0x${string}`);
+      console.log('[useTrollBet] claimWinnings success:', txHash);
+      return txHash;
+    } catch (err) {
+      console.error('[useTrollBet] claimWinnings error:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      throw err;
+    } finally {
+      setIsPending(false);
+    }
+  }, []);
 
   return {
     claimWinnings,
@@ -115,46 +173,51 @@ export function useClaimWinnings() {
 }
 
 /**
- * Hook to approve $DEGEN token spending (unlimited approval) - using useSendTransaction
+ * Hook to approve $DEGEN token spending (unlimited approval) - using Farcaster SDK directly
  */
 export function useApproveToken() {
-  const { data: hash, sendTransaction, isPending, error } = useSendTransaction();
+  const [hash, setHash] = useState<`0x${string}` | undefined>();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   // Max uint256 for unlimited approval
   const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
-  const approve = async (_amount?: string) => {
+  const approve = useCallback(async (_amount?: string) => {
     console.log('[useTrollBet] approve called');
-
-    // Encode the approve call
-    const data = encodeFunctionData({
-      abi: ERC20_ABI,
-      functionName: 'approve',
-      args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
-    });
-
-    console.log('[useTrollBet] calling sendTransaction for approve...', {
-      to: DEGEN_TOKEN_ADDRESS,
-      spender: TROLLBET_CONTRACT_ADDRESS,
-    });
+    setIsPending(true);
+    setError(null);
 
     try {
-      const result = sendTransaction({
+      // Encode the approve call
+      const data = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
+      });
+
+      console.log('[useTrollBet] calling Farcaster SDK for approve...', {
         to: DEGEN_TOKEN_ADDRESS,
-        data,
+        spender: TROLLBET_CONTRACT_ADDRESS,
+      });
+
+      const txHash = await sendViaFarcasterSDK({
+        to: DEGEN_TOKEN_ADDRESS,
+        data: data as Hex,
         chainId: CHAIN_ID,
       });
-      console.log('[useTrollBet] sendTransaction result:', result);
-      return result;
+      
+      setHash(txHash as `0x${string}`);
+      console.log('[useTrollBet] approve success:', txHash);
+      return txHash;
     } catch (err) {
-      console.error('[useTrollBet] sendTransaction error:', err);
+      console.error('[useTrollBet] approve error:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
       throw err;
+    } finally {
+      setIsPending(false);
     }
-  };
-
-  if (error) {
-    console.error('[useTrollBet] approve hook error:', error);
-  }
+  }, []);
 
   return {
     approve,
@@ -352,44 +415,50 @@ export function useTransactionStatus(hash?: `0x${string}`) {
 }
 
 /**
- * Hook to mint test tokens (only works on testnet with MockDEGEN) - using useSendTransaction
+ * Hook to mint test tokens (only works on testnet with MockDEGEN) - using Farcaster SDK directly
  */
 export function useMintTestTokens() {
-  const { data: hash, sendTransaction, isPending, error } = useSendTransaction();
+  const [hash, setHash] = useState<`0x${string}` | undefined>();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  const mintTokens = async (toAddress: Address, amount: string = "10000") => {
+  const mintTokens = useCallback(async (toAddress: Address, amount: string = "10000") => {
     console.log('[useTrollBet] mintTokens called', { toAddress, amount });
-    const amountWei = parseUnits(amount, 18);
-
-    const data = encodeFunctionData({
-      abi: ERC20_ABI,
-      functionName: 'mint',
-      args: [toAddress, amountWei],
-    });
-
-    console.log('[useTrollBet] calling sendTransaction for mint...', {
-      to: DEGEN_TOKEN_ADDRESS,
-      toAddress,
-      amountWei: amountWei.toString(),
-    });
+    setIsPending(true);
+    setError(null);
 
     try {
-      const result = sendTransaction({
+      const amountWei = parseUnits(amount, 18);
+
+      const data = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: 'mint',
+        args: [toAddress, amountWei],
+      });
+
+      console.log('[useTrollBet] calling Farcaster SDK for mint...', {
         to: DEGEN_TOKEN_ADDRESS,
-        data,
+        toAddress,
+        amountWei: amountWei.toString(),
+      });
+
+      const txHash = await sendViaFarcasterSDK({
+        to: DEGEN_TOKEN_ADDRESS,
+        data: data as Hex,
         chainId: CHAIN_ID,
       });
-      console.log('[useTrollBet] mint sendTransaction result:', result);
-      return result;
+      
+      setHash(txHash as `0x${string}`);
+      console.log('[useTrollBet] mint success:', txHash);
+      return txHash;
     } catch (err) {
-      console.error('[useTrollBet] mint sendTransaction error:', err);
+      console.error('[useTrollBet] mint error:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
       throw err;
+    } finally {
+      setIsPending(false);
     }
-  };
-
-  if (error) {
-    console.error('[useTrollBet] mint hook error:', error);
-  }
+  }, []);
 
   return {
     mintTokens,
