@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useUserBetETH, useMarketDataETH } from "~/hooks/useTrollBetETH";
 import type { Address } from "viem";
 import type { Market } from "~/lib/mockMarkets";
-import { TrendingUp, TrendingDown, Trophy } from "lucide-react";
+import { getTimeRemaining } from "~/lib/mockMarkets";
+import { TrendingUp, TrendingDown, Trophy, Clock } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 
@@ -46,6 +48,18 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
   const hasBetYes = yesAmount > 0;
   const hasBetNo = noAmount > 0;
 
+  // Time remaining state (updates every minute)
+  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(market.endTime));
+
+  useEffect(() => {
+    // Update time remaining every minute
+    const interval = setInterval(() => {
+      setTimeRemaining(getTimeRemaining(market.endTime));
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [market.endTime]);
+
   // Calculate potential winnings
   const yesPool = marketData ? parseFloat(marketData.yesPool) : market.yesPool;
   const noPool = marketData ? parseFloat(marketData.noPool) : market.noPool;
@@ -70,12 +84,20 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
         <h3 className="font-semibold text-sm text-gray-900 line-clamp-2 mb-1">
           {market.question}
         </h3>
-        <Badge
-          variant="outline"
-          className="text-xs px-2 py-0.5 border-[#9E75FF]/30 bg-[#9E75FF]/10 text-[#9E75FF]"
-        >
-          {market.category}
-        </Badge>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge
+            variant="outline"
+            className="text-xs px-2 py-0.5 border-[#9E75FF]/30 bg-[#9E75FF]/10 text-[#9E75FF]"
+          >
+            {market.category}
+          </Badge>
+          <div className="flex items-center gap-1 text-xs text-gray-600">
+            <Clock className="w-3 h-3" />
+            <span className={timeRemaining === 'Ended' ? 'text-red-600 font-semibold' : 'font-medium'}>
+              {timeRemaining}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* User's Bets */}
