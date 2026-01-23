@@ -421,7 +421,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       if (needsApproval) {
         console.log('[TrollBox] Needs approval, starting approve...');
         setPendingBetSide(side); // Save the side for after approval
-        setBetStatus({ type: 'info', message: 'Step 1/2: Approve tokens in your wallet...' });
+        setBetStatus({ type: 'info', message: '⚠️ Step 1/2: APPROVE tokens in your Farcaster wallet (check notification)' });
         
         try {
           console.log('[TrollBox] Calling approve...');
@@ -431,20 +431,35 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
         } catch (approveError) {
           console.error('[TrollBox] Approve error:', approveError);
           setPendingBetSide(null);
-          throw approveError;
+          // Check if user rejected
+          const errorMsg = approveError instanceof Error ? approveError.message : String(approveError);
+          if (errorMsg.includes('rejected') || errorMsg.includes('denied')) {
+            setBetStatus({ type: 'error', message: '❌ Transaction rejected. Please try again and approve in your wallet.' });
+          } else {
+            throw approveError;
+          }
+          setTimeout(() => setBetStatus(null), 5000);
+          return;
         }
         return; // Exit - the useEffect will continue after approval
       }
 
       // No approval needed - place the bet directly
       console.log('[TrollBox] Placing bet...', { marketIdNum, side, selectedAmount });
-      setBetStatus({ type: 'info', message: 'Confirm bet in your wallet...' });
+      setBetStatus({ type: 'info', message: '⚠️ CONFIRM bet in your Farcaster wallet (check notification)' });
       
       try {
         placeBet(marketIdNum, side === 'YES', selectedAmount);
         console.log('[TrollBox] Bet transaction sent');
       } catch (betError) {
         console.error('[TrollBox] Bet error:', betError);
+        // Check if user rejected
+        const errorMsg = betError instanceof Error ? betError.message : String(betError);
+        if (errorMsg.includes('rejected') || errorMsg.includes('denied')) {
+          setBetStatus({ type: 'error', message: '❌ Transaction rejected. Please try again and confirm in your wallet.' });
+          setTimeout(() => setBetStatus(null), 5000);
+          return;
+        }
         throw betError;
       }
     } catch (error) {
@@ -452,11 +467,11 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to place bet';
       setBetStatus({ 
         type: 'error', 
-        message: errorMessage
+        message: errorMessage.includes('rejected') ? '❌ Transaction rejected by user' : `❌ ${errorMessage}`
       });
       setSelectedSide(null);
       setPendingBetSide(null);
-      setTimeout(() => setBetStatus(null), 3000);
+      setTimeout(() => setBetStatus(null), 5000);
     }
   }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval, approve, address, connect]);
 
@@ -798,18 +813,18 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                       if (address) {
                         try {
                           console.log('[TrollBox] Starting mint...');
-                          setBetStatus({ type: 'info', message: 'Minting test tokens...' });
+                          setBetStatus({ type: 'info', message: '⚠️ CONFIRM mint in your Farcaster wallet (check notification)' });
                           mintTokens(address, "10000");
                           console.log('[TrollBox] Mint transaction sent');
-                          setBetStatus({ type: 'success', message: '🎉 10,000 test $DEGEN minting...' });
-                          setTimeout(() => {
-                            refetchBalance();
-                            setBetStatus(null);
-                          }, 3000);
                         } catch (mintError) {
                           console.error('[TrollBox] Mint error:', mintError);
-                          setBetStatus({ type: 'error', message: 'Failed to mint tokens' });
-                          setTimeout(() => setBetStatus(null), 3000);
+                          const errorMsg = mintError instanceof Error ? mintError.message : String(mintError);
+                          if (errorMsg.includes('rejected') || errorMsg.includes('denied')) {
+                            setBetStatus({ type: 'error', message: '❌ Mint rejected. Please try again and confirm in your wallet.' });
+                          } else {
+                            setBetStatus({ type: 'error', message: `❌ Failed to mint: ${errorMsg}` });
+                          }
+                          setTimeout(() => setBetStatus(null), 5000);
                         }
                       } else {
                         setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
