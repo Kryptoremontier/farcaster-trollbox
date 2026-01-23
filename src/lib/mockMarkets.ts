@@ -25,49 +25,48 @@ export interface Market {
 // 4. Match contractMarketId with actual on-chain IDs
 // 5. Get the exact endTime from the contract or deployment script output
 
-// ⚠️ IMPORTANT: These endTimes are FIXED timestamps from contract deployment
-// They will NOT change on page refresh, ensuring ended markets stay ended
-// When creating new markets, update these timestamps to match the contract
+// ⚠️ MAINNET MARKETS - BASE MAINNET
+// Deployed: 2026-01-23 21:04:25 UTC
+// Contract: 0x52ABabe88DE8799B374b11B91EC1b32989779e55
 
 export const MOCK_MARKETS: Market[] = [
-  // MAINNET-SAFE MARKETS (IDs 30-32) - Deployed at 2026-01-23T16:42:29Z
   {
-    id: 'market-30',
-    contractMarketId: 30,
+    id: 'market-0',
+    contractMarketId: 0,
     question: '🎲 Will BTC price end with digit 5 in next 10min?',
-    description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
+    description: '✅ SAFE - CoinGecko Oracle',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date('2026-01-23T16:42:29.000Z'), // FIXED timestamp
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
+    endTime: new Date('2026-01-23T20:04:25.000Z'), // FIXED timestamp
+    yesPool: 0, 
+    noPool: 0, 
+    totalBettors: 0, 
     status: 'active',
   },
   {
-    id: 'market-31',
-    contractMarketId: 31,
+    id: 'market-1',
+    contractMarketId: 1,
     question: '⚡ Will ETH gas be above 15 gwei in 10min?',
-    description: '✅ MAINNET-SAFE - Uses Etherscan API for real gas price',
+    description: '✅ SAFE - Etherscan Oracle',
     thumbnail: '⚡',
     category: 'crypto',
-    endTime: new Date('2026-01-23T16:42:29.000Z'), // FIXED timestamp
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
+    endTime: new Date('2026-01-23T20:04:25.000Z'), // FIXED timestamp
+    yesPool: 0, 
+    noPool: 0, 
+    totalBettors: 0, 
     status: 'active',
   },
   {
-    id: 'market-32',
-    contractMarketId: 32,
+    id: 'market-2',
+    contractMarketId: 2,
     question: '🎲 Will BTC price end with digit 3 in next 10min?',
-    description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
+    description: '✅ SAFE - CoinGecko Oracle',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date('2026-01-23T16:42:29.000Z'), // FIXED timestamp
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
+    endTime: new Date('2026-01-23T20:04:25.000Z'), // FIXED timestamp
+    yesPool: 0, 
+    noPool: 0, 
+    totalBettors: 0, 
     status: 'active',
   },
 ];

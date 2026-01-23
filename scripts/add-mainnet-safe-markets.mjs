@@ -123,7 +123,7 @@ async function addMarkets() {
 
         if (receipt.status === 'success') {
           console.log(`   ✅ Market #${marketId} created successfully!`);
-          console.log(`   🔗 https://sepolia.basescan.org/tx/${hash}\n`);
+          console.log(`   🔗 https://basescan.org/tx/${hash}\n`);
           successCount++;
         } else {
           console.log(`   ❌ Transaction failed!\n`);
