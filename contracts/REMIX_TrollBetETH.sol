@@ -116,7 +116,8 @@ contract TrollBetETH {
             noPool: 0,
             resolved: false,
             winningSide: false,
-            exists: true
+            exists: true,
+            cancelled: false
         });
 
         emit MarketCreated(marketId, question, endTime);
