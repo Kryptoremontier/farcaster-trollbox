@@ -30,10 +30,10 @@ const TEN_MINUTES_MS = 10 * 60 * 1000;
 const FRESH_END_TIME = new Date(Date.now() + TEN_MINUTES_MS);
 
 export const MOCK_MARKETS: Market[] = [
-  // MAINNET-SAFE MARKETS (IDs 24-26) - Deployed at ${new Date().toISOString()}
+  // MAINNET-SAFE MARKETS (IDs 27-29) - Deployed at 2026-01-23T16:26:10Z
   {
-    id: 'btc-digit-5-mainnet-safe-' + Date.now(),
-    contractMarketId: 24,
+    id: 'btc-digit-5-test-' + Date.now(),
+    contractMarketId: 27,
     question: '🎲 Will BTC price end with digit 5 in next 10min?',
     description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
     thumbnail: '🎲',
@@ -45,8 +45,8 @@ export const MOCK_MARKETS: Market[] = [
     status: 'active',
   },
   {
-    id: 'eth-gas-15-mainnet-safe-' + Date.now(),
-    contractMarketId: 25,
+    id: 'eth-gas-15-test-' + Date.now(),
+    contractMarketId: 28,
     question: '⚡ Will ETH gas be above 15 gwei in 10min?',
     description: '✅ MAINNET-SAFE - Uses Etherscan API for real gas price',
     thumbnail: '⚡',
@@ -58,8 +58,8 @@ export const MOCK_MARKETS: Market[] = [
     status: 'active',
   },
   {
-    id: 'btc-digit-3-mainnet-safe-' + Date.now(),
-    contractMarketId: 26,
+    id: 'btc-digit-3-test-' + Date.now(),
+    contractMarketId: 29,
     question: '🎲 Will BTC price end with digit 3 in next 10min?',
     description: '✅ MAINNET-SAFE - Uses CoinGecko API for real BTC price',
     thumbnail: '🎲',
