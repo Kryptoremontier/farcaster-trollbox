@@ -220,7 +220,9 @@ export function UserBetCard({
                 </span>
               </div>
               <Button
+                type="button"
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   console.log('[UserBetCard] Claim button clicked', { 
                     hasOnClaim: !!onClaim, 
@@ -239,7 +241,7 @@ export function UserBetCard({
                   }
                 }}
                 disabled={isClaimPending || isClaimConfirming}
-                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md"
+                className="w-full h-10 bg-green-600 hover:bg-green-700 text-white font-bold shadow-md active:scale-95 transition-transform"
               >
                 {isClaimPending || isClaimConfirming ? (
                   <>
