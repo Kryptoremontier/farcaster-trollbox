@@ -219,6 +219,7 @@ export function UserBetCard({
                   +{actualWinnings.toFixed(4)} ETH
                 </span>
               </div>
+              {onClaim && (
               <Button
                 type="button"
                 onClick={(e) => {
@@ -255,6 +256,7 @@ export function UserBetCard({
                   </>
                 )}
               </Button>
+              )}
             </div>
           )}
 
