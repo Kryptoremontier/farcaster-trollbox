@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { sdk } from "@farcaster/frame-sdk";
-import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy } from "lucide-react";
+import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy, UserCog } from "lucide-react";
 import { Button } from "~/components/ui/button-component";
 import { Badge } from "~/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -14,6 +14,7 @@ import { MarketCard } from "~/components/MarketCard";
 import { UserBetCard } from "~/components/UserBetCard";
 import { Portfolio } from "~/components/Portfolio";
 import { Leaderboard } from "~/components/Leaderboard";
+import { AdminPointsPanel } from "~/components/AdminPointsPanel";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import type { Address } from "viem";
 
@@ -48,8 +49,11 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   const [context, setContext] = useState<FarcasterContext | undefined>(undefined);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTab, setSelectedTab] = useState<"main" | "your-bets" | "trending" | "portfolio" | "leaderboard">("main");
+  const [selectedTab, setSelectedTab] = useState<"main" | "your-bets" | "trending" | "portfolio" | "leaderboard" | "admin">("main");
   const tabsRef = useRef<HTMLDivElement>(null);
+
+  // Check if user is admin
+  const isAdmin = context?.user?.username === "kryptoremontier";
 
   // Initialize Farcaster SDK
   useEffect(() => {
@@ -154,50 +158,68 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
             </div>
 
             {/* User / Wallet */}
-            {context?.user ? (
-              <div className="flex items-center gap-2">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-semibold text-gray-900 leading-tight">
-                    {context.user.displayName || context.user.username}
-                  </p>
-                  <p className="text-xs text-gray-500 leading-tight">
-                    @{context.user.username}
-                  </p>
-                </div>
-                <Avatar className="w-10 h-10 border-2 border-[#9E75FF]/20">
-                  {context.user.pfpUrl ? (
-                    <AvatarImage
-                      src={context.user.pfpUrl}
-                      alt={context.user.displayName || "User"}
-                    />
-                  ) : null}
-                  <AvatarFallback className="bg-[#9E75FF]/10 text-[#9E75FF] text-sm font-semibold">
-                    {(context.user.displayName || context.user.username || "U")
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            ) : (
-              <Button
-                variant={isConnected ? "outline" : "default"}
-                size="sm"
-                onClick={() => (isConnected ? disconnect() : handleConnect())}
-                className={cn(
-                  "gap-2 font-medium",
-                  isConnected
-                    ? "bg-white border-green-500 text-green-500 hover:bg-green-50"
-                    : "bg-[#9E75FF] hover:bg-[#8E65EF] text-white shadow-md"
-                )}
-              >
-                <Wallet className="w-4 h-4" />
-                {isConnected
-                  ? address
-                    ? `${address.slice(0, 5)}...${address.slice(-3)}`
-                    : "Connected"
-                  : "Connect"}
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Admin Icon - Only visible for admin */}
+              {isAdmin && (
+                <button
+                  onClick={() => setSelectedTab("admin")}
+                  className={cn(
+                    "p-2 rounded-full transition-all",
+                    selectedTab === "admin"
+                      ? "bg-[#9E75FF] text-white shadow-md"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  )}
+                  title="Admin Panel"
+                >
+                  <UserCog className="w-5 h-5" />
+                </button>
+              )}
+
+              {context?.user ? (
+                <>
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-semibold text-gray-900 leading-tight">
+                      {context.user.displayName || context.user.username}
+                    </p>
+                    <p className="text-xs text-gray-500 leading-tight">
+                      @{context.user.username}
+                    </p>
+                  </div>
+                  <Avatar className="w-10 h-10 border-2 border-[#9E75FF]/20">
+                    {context.user.pfpUrl ? (
+                      <AvatarImage
+                        src={context.user.pfpUrl}
+                        alt={context.user.displayName || "User"}
+                      />
+                    ) : null}
+                    <AvatarFallback className="bg-[#9E75FF]/10 text-[#9E75FF] text-sm font-semibold">
+                      {(context.user.displayName || context.user.username || "U")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </>
+              ) : (
+                <Button
+                  variant={isConnected ? "outline" : "default"}
+                  size="sm"
+                  onClick={() => (isConnected ? disconnect() : handleConnect())}
+                  className={cn(
+                    "gap-2 font-medium",
+                    isConnected
+                      ? "bg-white border-green-500 text-green-500 hover:bg-green-50"
+                      : "bg-[#9E75FF] hover:bg-[#8E65EF] text-white shadow-md"
+                  )}
+                >
+                  <Wallet className="w-4 h-4" />
+                  {isConnected
+                    ? address
+                      ? `${address.slice(0, 5)}...${address.slice(-3)}`
+                      : "Connected"
+                    : "Connect"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -441,6 +463,49 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
           {/* Leaderboard Tab */}
           {selectedTab === "leaderboard" && (
             <Leaderboard />
+          )}
+
+          {/* Admin Tab - Only accessible by admin */}
+          {selectedTab === "admin" && (
+            <>
+              {!isAdmin ? (
+                <div className="text-center py-16 space-y-3">
+                  <div className="text-6xl">🔒</div>
+                  <p className="text-gray-500 font-medium">Access Denied</p>
+                  <p className="text-sm text-gray-400">This area is restricted to administrators only</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">🔐 Admin Dashboard</h2>
+                      <p className="text-sm text-gray-500 mt-1">Welcome back, @{context?.user?.username}</p>
+                    </div>
+                  </div>
+
+                  {/* Admin Points Panel */}
+                  <div className="bg-gradient-to-br from-[#9E75FF]/5 to-white border-2 border-[#9E75FF]/20 rounded-xl p-6">
+                    <AdminPointsPanel userAddress={address as Address} />
+                  </div>
+
+                  {/* Additional Admin Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-gray-500 mb-2">Total Volume</h3>
+                      <p className="text-2xl font-bold text-[#9E75FF]">Coming Soon</p>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-gray-500 mb-2">Platform Fees</h3>
+                      <p className="text-2xl font-bold text-green-600">Coming Soon</p>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-gray-500 mb-2">Active Users</h3>
+                      <p className="text-2xl font-bold text-blue-600">Coming Soon</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

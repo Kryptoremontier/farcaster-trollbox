@@ -49,7 +49,6 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
     ? (noAmount / noPool) * totalPool * 0.97
     : 0;
   const maxPotentialWin = Math.max(yesPotentialWin, noPotentialWin);
-  const potentialProfit = maxPotentialWin - totalBet;
 
   return (
     <Card
@@ -114,9 +113,6 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
           <div className="text-right">
             <div className="text-sm font-bold text-yellow-700">
               {maxPotentialWin.toLocaleString(undefined, { maximumFractionDigits: 0 })} $DEGEN
-            </div>
-            <div className={`text-xs font-semibold ${potentialProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {potentialProfit > 0 ? '+' : ''}{potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
             </div>
           </div>
         </div>

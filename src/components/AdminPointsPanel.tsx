@@ -86,7 +86,14 @@ const MOCK_POINTS_DATA: UserPointsDisplay[] = [
   },
 ];
 
-export function AdminPointsPanel() {
+interface AdminPointsPanelProps {
+  userAddress?: string;
+}
+
+export function AdminPointsPanel({ userAddress }: AdminPointsPanelProps) {
+  // TODO: Use userAddress to fetch real user data from contract
+  console.log('Admin viewing data for:', userAddress);
+  
   const totalPoints = MOCK_POINTS_DATA.reduce((sum, user) => sum + user.totalPoints, 0);
   
   // Calculate airdrop allocations
@@ -96,7 +103,7 @@ export function AdminPointsPanel() {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="space-y-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
