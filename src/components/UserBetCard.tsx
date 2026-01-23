@@ -74,8 +74,9 @@ export function UserBetCard({
   const hasBetYes = yesAmount > 0;
   const hasBetNo = noAmount > 0;
 
-  // Grace period for verification (5 minutes after market ends)
-  const VERIFICATION_GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+  // Grace period for verification (15 minutes after market ends)
+  // This covers: market end + cron job interval (10 min) + tx execution time
+  const VERIFICATION_GRACE_PERIOD_MS = 15 * 60 * 1000; // 15 minutes
   const marketEnded = timeRemaining === 'Ended';
   const isInVerificationPeriod = marketEnded && marketData?.endTimeDate && 
     !marketData?.resolved &&
@@ -192,7 +193,7 @@ export function UserBetCard({
               <span className="text-sm font-semibold text-yellow-700">🔍 Verifying...</span>
             </div>
             <p className="text-xs text-yellow-600 mt-1">
-              Bot is checking the result. Please wait 1-5 minutes.
+              Bot runs every 10 minutes. Please wait 5-15 minutes.
             </p>
           </div>
         </div>

@@ -443,8 +443,9 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     ? (parseFloat(marketData?.yesPool || "0") / totalPool) * 100 
     : 50;
 
-  // Grace period for verification (5 minutes after market ends)
-  const VERIFICATION_GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+  // Grace period for verification (15 minutes after market ends)
+  // This covers: market end + cron job interval (10 min) + tx execution time
+  const VERIFICATION_GRACE_PERIOD_MS = 15 * 60 * 1000; // 15 minutes
   const marketEnded = timeRemaining.hours === 0 && timeRemaining.minutes === 0 && timeRemaining.seconds === 0;
   const isInVerificationPeriod = marketEnded && marketData?.endTimeDate && 
     !marketData?.resolved &&
@@ -694,7 +695,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                     <div>
                       <div className="font-semibold text-yellow-800">🔍 Verifying Result...</div>
                       <div className="text-sm text-yellow-700 mt-1">
-                        Our bot is checking external data sources to determine the winner. This usually takes 1-5 minutes.
+                        Our bot runs every 10 minutes to check results. This usually takes 5-15 minutes after market ends.
                       </div>
                     </div>
                   </div>
