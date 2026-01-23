@@ -25,45 +25,19 @@ export interface Market {
 // 4. Match contractMarketId with actual on-chain IDs
 // 5. Get the exact endTime from the contract or deployment script output
 
-// ⚠️ MAINNET MARKETS - BASE MAINNET
-// Deployed: 2026-01-23 21:04:25 UTC
+// ⚠️ MAINNET MARKET - BASE MAINNET
+// Deployed: 2026-01-23 21:07:20 UTC
 // Contract: 0x52ABabe88DE8799B374b11B91EC1b32989779e55
 
 export const MOCK_MARKETS: Market[] = [
   {
-    id: 'market-0',
-    contractMarketId: 0,
-    question: '🎲 Will BTC price end with digit 5 in next 10min?',
-    description: '✅ SAFE - CoinGecko Oracle',
+    id: 'market-3',
+    contractMarketId: 3,
+    question: '🎲 Will BTC price end with digit 5 in next 30min?',
+    description: '✅ MAINNET LAUNCH - CoinGecko Oracle',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date('2026-01-23T20:04:25.000Z'), // FIXED timestamp
-    yesPool: 0, 
-    noPool: 0, 
-    totalBettors: 0, 
-    status: 'active',
-  },
-  {
-    id: 'market-1',
-    contractMarketId: 1,
-    question: '⚡ Will ETH gas be above 15 gwei in 10min?',
-    description: '✅ SAFE - Etherscan Oracle',
-    thumbnail: '⚡',
-    category: 'crypto',
-    endTime: new Date('2026-01-23T20:04:25.000Z'), // FIXED timestamp
-    yesPool: 0, 
-    noPool: 0, 
-    totalBettors: 0, 
-    status: 'active',
-  },
-  {
-    id: 'market-2',
-    contractMarketId: 2,
-    question: '🎲 Will BTC price end with digit 3 in next 10min?',
-    description: '✅ SAFE - CoinGecko Oracle',
-    thumbnail: '🎲',
-    category: 'crypto',
-    endTime: new Date('2026-01-23T20:04:25.000Z'), // FIXED timestamp
+    endTime: new Date('2026-01-23T20:37:20.000Z'), // FIXED timestamp
     yesPool: 0, 
     noPool: 0, 
     totalBettors: 0, 
