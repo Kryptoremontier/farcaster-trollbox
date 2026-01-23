@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract, useAccount, useBalance } from 'wagmi';
 import { type Address, parseEther, formatEther } from 'viem';
 import { baseSepolia } from 'wagmi/chains';
@@ -37,6 +38,14 @@ const TrollBetETH_ABI = [
       { name: 'resolved', type: 'bool' },
       { name: 'winningSide', type: 'bool' }
     ],
+    stateMutability: 'view'
+  },
+  // marketCount
+  {
+    type: 'function',
+    name: 'marketCount',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view'
   },
   // getUserBet
@@ -305,6 +314,75 @@ export function useTotalPoolETH(marketId: number) {
     totalPool,
     isLoading,
     error,
+  };
+}
+
+/**
+ * Hook to get market count from contract
+ */
+export function useMarketCount() {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: TROLLBET_ETH_ADDRESS,
+    abi: TrollBetETH_ABI,
+    functionName: 'marketCount',
+    chainId: baseSepolia.id,
+  });
+
+  return {
+    marketCount: data ? Number(data) : 0,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+/**
+ * Hook to get all markets from contract (dynamic loading)
+ */
+export function useAllMarkets() {
+  const { marketCount, isLoading: isLoadingCount } = useMarketCount();
+  const [markets, setMarkets] = useState<Array<{
+    id: number;
+    question: string;
+    endTime: Date;
+    yesPool: string;
+    noPool: string;
+    resolved: boolean;
+    winningSide: boolean;
+  }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadMarkets() {
+      if (marketCount === 0 || isLoadingCount) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      const loadedMarkets = [];
+
+      for (let i = 0; i < marketCount; i++) {
+        try {
+          // This will be handled by individual useMarketDataETH calls
+          // For now, just return the IDs
+          loadedMarkets.push({ id: i });
+        } catch (error) {
+          console.error(`Error loading market ${i}:`, error);
+        }
+      }
+
+      setMarkets(loadedMarkets as any);
+      setIsLoading(false);
+    }
+
+    loadMarkets();
+  }, [marketCount, isLoadingCount]);
+
+  return {
+    markets,
+    marketCount,
+    isLoading: isLoading || isLoadingCount,
   };
 }
 

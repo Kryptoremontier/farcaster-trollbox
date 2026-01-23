@@ -45,6 +45,9 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
     /// @notice Accumulated protocol fees ready for withdrawal
     uint256 public accumulatedFees;
 
+    /// @notice Emergency pause state
+    bool public paused;
+
     /// @notice Market ID => Market data
     mapping(uint256 => Market) public markets;
 
@@ -83,6 +86,9 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
         uint256 amount
     );
 
+    event Paused(address indexed by);
+    event Unpaused(address indexed by);
+
     // ============ Errors ============
 
     error MarketDoesNotExist();
@@ -97,6 +103,14 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
     error NotAWinner();
     error NoFeesToWithdraw();
     error TransferFailed();
+    error ContractPaused();
+
+    // ============ Modifiers ============
+
+    modifier whenNotPaused() {
+        if (paused) revert ContractPaused();
+        _;
+    }
 
     // ============ Constructor ============
 
@@ -185,7 +199,7 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
     function placeBet(
         uint256 marketId,
         bool side
-    ) external payable nonReentrant {
+    ) external payable nonReentrant whenNotPaused {
         Market storage market = markets[marketId];
         
         if (!market.exists) revert MarketDoesNotExist();
@@ -357,6 +371,38 @@ contract TrollBetETH is Ownable, ReentrancyGuard {
         Market storage market = markets[marketId];
         if (!market.exists) revert MarketDoesNotExist();
         return market.yesPool + market.noPool;
+    }
+
+    // ============ Emergency Functions ============
+
+    /**
+     * @notice Pause the contract (emergency stop)
+     * @dev Only owner can pause. Prevents new bets but allows claims.
+     */
+    function pause() external onlyOwner {
+        paused = true;
+        emit Paused(msg.sender);
+    }
+
+    /**
+     * @notice Unpause the contract
+     * @dev Only owner can unpause.
+     */
+    function unpause() external onlyOwner {
+        paused = false;
+        emit Unpaused(msg.sender);
+    }
+
+    /**
+     * @notice Emergency withdraw all ETH from contract
+     * @dev Only callable when paused. Last resort if contract is compromised.
+     * @dev Users should be refunded manually off-chain if this is used.
+     */
+    function emergencyWithdraw() external onlyOwner {
+        if (!paused) revert ContractPaused(); // Must be paused first
+        uint256 balance = address(this).balance;
+        (bool sent, ) = owner().call{value: balance}("");
+        if (!sent) revert TransferFailed();
     }
 
     /**
