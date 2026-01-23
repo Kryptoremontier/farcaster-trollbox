@@ -16,6 +16,7 @@ async function sendViaFarcasterSDK(params: {
   to: Address;
   data: Hex;
   chainId: number;
+  from?: Address;
 }): Promise<string> {
   console.log('[sendViaFarcasterSDK] Getting provider...');
   
@@ -26,13 +27,20 @@ async function sendViaFarcasterSDK(params: {
   
   console.log('[sendViaFarcasterSDK] Provider obtained, sending transaction...', params);
   
-  // Use eth_sendTransaction directly
+  // Get current account from provider
+  const accounts = await provider.request({ method: 'eth_accounts' }) as string[];
+  const from = params.from || (accounts[0] as Address);
+  
+  console.log('[sendViaFarcasterSDK] Using account:', from);
+  
+  // Use eth_sendTransaction directly with all required fields
   const txHash = await provider.request({
     method: 'eth_sendTransaction',
     params: [{
+      from,
       to: params.to,
       data: params.data,
-      // Farcaster wallet should handle gas estimation
+      // Let wallet estimate gas
     }],
   }) as string;
   
@@ -73,13 +81,13 @@ export const DEGEN_TOKEN_ADDRESS: Address = '0xdDB5C1a86762068485baA1B481FeBeB17
 /**
  * Hook to place a bet on a market - using Farcaster SDK directly
  */
-export function usePlaceBet() {
+export function usePlaceBet(userAddress?: Address) {
   const [hash, setHash] = useState<`0x${string}` | undefined>();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const placeBet = useCallback(async (marketId: number, side: boolean, amount: string) => {
-    console.log('[useTrollBet] placeBet called', { marketId, side, amount });
+    console.log('[useTrollBet] placeBet called', { marketId, side, amount, userAddress });
     setIsPending(true);
     setError(null);
     
@@ -98,12 +106,14 @@ export function usePlaceBet() {
         marketId,
         side,
         amountWei: amountWei.toString(),
+        from: userAddress,
       });
 
       const txHash = await sendViaFarcasterSDK({
         to: TROLLBET_CONTRACT_ADDRESS,
         data: data as Hex,
         chainId: CHAIN_ID,
+        from: userAddress,
       });
       
       setHash(txHash as `0x${string}`);
@@ -116,7 +126,7 @@ export function usePlaceBet() {
     } finally {
       setIsPending(false);
     }
-  }, []);
+  }, [userAddress]);
 
   return {
     placeBet,
@@ -175,7 +185,7 @@ export function useClaimWinnings() {
 /**
  * Hook to approve $DEGEN token spending (unlimited approval) - using Farcaster SDK directly
  */
-export function useApproveToken() {
+export function useApproveToken(userAddress?: Address) {
   const [hash, setHash] = useState<`0x${string}` | undefined>();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -184,7 +194,7 @@ export function useApproveToken() {
   const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
   const approve = useCallback(async (_amount?: string) => {
-    console.log('[useTrollBet] approve called');
+    console.log('[useTrollBet] approve called', { userAddress });
     setIsPending(true);
     setError(null);
 
@@ -199,12 +209,14 @@ export function useApproveToken() {
       console.log('[useTrollBet] calling Farcaster SDK for approve...', {
         to: DEGEN_TOKEN_ADDRESS,
         spender: TROLLBET_CONTRACT_ADDRESS,
+        from: userAddress,
       });
 
       const txHash = await sendViaFarcasterSDK({
         to: DEGEN_TOKEN_ADDRESS,
         data: data as Hex,
         chainId: CHAIN_ID,
+        from: userAddress,
       });
       
       setHash(txHash as `0x${string}`);
@@ -217,7 +229,7 @@ export function useApproveToken() {
     } finally {
       setIsPending(false);
     }
-  }, []);
+  }, [userAddress]);
 
   return {
     approve,
@@ -417,13 +429,13 @@ export function useTransactionStatus(hash?: `0x${string}`) {
 /**
  * Hook to mint test tokens (only works on testnet with MockDEGEN) - using Farcaster SDK directly
  */
-export function useMintTestTokens() {
+export function useMintTestTokens(userAddress?: Address) {
   const [hash, setHash] = useState<`0x${string}` | undefined>();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const mintTokens = useCallback(async (toAddress: Address, amount: string = "10000") => {
-    console.log('[useTrollBet] mintTokens called', { toAddress, amount });
+    console.log('[useTrollBet] mintTokens called', { toAddress, amount, userAddress });
     setIsPending(true);
     setError(null);
 
@@ -440,12 +452,14 @@ export function useMintTestTokens() {
         to: DEGEN_TOKEN_ADDRESS,
         toAddress,
         amountWei: amountWei.toString(),
+        from: userAddress,
       });
 
       const txHash = await sendViaFarcasterSDK({
         to: DEGEN_TOKEN_ADDRESS,
         data: data as Hex,
         chainId: CHAIN_ID,
+        from: userAddress,
       });
       
       setHash(txHash as `0x${string}`);
@@ -458,7 +472,7 @@ export function useMintTestTokens() {
     } finally {
       setIsPending(false);
     }
-  }, []);
+  }, [userAddress]);
 
   return {
     mintTokens,
