@@ -16,6 +16,7 @@ import { Portfolio } from "~/components/Portfolio";
 import { Leaderboard } from "~/components/Leaderboard";
 import { AdminPointsPanel } from "~/components/AdminPointsPanel";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
+import { useClaimWinningsETH, useTransactionStatusETH } from "~/hooks/useTrollBetETH";
 import type { Address } from "viem";
 
 interface FarcasterUser {
@@ -45,6 +46,8 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
+  const { claimWinnings: claimWinningsHook, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH();
+  const { isConfirming: isClaimConfirming } = useTransactionStatusETH(claimHash);
 
   const [context, setContext] = useState<FarcasterContext | undefined>(undefined);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
@@ -55,6 +58,21 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
 
   // Check if user is admin
   const isAdmin = context?.user?.username === "kryptoremontier";
+
+  // Wrapper for claimWinnings
+  const claimWinnings = useCallback((marketId: number) => {
+    console.log('[TrollBoxHub] claimWinnings called with marketId:', marketId);
+    if (!isConnected || !address) {
+      console.error('[TrollBoxHub] Cannot claim: not connected');
+      return;
+    }
+    try {
+      claimWinningsHook(marketId);
+      console.log('[TrollBoxHub] claimWinningsHook called successfully');
+    } catch (error) {
+      console.error('[TrollBoxHub] Error calling claimWinningsHook:', error);
+    }
+  }, [claimWinningsHook, isConnected, address]);
 
   // Load Farcaster context and auto-connect wallet
   useEffect(() => {
@@ -506,7 +524,9 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
                         market={market}
                         userAddress={address as Address}
                         onSelect={onMarketSelect}
-                        onClaim={null}
+                        onClaim={claimWinnings}
+                        isClaimPending={isClaimPending}
+                        isClaimConfirming={isClaimConfirming}
                       />
                     ))}
                   </div>
