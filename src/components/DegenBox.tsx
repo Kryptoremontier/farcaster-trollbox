@@ -21,7 +21,8 @@ import {
   useTransactionStatus,
   useApproveToken,
   useDegenBalance,
-  useDegenAllowance
+  useDegenAllowance,
+  useMintTestTokens
 } from "~/hooks/useTrollBet"
 import type { Address } from "viem"
 
@@ -142,11 +143,13 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const { placeBet, hash: betHash, isPending: isBetPending } = usePlaceBet()
   const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinnings()
   const { approve, hash: approveHash, isPending: isApprovePending } = useApproveToken()
+  const { mintTokens, hash: mintHash, isPending: isMintPending } = useMintTestTokens()
   
   // Transaction status tracking
   const { isConfirming: isBetConfirming, isConfirmed: isBetConfirmed } = useTransactionStatus(betHash)
   const { isConfirming: isClaimConfirming, isConfirmed: isClaimConfirmed } = useTransactionStatus(claimHash)
   const { isConfirming: isApproveConfirming, isConfirmed: isApproveConfirmed } = useTransactionStatus(approveHash)
+  const { isConfirming: isMintConfirming, isConfirmed: isMintConfirmed } = useTransactionStatus(mintHash)
   
   // UI state
   const [betStatus, setBetStatus] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null)
@@ -324,6 +327,18 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       setTimeout(() => setBetStatus(null), 3000);
     }
   }, [isApproveConfirmed, refetchAllowance]);
+
+  // Handle mint confirmation
+  useEffect(() => {
+    if (isMintConfirmed) {
+      refetchBalance();
+      setBetStatus({
+        type: 'success',
+        message: `🎉 Test tokens minted successfully!`
+      });
+      setTimeout(() => setBetStatus(null), 3000);
+    }
+  }, [isMintConfirmed, refetchBalance]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
@@ -695,6 +710,33 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                   <span>Your Bets: {userBet ? formatNumber(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)) : '0'} $DEGEN</span>
                   <span className="text-green-600">Available: {isConnected ? formatNumber(parseFloat(degenBalance)) : '0'}</span>
                 </div>
+                {/* Get Test Tokens Button (Testnet only) */}
+                {isConnected && parseFloat(degenBalance) < 100 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (address) {
+                        try {
+                          setBetStatus({ type: 'info', message: 'Minting test tokens...' });
+                          await mintTokens(address, "10000");
+                          setBetStatus({ type: 'success', message: '🎉 10,000 test $DEGEN minted!' });
+                          setTimeout(() => {
+                            refetchBalance();
+                            setBetStatus(null);
+                          }, 3000);
+                        } catch (error) {
+                          setBetStatus({ type: 'error', message: 'Failed to mint tokens' });
+                          setTimeout(() => setBetStatus(null), 3000);
+                        }
+                      }
+                    }}
+                    disabled={isMintPending || isMintConfirming}
+                    className="w-full mt-2 text-xs bg-yellow-50 border-yellow-400 text-yellow-700 hover:bg-yellow-100"
+                  >
+                    {isMintPending || isMintConfirming ? '⏳ Minting...' : '🪙 Get 10,000 Test $DEGEN (Testnet)'}
+                  </Button>
+                )}
               </div>
 
               {/* Amount Selection */}

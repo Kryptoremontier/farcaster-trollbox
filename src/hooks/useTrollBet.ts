@@ -282,3 +282,42 @@ export function useTransactionStatus(hash?: `0x${string}`) {
     isError,
   };
 }
+
+/**
+ * Hook to mint test tokens (only works on testnet with MockDEGEN)
+ */
+export function useMintTestTokens() {
+  const { data: hash, writeContract, isPending, error } = useWriteContract();
+
+  const mintTokens = async (toAddress: Address, amount: string = "10000") => {
+    const amountWei = parseUnits(amount, 18);
+
+    // MockDEGEN mint ABI
+    const mintABI = [
+      {
+        type: 'function',
+        name: 'mint',
+        inputs: [
+          { name: 'to', type: 'address' },
+          { name: 'amount', type: 'uint256' }
+        ],
+        outputs: [],
+        stateMutability: 'nonpayable'
+      }
+    ] as const;
+
+    return writeContract({
+      address: DEGEN_TOKEN_ADDRESS,
+      abi: mintABI,
+      functionName: 'mint',
+      args: [toAddress, amountWei],
+    });
+  };
+
+  return {
+    mintTokens,
+    hash,
+    isPending,
+    error,
+  };
+}
