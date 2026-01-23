@@ -47,12 +47,13 @@
 
 ✅ **ETH Gas Price** (Etherscan API)
 ```
-"Will ETH gas be above 30 gwei at 18:00 UTC?"
+"Will ETH gas be above 30 gwei at time of resolution?"
 ```
-- **Oracle**: Etherscan Free API
+- **Oracle**: Etherscan Free API (current price)
 - **Weryfikacja**: Automatyczna (Cron Job)
-- **Ryzyko manipulacji**: NISKIE
+- **Ryzyko manipulacji**: NISKIE (gas zmienia się wolno)
 - **Czas rozstrzygnięcia**: 5-15 min po zakończeniu
+- **⚠️ UWAGA**: Cron pobiera cenę "teraz", nie "o 18:00". Dla precyzji użyj CoinGecko Pro (historical data) lub pytaj o "at time of resolution"
 
 ✅ **BTC/ETH Ratio** (CoinGecko API)
 ```
@@ -63,6 +64,41 @@
 - **Ryzyko manipulacji**: NISKIE
 - **Czas rozstrzygnięcia**: 5-15 min po zakończeniu
 
+#### **⚠️ ORACLE "SHADOW" PROBLEM (KRYTYCZNE!):**
+
+**Problem:** Cron Job uruchamia się co 10 minut. Jeśli rynek kończy się o 18:00:00, Cron może ruszyć dopiero o 18:05:00 lub 18:10:00.
+
+**Konsekwencje:**
+- Cena BTC/ETH zmienia się co sekundę
+- Gas price zmienia się co kilka sekund
+- Użytkownicy mogą czuć się oszukani jeśli wynik "zmienił się" w tych 5-10 minutach
+
+**ROZWIĄZANIA:**
+
+✅ **Opcja 1: "At time of resolution"** (ZALECANE na start)
+```
+"Will BTC price end with digit 5 at time of resolution?"
+```
+- Jasne: cena jest sprawdzana gdy Cron ruszy (0-10 min po końcu)
+- Użytkownicy wiedzą że to nie jest "dokładnie o 18:00"
+- Digit końcówki zmienia się rzadko, więc 10 min delay = OK
+
+✅ **Opcja 2: Digit Markets** (NAJLEPSZE na start)
+```
+"Will BTC price end with digit 5 in next 6 hours?"
+```
+- Ostatnia cyfra ceny zmienia się wolniej niż pełna cena
+- 10 min delay ma mniejszy wpływ
+- Trudniejsze do manipulacji
+
+❌ **Opcja 3: Historical Data** (wymaga CoinGecko Pro, $400/miesiąc)
+```
+"Will BTC price be above $100k at exactly 18:00 UTC?"
+```
+- Możesz pobrać cenę z dokładnego timestampu
+- Ale wymaga płatnego API
+- Na start: overkill
+
 #### **🚫 NIEBEZPIECZNE Typy Rynków (NIE UŻYWAJ NA START):**
 
 ❌ **Whale Movements** - wymaga płatnego API Etherscan/Dune
@@ -70,17 +106,19 @@
 ❌ **"Will X happen?"** - zbyt ogólne, łatwe do manipulacji
 ❌ **Rynki < 1 godzina** - za mało czasu na weryfikację
 ❌ **Rynki > 7 dni** - użytkownicy zapomną, niskie zaangażowanie
+❌ **"At exactly HH:MM UTC"** - Cron ma 10min delay, użytkownicy mogą czuć się oszukani
 
 #### **📝 TEMPLATE dla Bezpiecznych Rynków:**
 
 ```javascript
 // DOBRE - Konkretne, weryfikowalne, niemożliwe do manipulacji
 {
-  question: "🎲 Will BTC price end with digit 7 at 18:00 UTC today?",
+  question: "🎲 Will BTC price end with digit 7 at time of resolution?",
   endTime: "2026-01-24T18:00:00.000Z", // FIXED timestamp
   category: "crypto",
-  oracle: "CoinGecko",
-  verificationMethod: "Automatic (Cron Job every 10 min)"
+  oracle: "CoinGecko (current price when Cron runs)",
+  verificationMethod: "Automatic (Cron Job every 10 min)",
+  note: "⚠️ Price checked 0-10 min after market ends, not exactly at endTime"
 }
 
 // ZŁE - Zbyt ogólne, subiektywne
@@ -266,14 +304,14 @@ export const MOCK_MARKETS: Market[] = [
 // markets-mainnet-launch.mjs
 const LAUNCH_MARKETS = [
   {
-    question: "🎲 Will BTC price end with digit 5 at 18:00 UTC today?",
+    question: "🎲 Will BTC price end with digit 5 at time of resolution?",
     endTime: "2026-01-24T18:00:00.000Z", // 6h od teraz
-    note: "CoinGecko Oracle - Automatic"
+    note: "CoinGecko Oracle - Automatic (price checked when Cron runs, 0-10min after end)"
   },
   {
-    question: "⚡ Will ETH gas be above 30 gwei at 20:00 UTC?",
+    question: "⚡ Will ETH gas be above 30 gwei at time of resolution?",
     endTime: "2026-01-24T20:00:00.000Z", // 8h od teraz
-    note: "Etherscan Oracle - Automatic"
+    note: "Etherscan Oracle - Automatic (gas checked when Cron runs, 0-10min after end)"
   },
   {
     question: "🎲 Will BTC price end with digit 3 at midnight UTC?",
