@@ -363,7 +363,10 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   // handleApprove removed - now handled automatically in handlePlaceBet
 
   const handlePlaceBet = useCallback(async (side: 'YES' | 'NO') => {
+    console.log('[TrollBox] handlePlaceBet called', { side, isConnected, address, needsApproval, selectedAmount });
+    
     if (!isConnected) {
+      console.log('[TrollBox] Not connected, showing error');
       setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
       setTimeout(() => setBetStatus(null), 3000);
       return;
@@ -374,8 +377,17 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
 
       // Auto-approve if needed
       if (needsApproval) {
+        console.log('[TrollBox] Needs approval, starting approve...');
         setBetStatus({ type: 'info', message: 'Step 1/2: Approving tokens...' });
-        await approve(selectedAmount);
+        
+        try {
+          console.log('[TrollBox] Calling approve...');
+          const approveResult = await approve(selectedAmount);
+          console.log('[TrollBox] Approve result:', approveResult);
+        } catch (approveError) {
+          console.error('[TrollBox] Approve error:', approveError);
+          throw approveError;
+        }
         
         // Wait for approval to be confirmed
         setBetStatus({ type: 'info', message: 'Waiting for approval confirmation...' });
@@ -385,10 +397,18 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       }
 
       // Place the bet
+      console.log('[TrollBox] Placing bet...', { marketIdNum, side, selectedAmount });
       setBetStatus({ type: 'info', message: needsApproval ? 'Step 2/2: Placing bet...' : 'Placing bet...' });
-      await placeBet(marketIdNum, side === 'YES', selectedAmount);
+      
+      try {
+        const betResult = await placeBet(marketIdNum, side === 'YES', selectedAmount);
+        console.log('[TrollBox] Bet result:', betResult);
+      } catch (betError) {
+        console.error('[TrollBox] Bet error:', betError);
+        throw betError;
+      }
     } catch (error) {
-      console.error('Bet error:', error);
+      console.error('[TrollBox] Full error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to place bet';
       setBetStatus({ 
         type: 'error', 
@@ -397,7 +417,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       setSelectedSide(null);
       setTimeout(() => setBetStatus(null), 3000);
     }
-  }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval, approve]);
+  }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval, approve, address]);
 
   const handleClaimWinnings = useCallback(async () => {
     if (!isConnected) {
@@ -716,16 +736,20 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                     variant="outline"
                     size="sm"
                     onClick={async () => {
+                      console.log('[TrollBox] Mint button clicked', { address });
                       if (address) {
                         try {
+                          console.log('[TrollBox] Starting mint...');
                           setBetStatus({ type: 'info', message: 'Minting test tokens...' });
-                          await mintTokens(address, "10000");
+                          const mintResult = await mintTokens(address, "10000");
+                          console.log('[TrollBox] Mint result:', mintResult);
                           setBetStatus({ type: 'success', message: '🎉 10,000 test $DEGEN minted!' });
                           setTimeout(() => {
                             refetchBalance();
                             setBetStatus(null);
                           }, 3000);
-                        } catch {
+                        } catch (mintError) {
+                          console.error('[TrollBox] Mint error:', mintError);
                           setBetStatus({ type: 'error', message: 'Failed to mint tokens' });
                           setTimeout(() => setBetStatus(null), 3000);
                         }

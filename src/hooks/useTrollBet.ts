@@ -15,16 +15,36 @@ export function usePlaceBet() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
   const placeBet = async (marketId: number, side: boolean, amount: string) => {
+    console.log('[useTrollBet] placeBet called', { marketId, side, amount });
     // Convert amount to wei (18 decimals for $DEGEN)
     const amountWei = parseUnits(amount, 18);
 
-    return writeContract({
+    console.log('[useTrollBet] calling writeContract for placeBet...', {
       address: TROLLBET_CONTRACT_ADDRESS,
-      abi: TrollBetABI,
-      functionName: 'placeBet',
-      args: [BigInt(marketId), side, amountWei],
+      marketId,
+      side,
+      amountWei: amountWei.toString(),
     });
+
+    try {
+      const result = await writeContract({
+        address: TROLLBET_CONTRACT_ADDRESS,
+        abi: TrollBetABI,
+        functionName: 'placeBet',
+        args: [BigInt(marketId), side, amountWei],
+      });
+      console.log('[useTrollBet] placeBet writeContract result:', result);
+      return result;
+    } catch (err) {
+      console.error('[useTrollBet] placeBet writeContract error:', err);
+      throw err;
+    }
   };
+
+  // Log error if it changes
+  if (error) {
+    console.error('[useTrollBet] placeBet hook error:', error);
+  }
 
   return {
     placeBet,
@@ -67,6 +87,7 @@ export function useApproveToken() {
   const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
   const approve = async (_amount?: string) => {
+    console.log('[useTrollBet] approve called');
     // Always approve unlimited for better UX - user only needs to approve once
     // The _amount parameter is kept for backwards compatibility but ignored
 
@@ -84,13 +105,30 @@ export function useApproveToken() {
       }
     ] as const;
 
-    return writeContract({
+    console.log('[useTrollBet] calling writeContract for approve...', {
       address: DEGEN_TOKEN_ADDRESS,
-      abi: erc20ABI,
-      functionName: 'approve',
-      args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
+      spender: TROLLBET_CONTRACT_ADDRESS,
     });
+
+    try {
+      const result = await writeContract({
+        address: DEGEN_TOKEN_ADDRESS,
+        abi: erc20ABI,
+        functionName: 'approve',
+        args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
+      });
+      console.log('[useTrollBet] writeContract result:', result);
+      return result;
+    } catch (err) {
+      console.error('[useTrollBet] writeContract error:', err);
+      throw err;
+    }
   };
+
+  // Log error if it changes
+  if (error) {
+    console.error('[useTrollBet] approve hook error:', error);
+  }
 
   return {
     approve,
@@ -294,6 +332,7 @@ export function useMintTestTokens() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
   const mintTokens = async (toAddress: Address, amount: string = "10000") => {
+    console.log('[useTrollBet] mintTokens called', { toAddress, amount });
     const amountWei = parseUnits(amount, 18);
 
     // MockDEGEN mint ABI
@@ -310,13 +349,31 @@ export function useMintTestTokens() {
       }
     ] as const;
 
-    return writeContract({
+    console.log('[useTrollBet] calling writeContract for mint...', {
       address: DEGEN_TOKEN_ADDRESS,
-      abi: mintABI,
-      functionName: 'mint',
-      args: [toAddress, amountWei],
+      toAddress,
+      amountWei: amountWei.toString(),
     });
+
+    try {
+      const result = await writeContract({
+        address: DEGEN_TOKEN_ADDRESS,
+        abi: mintABI,
+        functionName: 'mint',
+        args: [toAddress, amountWei],
+      });
+      console.log('[useTrollBet] mint writeContract result:', result);
+      return result;
+    } catch (err) {
+      console.error('[useTrollBet] mint writeContract error:', err);
+      throw err;
+    }
   };
+
+  // Log error if it changes
+  if (error) {
+    console.error('[useTrollBet] mint hook error:', error);
+  }
 
   return {
     mintTokens,
