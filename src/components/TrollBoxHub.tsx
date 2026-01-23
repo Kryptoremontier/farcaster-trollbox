@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import sdk from "@farcaster/miniapp-sdk";
-import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy, UserCog } from "lucide-react";
+import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, Trophy, UserCog, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "~/components/ui/button-component";
 import { Badge } from "~/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -50,6 +50,7 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<"main" | "your-bets" | "trending" | "portfolio" | "leaderboard" | "admin">("main");
+  const [showEndedMarkets, setShowEndedMarkets] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   // Check if user is admin
@@ -95,14 +96,45 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
     connect({ connector: config.connectors[0] });
   }, [connect]);
 
-  // Filter markets for main/search
-  const filteredMarkets = MOCK_MARKETS.filter((market) => {
+  // Helper to check if market is ended
+  const isMarketEnded = useCallback((market: typeof MOCK_MARKETS[0]) => {
+    return market.endTime < new Date();
+  }, []);
+
+  // Separate active and ended markets
+  const { activeMarkets, endedMarkets } = useMemo(() => {
+    const active: typeof MOCK_MARKETS = [];
+    const ended: typeof MOCK_MARKETS = [];
+    
+    MOCK_MARKETS.forEach(market => {
+      if (isMarketEnded(market)) {
+        ended.push(market);
+      } else {
+        active.push(market);
+      }
+    });
+    
+    return { activeMarkets: active, endedMarkets: ended };
+  }, [isMarketEnded]);
+
+  // Filter active markets for main/search
+  const filteredActiveMarkets = activeMarkets.filter((market) => {
     const matchesSearch =
       searchQuery === "" ||
       market.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       market.description.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesSearch && market.status === "active";
+  });
+
+  // Filter ended markets for main/search
+  const filteredEndedMarkets = endedMarkets.filter((market) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      market.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      market.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesSearch;
   });
 
   // Top 10 markets by total pool for trending tab
@@ -377,10 +409,10 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
       {/* Content Area */}
       <div className="flex-1 py-6 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Main Tab - Same as Trending */}
+          {/* Main Tab - Active + Ended Markets */}
           {selectedTab === "main" && (
             <>
-              {filteredMarkets.length === 0 ? (
+              {filteredActiveMarkets.length === 0 && filteredEndedMarkets.length === 0 ? (
                 <div className="text-center py-16 space-y-3">
                   <div className="text-6xl">🤷</div>
                   <p className="text-gray-500 font-medium">No markets found</p>
@@ -388,23 +420,61 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-600">
-                      <span className="font-semibold text-gray-900">
-                        {filteredMarkets.length}
-                      </span>{" "}
-                      active {filteredMarkets.length === 1 ? "market" : "markets"}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredMarkets.map((market) => (
-                      <MarketCard
-                        key={market.id}
-                        market={market}
-                        onSelect={onMarketSelect}
-                      />
-                    ))}
-                  </div>
+                  {/* Active Markets */}
+                  {filteredActiveMarkets.length > 0 && (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-semibold text-gray-900">
+                            {filteredActiveMarkets.length}
+                          </span>{" "}
+                          active {filteredActiveMarkets.length === 1 ? "market" : "markets"}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                        {filteredActiveMarkets.map((market) => (
+                          <MarketCard
+                            key={market.id}
+                            market={market}
+                            onSelect={onMarketSelect}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Ended Markets - Collapsed */}
+                  {filteredEndedMarkets.length > 0 && (
+                    <div className="mt-8">
+                      <button
+                        onClick={() => setShowEndedMarkets(!showEndedMarkets)}
+                        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-gray-700">
+                            Ended Markets ({filteredEndedMarkets.length})
+                          </span>
+                        </div>
+                        {showEndedMarkets ? (
+                          <ChevronUp className="w-5 h-5 text-gray-600" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-600" />
+                        )}
+                      </button>
+
+                      {showEndedMarkets && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+                          {filteredEndedMarkets.map((market) => (
+                            <MarketCard
+                              key={market.id}
+                              market={market}
+                              onSelect={onMarketSelect}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </>

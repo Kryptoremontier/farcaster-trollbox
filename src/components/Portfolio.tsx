@@ -5,9 +5,9 @@ import { useETHBalance, useUserBetETH, useClaimWinningsETH, useMarketDataETH, us
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
-import { Wallet, TrendingUp, Trophy, Activity } from "lucide-react";
+import { Wallet, TrendingUp, Trophy, Activity, ChevronDown, ChevronUp } from "lucide-react";
 import { Card } from "~/components/ui/card";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface PortfolioProps {
   onMarketSelect: (marketId: string) => void;
@@ -128,6 +128,7 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
   const { balance: ethBalance } = useETHBalance(address as Address | undefined);
   const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH();
   const { isConfirming: isClaimConfirming } = useTransactionStatusETH(claimHash);
+  const [showEndedBets, setShowEndedBets] = useState(false);
   const [stats, setStats] = useState({ 
     activeBets: 0, 
     totalWagered: 0,
@@ -145,6 +146,25 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
   }) => {
     setStats(newStats);
   }, []);
+
+  // Prepare markets data (before any early returns)
+  const marketsWithBets = MOCK_MARKETS.filter(m => m.contractMarketId !== undefined);
+
+  // Separate active and ended markets
+  const { activeMarkets, endedMarkets } = useMemo(() => {
+    const active: typeof MOCK_MARKETS = [];
+    const ended: typeof MOCK_MARKETS = [];
+    
+    marketsWithBets.forEach(market => {
+      if (market.endTime < new Date()) {
+        ended.push(market);
+      } else {
+        active.push(market);
+      }
+    });
+    
+    return { activeMarkets: active, endedMarkets: ended };
+  }, [marketsWithBets]);
 
   // Show loading state while connecting
   if (isConnecting) {
@@ -166,8 +186,6 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
       </div>
     );
   }
-
-  const marketsWithBets = MOCK_MARKETS.filter(m => m.contractMarketId !== undefined);
 
   const totalBets = stats.activeBets + stats.wonBets + stats.lostBets;
   const winRate = (stats.wonBets + stats.lostBets) > 0 
@@ -271,26 +289,66 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
       </Card>
 
       {/* Active Positions */}
-      <div>
-        <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-[#9E75FF]" />
-          Active Positions
-        </h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {marketsWithBets.map((market) => (
-            <UserBetCard
-              key={market.id}
-              market={market}
-              userAddress={address as Address}
-              onSelect={onMarketSelect}
-              onClaim={claimWinnings}
-              isClaimPending={isClaimPending}
-              isClaimConfirming={isClaimConfirming}
-            />
-          ))}
+      {activeMarkets.length > 0 && (
+        <div className="mb-8">
+          <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-[#9E75FF]" />
+            Active Positions ({activeMarkets.length})
+          </h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {activeMarkets.map((market) => (
+              <UserBetCard
+                key={market.id}
+                market={market}
+                userAddress={address as Address}
+                onSelect={onMarketSelect}
+                onClaim={claimWinnings}
+                isClaimPending={isClaimPending}
+                isClaimConfirming={isClaimConfirming}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Ended Positions - Collapsed */}
+      {endedMarkets.length > 0 && (
+        <div className="mt-8">
+          <button
+            onClick={() => setShowEndedBets(!showEndedBets)}
+            className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-semibold text-gray-700">
+                Ended Positions ({endedMarkets.length})
+              </span>
+            </div>
+            {showEndedBets ? (
+              <ChevronUp className="w-5 h-5 text-gray-600" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-600" />
+            )}
+          </button>
+
+          {showEndedBets && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+              {endedMarkets.map((market) => (
+                <UserBetCard
+                  key={market.id}
+                  market={market}
+                  userAddress={address as Address}
+                  onSelect={onMarketSelect}
+                  onClaim={claimWinnings}
+                  isClaimPending={isClaimPending}
+                  isClaimConfirming={isClaimConfirming}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
