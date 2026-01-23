@@ -222,7 +222,7 @@ export function useMarketDataETH(marketId: number) {
  * Hook to get user's bet on a market
  */
 export function useUserBetETH(marketId: number, userAddress?: Address) {
-  const { data, isLoading, error, refetch } = useReadContract({
+  const { data, isLoading, error, refetch, isFetching } = useReadContract({
     address: TROLLBET_ETH_ADDRESS,
     abi: TrollBetETH_ABI,
     functionName: 'getUserBet',
@@ -230,8 +230,11 @@ export function useUserBetETH(marketId: number, userAddress?: Address) {
     chainId: baseSepolia.id,
     query: {
       enabled: !!userAddress && marketId !== undefined,
-      refetchInterval: 3000,
-      staleTime: 0,
+      refetchInterval: 5000, // Every 5 seconds
+      staleTime: 0, // Always consider data stale
+      gcTime: 60000, // Keep in cache for 60 seconds (longer)
+      refetchOnMount: true, // Refetch when component mounts
+      refetchOnWindowFocus: true, // Refetch when window regains focus
     },
   });
 
@@ -240,6 +243,15 @@ export function useUserBetETH(marketId: number, userAddress?: Address) {
     noAmount: formatEther(data[1]),
     claimed: data[2],
   } : null;
+
+  // Debug logging
+  if (data && (Number(data[0]) > 0 || Number(data[1]) > 0)) {
+    console.log('[useUserBetETH] Found bet for market', marketId, {
+      yesAmount: formatEther(data[0]),
+      noAmount: formatEther(data[1]),
+      claimed: data[2],
+    });
+  }
 
   return {
     userBet,

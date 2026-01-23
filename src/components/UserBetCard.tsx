@@ -20,18 +20,25 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
   );
   const { marketData } = useMarketDataETH(market.contractMarketId ?? 0);
 
-  // Don't render if loading
-  if (isLoading) return null;
+  // Don't render if no bet data (but allow loading state to pass through)
+  if (!isLoading && !userBet) return null;
 
-  // Don't render if no bet data
-  if (!userBet) return null;
-
-  const yesAmount = parseFloat(userBet.yesAmount);
-  const noAmount = parseFloat(userBet.noAmount);
+  const yesAmount = userBet ? parseFloat(userBet.yesAmount) : 0;
+  const noAmount = userBet ? parseFloat(userBet.noAmount) : 0;
   const totalBet = yesAmount + noAmount;
 
-  // Don't render if user hasn't bet on this market
-  if (totalBet === 0) return null;
+  // Don't render if user hasn't bet on this market (unless still loading)
+  if (!isLoading && totalBet === 0) return null;
+
+  // Show skeleton while loading
+  if (isLoading) {
+    return (
+      <Card className="p-4 animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+      </Card>
+    );
+  }
 
   const hasBetYes = yesAmount > 0;
   const hasBetNo = noAmount > 0;
