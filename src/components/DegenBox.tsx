@@ -69,46 +69,10 @@ interface LeaderboardEntry {
 const getAvatarUrl = (name: string) => 
   `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}&backgroundColor=9E75FF`;
 
-const MOCK_MESSAGES: ChatMessage[] = [
-  {
-    id: "1",
-    user: { name: "CryptoMaxi", avatar: getAvatarUrl("CryptoMaxi"), bet: "YES" },
-    message: "Peter literally cannot go 24hrs without tweeting about BTC lmao",
-    timestamp: new Date(Date.now() - 120000),
-  },
-  {
-    id: "2",
-    user: { name: "DiamondHands", avatar: getAvatarUrl("DiamondHands"), bet: "NO" },
-    message: "Nah he's been quiet lately, gonna surprise everyone",
-    timestamp: new Date(Date.now() - 90000),
-  },
-  {
-    id: "3",
-    user: { name: "DegenKing", avatar: getAvatarUrl("DegenKing"), bet: "YES" },
-    message: "Easy money, Peter tweets gold FUD every single day",
-    timestamp: new Date(Date.now() - 60000),
-  },
-  {
-    id: "4",
-    user: { name: "MoonBoi", avatar: getAvatarUrl("MoonBoi"), bet: "YES" },
-    message: "BTC pumping = Peter seething. It's guaranteed",
-    timestamp: new Date(Date.now() - 30000),
-  },
-  {
-    id: "5",
-    user: { name: "GoldBug42", avatar: getAvatarUrl("GoldBug42"), bet: "NO" },
-    message: "He just tweeted about gold, might skip BTC today",
-    timestamp: new Date(Date.now() - 15000),
-  },
-]
+// Empty initial state - real data will come from blockchain and API
+const MOCK_MESSAGES: ChatMessage[] = []
 
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, user: { name: "OracleOfDegen", avatar: getAvatarUrl("OracleOfDegen") }, wins: 47, accuracy: 89, earnings: 125000 },
-  { rank: 2, user: { name: "ProphetPepe", avatar: getAvatarUrl("ProphetPepe") }, wins: 42, accuracy: 85, earnings: 98000 },
-  { rank: 3, user: { name: "BasedBettor", avatar: getAvatarUrl("BasedBettor") }, wins: 38, accuracy: 82, earnings: 76000 },
-  { rank: 4, user: { name: "AlphaChad", avatar: getAvatarUrl("AlphaChad") }, wins: 35, accuracy: 79, earnings: 54000 },
-  { rank: 5, user: { name: "DegenerateDAO", avatar: getAvatarUrl("DegenerateDAO") }, wins: 31, accuracy: 76, earnings: 42000 },
-]
+const MOCK_LEADERBOARD: LeaderboardEntry[] = []
 
 interface DegenBoxProps {
   marketId: string;

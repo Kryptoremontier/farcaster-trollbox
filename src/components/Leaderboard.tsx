@@ -28,78 +28,8 @@ interface LeaderboardEntry {
 const getAvatarUrl = (name: string) => 
   `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}&backgroundColor=9E75FF`;
 
-// Mock data - in production, fetch from contract/API
-// 🤫 Secret points calculated based on activity
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  {
-    rank: 1,
-    address: "0x1234...5678",
-    username: "DegenKing",
-    avatar: getAvatarUrl("DegenKing"),
-    totalWagered: 50000,
-    totalWon: 35000,
-    totalLost: 10000,
-    pnl: 25000,
-    roi: 50.0,
-    winRate: 77.8,
-    activeBets: 5,
-    secretPoints: 125000, // 🤫 Legendary tier
-  },
-  {
-    rank: 2,
-    address: "0xabcd...ef01",
-    username: "CryptoMaxi",
-    avatar: getAvatarUrl("CryptoMaxi"),
-    totalWagered: 42000,
-    totalWon: 28000,
-    totalLost: 12000,
-    pnl: 16000,
-    roi: 38.1,
-    winRate: 70.0,
-    activeBets: 3,
-    secretPoints: 85000, // 🤫 Diamond tier
-  },
-  {
-    rank: 3,
-    address: "0x9876...4321",
-    username: "MoonBoi",
-    avatar: getAvatarUrl("MoonBoi"),
-    totalWagered: 38000,
-    totalWon: 24000,
-    totalLost: 11000,
-    pnl: 13000,
-    roi: 34.2,
-    winRate: 68.6,
-    activeBets: 7,
-    secretPoints: 45000, // 🤫 Diamond tier
-  },
-  {
-    rank: 4,
-    address: "0xd04d...96a1",
-    username: "You",
-    totalWagered: 1256,
-    totalWon: 0,
-    totalLost: 0,
-    pnl: 0,
-    roi: 0,
-    winRate: 0,
-    activeBets: 1,
-    secretPoints: 150, // 🤫 Bronze tier (just started)
-  },
-  {
-    rank: 5,
-    address: "0x5555...6666",
-    username: "DiamondHands",
-    totalWagered: 25000,
-    totalWon: 15000,
-    totalLost: 8000,
-    pnl: 7000,
-    roi: 28.0,
-    winRate: 65.2,
-    activeBets: 2,
-    secretPoints: 18000, // 🤫 Gold tier
-  },
-];
+// Empty initial state - real data will come from API/Redis
+const MOCK_LEADERBOARD: LeaderboardEntry[] = [];
 
 export function Leaderboard() {
   const { address } = useAccount();
