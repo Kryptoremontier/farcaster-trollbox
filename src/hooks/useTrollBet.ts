@@ -136,6 +136,8 @@ export function useUserBet(marketId: number, userAddress?: Address) {
     args: userAddress ? [BigInt(marketId), userAddress] : undefined,
     query: {
       enabled: !!userAddress && marketId !== undefined,
+      refetchInterval: 3000, // Refetch every 3 seconds
+      staleTime: 0, // Always consider data stale
     },
   });
 

@@ -21,7 +21,7 @@ export interface Market {
 export const MOCK_MARKETS: Market[] = [
   {
     id: 'peter-schiff-btc',
-    contractMarketId: 0, // TODO: Update after deploying and creating markets
+    contractMarketId: 0,
     question: 'Will Peter Schiff tweet negatively about Bitcoin in the next 24 hours?',
     description: 'Peter literally cannot go 24hrs without BTC FUD',
     thumbnail: '🧓💬',
@@ -34,6 +34,7 @@ export const MOCK_MARKETS: Market[] = [
   },
   {
     id: 'degen-price',
+    contractMarketId: 1,
     question: 'Will $DEGEN hit $0.10 this week?',
     description: 'Degens betting on Degen. Meta af.',
     thumbnail: '🎩📈',
@@ -46,6 +47,7 @@ export const MOCK_MARKETS: Market[] = [
   },
   {
     id: 'elon-pepe',
+    contractMarketId: 2,
     question: 'Will Elon Musk post a Pepe meme today?',
     description: 'The ultimate troll moves are unpredictable',
     thumbnail: '🐸🚀',
@@ -58,6 +60,7 @@ export const MOCK_MARKETS: Market[] = [
   },
   {
     id: 'base-tvl',
+    contractMarketId: 4,
     question: 'Will Base TVL exceed $2B this month?',
     description: 'Onchain summer vibes or bearish reality?',
     thumbnail: '🔵💎',
@@ -70,6 +73,7 @@ export const MOCK_MARKETS: Market[] = [
   },
   {
     id: 'vitalik-tweet',
+    contractMarketId: 5,
     question: 'Will Vitalik tweet about AI this week?',
     description: 'He loves AI more than you love your portfolio',
     thumbnail: '🧙‍♂️🤖',
@@ -78,6 +82,19 @@ export const MOCK_MARKETS: Market[] = [
     yesPool: 29000,
     noPool: 21000,
     totalBettors: 445,
+    status: 'active',
+  },
+  {
+    id: 'eth-flip-btc',
+    contractMarketId: 3,
+    question: 'Will ETH flip BTC market cap in 2025?',
+    description: 'The ultimate flippening debate',
+    thumbnail: '💎⚡',
+    category: 'crypto',
+    endTime: new Date('2025-12-31'),
+    yesPool: 125000,
+    noPool: 98000,
+    totalBettors: 3421,
     status: 'active',
   },
   {
