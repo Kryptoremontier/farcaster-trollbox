@@ -382,16 +382,15 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       console.log('[TrollBox] Approval confirmed, now placing bet...', { pendingBetSide });
       setBetStatus({ type: 'info', message: 'Step 2/2: Placing bet...' });
       
-      placeBet(marketIdNum, pendingBetSide === 'YES', selectedAmount)
-        .then(() => {
-          console.log('[TrollBox] Bet transaction sent');
-        })
-        .catch((err) => {
-          console.error('[TrollBox] Bet error after approval:', err);
-          setBetStatus({ type: 'error', message: 'Failed to place bet' });
-          setPendingBetSide(null);
-          setTimeout(() => setBetStatus(null), 3000);
-        });
+      try {
+        placeBet(marketIdNum, pendingBetSide === 'YES', selectedAmount);
+        console.log('[TrollBox] Bet transaction sent');
+      } catch (err) {
+        console.error('[TrollBox] Bet error after approval:', err);
+        setBetStatus({ type: 'error', message: 'Failed to place bet' });
+        setPendingBetSide(null);
+        setTimeout(() => setBetStatus(null), 3000);
+      }
     }
   }, [isApproveConfirmed, pendingBetSide, needsApproval, placeBet, marketIdNum, selectedAmount]);
 
@@ -426,7 +425,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
         
         try {
           console.log('[TrollBox] Calling approve...');
-          await approve(selectedAmount);
+          approve(selectedAmount);
           console.log('[TrollBox] Approve transaction sent, waiting for confirmation...');
           // The useEffect above will handle placing the bet after confirmation
         } catch (approveError) {
@@ -442,7 +441,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       setBetStatus({ type: 'info', message: 'Confirm bet in your wallet...' });
       
       try {
-        await placeBet(marketIdNum, side === 'YES', selectedAmount);
+        placeBet(marketIdNum, side === 'YES', selectedAmount);
         console.log('[TrollBox] Bet transaction sent');
       } catch (betError) {
         console.error('[TrollBox] Bet error:', betError);
@@ -800,9 +799,9 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                         try {
                           console.log('[TrollBox] Starting mint...');
                           setBetStatus({ type: 'info', message: 'Minting test tokens...' });
-                          const mintResult = await mintTokens(address, "10000");
-                          console.log('[TrollBox] Mint result:', mintResult);
-                          setBetStatus({ type: 'success', message: '🎉 10,000 test $DEGEN minted!' });
+                          mintTokens(address, "10000");
+                          console.log('[TrollBox] Mint transaction sent');
+                          setBetStatus({ type: 'success', message: '🎉 10,000 test $DEGEN minting...' });
                           setTimeout(() => {
                             refetchBalance();
                             setBetStatus(null);

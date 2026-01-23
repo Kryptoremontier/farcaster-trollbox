@@ -40,7 +40,7 @@ export function usePlaceBet() {
   const { address } = useAccount();
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const placeBet = async (marketId: number, side: boolean, amount: string) => {
+  const placeBet = (marketId: number, side: boolean, amount: string) => {
     console.log('[useTrollBet] placeBet called', { marketId, side, amount, address });
     
     if (!address) {
@@ -57,21 +57,17 @@ export function usePlaceBet() {
       account: address,
     });
 
-    try {
-      const result = await writeContract({
-        address: TROLLBET_CONTRACT_ADDRESS,
-        abi: TrollBetABI,
-        functionName: 'placeBet',
-        args: [BigInt(marketId), side, amountWei],
-        account: address,
-        chain: baseSepolia,
-      });
-      console.log('[useTrollBet] placeBet writeContract result:', result);
-      return result;
-    } catch (err) {
-      console.error('[useTrollBet] placeBet error:', err);
-      throw err;
-    }
+    // writeContract is synchronous in wagmi v2
+    writeContract({
+      address: TROLLBET_CONTRACT_ADDRESS,
+      abi: TrollBetABI,
+      functionName: 'placeBet',
+      args: [BigInt(marketId), side, amountWei],
+      account: address,
+      chain: baseSepolia,
+    });
+    
+    console.log('[useTrollBet] placeBet writeContract called');
   };
 
   if (error) {
@@ -93,14 +89,14 @@ export function useClaimWinnings() {
   const { address } = useAccount();
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const claimWinnings = async (marketId: number) => {
+  const claimWinnings = (marketId: number) => {
     console.log('[useTrollBet] claimWinnings called', { marketId, address });
     
     if (!address) {
       throw new Error('No wallet connected');
     }
 
-    return writeContract({
+    writeContract({
       address: TROLLBET_CONTRACT_ADDRESS,
       abi: TrollBetABI,
       functionName: 'claimWinnings',
@@ -128,7 +124,7 @@ export function useApproveToken() {
   // Max uint256 for unlimited approval
   const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
-  const approve = async (_amount?: string) => {
+  const approve = (_amount?: string) => {
     console.log('[useTrollBet] approve called', { address });
     
     if (!address) {
@@ -141,21 +137,17 @@ export function useApproveToken() {
       account: address,
     });
 
-    try {
-      const result = await writeContract({
-        address: DEGEN_TOKEN_ADDRESS,
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
-        account: address,
-        chain: baseSepolia,
-      });
-      console.log('[useTrollBet] approve writeContract result:', result);
-      return result;
-    } catch (err) {
-      console.error('[useTrollBet] approve error:', err);
-      throw err;
-    }
+    // writeContract is synchronous in wagmi v2
+    writeContract({
+      address: DEGEN_TOKEN_ADDRESS,
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
+      account: address,
+      chain: baseSepolia,
+    });
+    
+    console.log('[useTrollBet] approve writeContract called');
   };
 
   if (error) {
@@ -364,7 +356,7 @@ export function useMintTestTokens() {
   const { address } = useAccount();
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const mintTokens = async (toAddress: Address, amount: string = "10000") => {
+  const mintTokens = (toAddress: Address, amount: string = "10000") => {
     console.log('[useTrollBet] mintTokens called', { toAddress, amount, address });
     
     if (!address) {
@@ -380,21 +372,17 @@ export function useMintTestTokens() {
       account: address,
     });
 
-    try {
-      const result = await writeContract({
-        address: DEGEN_TOKEN_ADDRESS,
-        abi: ERC20_ABI,
-        functionName: 'mint',
-        args: [toAddress, amountWei],
-        account: address,
-        chain: baseSepolia,
-      });
-      console.log('[useTrollBet] mint writeContract result:', result);
-      return result;
-    } catch (err) {
-      console.error('[useTrollBet] mint error:', err);
-      throw err;
-    }
+    // writeContract is synchronous in wagmi v2
+    writeContract({
+      address: DEGEN_TOKEN_ADDRESS,
+      abi: ERC20_ABI,
+      functionName: 'mint',
+      args: [toAddress, amountWei],
+      account: address,
+      chain: baseSepolia,
+    });
+    
+    console.log('[useTrollBet] mint writeContract called');
   };
 
   if (error) {
