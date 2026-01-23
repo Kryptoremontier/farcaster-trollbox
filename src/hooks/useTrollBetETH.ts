@@ -222,7 +222,7 @@ export function useMarketDataETH(marketId: number) {
  * Hook to get user's bet on a market
  */
 export function useUserBetETH(marketId: number, userAddress?: Address) {
-  const { data, isLoading, error, refetch, isFetching } = useReadContract({
+  const { data, isLoading, error, refetch } = useReadContract({
     address: TROLLBET_ETH_ADDRESS,
     abi: TrollBetETH_ABI,
     functionName: 'getUserBet',
