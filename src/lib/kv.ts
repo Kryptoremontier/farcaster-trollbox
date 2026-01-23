@@ -1,10 +1,16 @@
 import { MiniAppNotificationDetails } from "@farcaster/miniapp-sdk";
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
+// Check if Redis is configured
+const isRedisConfigured = !!(
+  (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) &&
+  (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN)
+);
+
+const redis = isRedisConfigured ? new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN,
-});
+}) : null;
 
 function getUserNotificationDetailsKey(fid: number): string {
   return `frames-v2-demo:user:${fid}`;
@@ -13,6 +19,7 @@ function getUserNotificationDetailsKey(fid: number): string {
 export async function getUserNotificationDetails(
   fid: number
 ): Promise<MiniAppNotificationDetails | null> {
+  if (!redis) return null;
   return await redis.get<MiniAppNotificationDetails>(
     getUserNotificationDetailsKey(fid)
   );
@@ -22,12 +29,14 @@ export async function setUserNotificationDetails(
   fid: number,
   notificationDetails: MiniAppNotificationDetails
 ): Promise<void> {
+  if (!redis) return;
   await redis.set(getUserNotificationDetailsKey(fid), notificationDetails);
 }
 
 export async function deleteUserNotificationDetails(
   fid: number
 ): Promise<void> {
+  if (!redis) return;
   await redis.del(getUserNotificationDetailsKey(fid));
 }
 
@@ -74,6 +83,7 @@ function getLeaderboardKey(): string {
  * Get user points
  */
 export async function getUserPoints(address: string): Promise<UserPoints | null> {
+  if (!redis) return null;
   try {
     const data = await redis.get<UserPoints>(getUserPointsKey(address));
     if (data && data.activeDays) {
@@ -112,10 +122,12 @@ export async function initializeUserPoints(
     activeDays: new Set<string>(),
   };
 
-  await redis.set(getUserPointsKey(address), {
-    ...points,
-    activeDays: Array.from(points.activeDays),
-  });
+  if (redis) {
+    await redis.set(getUserPointsKey(address), {
+      ...points,
+      activeDays: Array.from(points.activeDays),
+    });
+  }
 
   return points;
 }
@@ -151,44 +163,46 @@ export async function recordBet(
     txHash,
   };
 
-  // Add bet to user's bet history
-  const betsKey = getUserBetsKey(address);
-  await redis.lpush(betsKey, bet);
+  if (redis) {
+    // Add bet to user's bet history
+    const betsKey = getUserBetsKey(address);
+    await redis.lpush(betsKey, bet);
 
-  // Update points
-  const today = new Date().toISOString().split('T')[0];
-  userPoints.activeDays.add(today);
-  userPoints.betsPlaced += 1;
-  userPoints.volumeTraded += amount;
-  userPoints.lastBetTimestamp = Date.now();
+    // Update points
+    const today = new Date().toISOString().split('T')[0];
+    userPoints.activeDays.add(today);
+    userPoints.betsPlaced += 1;
+    userPoints.volumeTraded += amount;
+    userPoints.lastBetTimestamp = Date.now();
 
-  // Calculate points (from pointsSystem.ts logic)
-  const BET_PLACED_POINTS = 100;
-  const VOLUME_POINTS_PER_1K = 50;
-  const DAILY_ACTIVE_POINTS = 25;
+    // Calculate points (from pointsSystem.ts logic)
+    const BET_PLACED_POINTS = 100;
+    const VOLUME_POINTS_PER_1K = 50;
+    const DAILY_ACTIVE_POINTS = 25;
 
-  let pointsEarned = BET_PLACED_POINTS;
-  pointsEarned += Math.floor(amount / 1000) * VOLUME_POINTS_PER_1K;
-  
-  // Daily active bonus (first bet of the day)
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  if (!userPoints.activeDays.has(yesterday)) {
-    pointsEarned += DAILY_ACTIVE_POINTS;
+    let pointsEarned = BET_PLACED_POINTS;
+    pointsEarned += Math.floor(amount / 1000) * VOLUME_POINTS_PER_1K;
+    
+    // Daily active bonus (first bet of the day)
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    if (!userPoints.activeDays.has(yesterday)) {
+      pointsEarned += DAILY_ACTIVE_POINTS;
+    }
+
+    userPoints.totalPoints += pointsEarned;
+
+    // Save updated points
+    await redis.set(getUserPointsKey(address), {
+      ...userPoints,
+      activeDays: Array.from(userPoints.activeDays),
+    });
+
+    // Update leaderboard (sorted set by total points)
+    await redis.zadd(getLeaderboardKey(), {
+      score: userPoints.totalPoints,
+      member: address.toLowerCase(),
+    });
   }
-
-  userPoints.totalPoints += pointsEarned;
-
-  // Save updated points
-  await redis.set(getUserPointsKey(address), {
-    ...userPoints,
-    activeDays: Array.from(userPoints.activeDays),
-  });
-
-  // Update leaderboard (sorted set by total points)
-  await redis.zadd(getLeaderboardKey(), {
-    score: userPoints.totalPoints,
-    member: address.toLowerCase(),
-  });
 
   return userPoints;
 }
@@ -197,6 +211,7 @@ export async function recordBet(
  * Get top N users from leaderboard
  */
 export async function getLeaderboard(limit: number = 100): Promise<Array<{ address: string; points: number }>> {
+  if (!redis) return [];
   try {
     const results = await redis.zrange(getLeaderboardKey(), 0, limit - 1, {
       rev: true,
@@ -225,6 +240,7 @@ export async function getUserBetHistory(
   address: string,
   limit: number = 50
 ): Promise<BetRecord[]> {
+  if (!redis) return [];
   try {
     const bets = await redis.lrange<BetRecord>(getUserBetsKey(address), 0, limit - 1);
     return bets || [];
