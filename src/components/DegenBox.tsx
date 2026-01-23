@@ -120,8 +120,8 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
   
-  // Check if we're on the correct network (Base Sepolia)
-  const isCorrectNetwork = chain?.id === 84532;
+  // Check if we're on the correct network (Base Mainnet)
+  const isCorrectNetwork = chain?.id === 8453;
   
   // ETH amounts (much smaller than token amounts!)
   const [selectedAmount, setSelectedAmount] = useState("0.001")
@@ -819,7 +819,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 {isConnected && !isCorrectNetwork && (
                   <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-center">
                     <p className="text-xs text-yellow-800 font-bold">⚠️ Wrong Network!</p>
-                    <p className="text-xs text-yellow-700">Switch to Base Sepolia</p>
+                    <p className="text-xs text-yellow-700">Switch to Base Mainnet</p>
                     <p className="text-xs text-yellow-600">(Current: {chain?.name})</p>
                   </div>
                 )}
@@ -868,7 +868,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                       rel="noopener noreferrer"
                       className="text-xs text-blue-600 underline hover:text-blue-800"
                     >
-                      Get free Base Sepolia ETH →
+                      Get Base ETH →
                     </a>
                   </div>
                 )}
