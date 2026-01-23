@@ -80,11 +80,28 @@ async function fetchCryptoPrice(symbol: string): Promise<number> {
 
 async function fetchEthGasPrice(): Promise<number> {
   try {
+    // Use Etherscan API for Ethereum mainnet gas prices
+    // Note: For Base gas prices, we'd need a different API
     const response = await fetch(
-      'https://api.etherscan.io/api?module=gastracker&action=gasoracle'
+      'https://api.etherscan.io/api?module=gastracker&action=gasoracle',
+      { next: { revalidate: 60 } } // Cache for 60 seconds
     );
+    
+    if (!response.ok) {
+      console.error(`Etherscan API error: ${response.status}`);
+      return 0;
+    }
+    
     const data = await response.json();
-    return parseInt(data.result?.ProposeGasPrice || '0');
+    
+    if (data.status !== '1') {
+      console.error('Etherscan API returned error:', data.message);
+      return 0;
+    }
+    
+    const gasPrice = parseInt(data.result?.ProposeGasPrice || '0');
+    console.log(`      ⛽ Fetched gas price: ${gasPrice} gwei`);
+    return gasPrice;
   } catch (error) {
     console.error('Failed to fetch gas price:', error);
     return 0;
@@ -155,7 +172,7 @@ export async function GET(req: NextRequest) {
   const startTime = Date.now();
   
   try {
-    console.log('🤖 [CRON] Auto-resolve markets started');
+    console.log('🤖 [CRON] Auto-resolve markets started at', new Date().toISOString());
 
     // Verify cron secret (security)
     const authHeader = req.headers.get('authorization');
@@ -248,11 +265,22 @@ export async function GET(req: NextRequest) {
         console.log(`      Ended: ${new Date(Number(endTime) * 1000).toISOString()}`);
         console.log(`      Pools: ${formatEther(yesPool)} YES / ${formatEther(noPool)} NO`);
 
-        // Get result from oracle
-        const result = await getMarketResult(question);
+        // Get result from oracle with retry
+        let result: boolean | null = null;
+        let retries = 0;
+        const maxRetries = 2;
+        
+        while (result === null && retries <= maxRetries) {
+          if (retries > 0) {
+            console.log(`      🔄 Retry ${retries}/${maxRetries}...`);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s between retries
+          }
+          result = await getMarketResult(question);
+          retries++;
+        }
 
         if (result === null) {
-          console.log(`      ⚠️  Cannot auto-resolve - needs manual intervention`);
+          console.log(`      ⚠️  Cannot auto-resolve after ${maxRetries} retries - needs manual intervention`);
           results.details.push({
             marketId: i,
             question,
