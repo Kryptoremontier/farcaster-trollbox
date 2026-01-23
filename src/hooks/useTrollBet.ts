@@ -1,6 +1,10 @@
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 import { type Address, parseUnits, formatUnits } from 'viem';
+import { baseSepolia } from 'wagmi/chains';
 import TrollBetABI from '~/lib/abi/TrollBet.json';
+
+// Chain ID for all transactions (Base Sepolia for testnet)
+const CHAIN_ID = baseSepolia.id;
 
 // Contract address - TODO: Update this after deployment
 export const TROLLBET_CONTRACT_ADDRESS: Address = '0x26dEe56f85fAa471eFF9210326734389186ac625';
@@ -32,6 +36,7 @@ export function usePlaceBet() {
         abi: TrollBetABI,
         functionName: 'placeBet',
         args: [BigInt(marketId), side, amountWei],
+        chainId: CHAIN_ID,
       });
       console.log('[useTrollBet] placeBet writeContract result:', result);
       return result;
@@ -66,6 +71,7 @@ export function useClaimWinnings() {
       abi: TrollBetABI,
       functionName: 'claimWinnings',
       args: [BigInt(marketId)],
+      chainId: CHAIN_ID,
     });
   };
 
@@ -116,6 +122,7 @@ export function useApproveToken() {
         abi: erc20ABI,
         functionName: 'approve',
         args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
+        chainId: CHAIN_ID,
       });
       console.log('[useTrollBet] writeContract result:', result);
       return result;
@@ -361,6 +368,7 @@ export function useMintTestTokens() {
         abi: mintABI,
         functionName: 'mint',
         args: [toAddress, amountWei],
+        chainId: CHAIN_ID,
       });
       console.log('[useTrollBet] mint writeContract result:', result);
       return result;
