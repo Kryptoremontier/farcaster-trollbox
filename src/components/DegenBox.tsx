@@ -316,26 +316,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
     connect({ connector: config.connectors[0] })
   }, [connect])
 
-  const handleApprove = useCallback(async () => {
-    if (!isConnected) {
-      setBetStatus({ type: 'error', message: 'Please connect your wallet first' });
-      setTimeout(() => setBetStatus(null), 3000);
-      return;
-    }
-
-    try {
-      setBetStatus({ type: 'info', message: 'Requesting token approval...' });
-      await approve(selectedAmount);
-    } catch (error) {
-      console.error('Approval error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to approve tokens';
-      setBetStatus({ 
-        type: 'error', 
-        message: errorMessage
-      });
-      setTimeout(() => setBetStatus(null), 3000);
-    }
-  }, [approve, selectedAmount, isConnected]);
+  // handleApprove removed - now handled automatically in handlePlaceBet
 
   const handlePlaceBet = useCallback(async (side: 'YES' | 'NO') => {
     if (!isConnected) {
@@ -344,15 +325,23 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       return;
     }
 
-    if (needsApproval) {
-      setBetStatus({ type: 'info', message: 'Please approve token spending first' });
-      setTimeout(() => setBetStatus(null), 3000);
-      return;
-    }
-
     try {
       setSelectedSide(side);
-      setBetStatus({ type: 'info', message: `Placing bet on ${side}...` });
+
+      // Auto-approve if needed
+      if (needsApproval) {
+        setBetStatus({ type: 'info', message: 'Step 1/2: Approving tokens...' });
+        await approve(selectedAmount);
+        
+        // Wait for approval to be confirmed
+        setBetStatus({ type: 'info', message: 'Waiting for approval confirmation...' });
+        // The useEffect will handle refetching allowance and updating needsApproval
+        // We'll wait a bit for the state to update
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+      // Place the bet
+      setBetStatus({ type: 'info', message: needsApproval ? 'Step 2/2: Placing bet...' : 'Placing bet...' });
       await placeBet(marketIdNum, side === 'YES', selectedAmount);
     } catch (error) {
       console.error('Bet error:', error);
@@ -364,7 +353,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       setSelectedSide(null);
       setTimeout(() => setBetStatus(null), 3000);
     }
-  }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval]);
+  }, [placeBet, marketIdNum, selectedAmount, isConnected, needsApproval, approve]);
 
   const handleClaimWinnings = useCallback(async () => {
     if (!isConnected) {
@@ -609,24 +598,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 </div>
               )}
 
-              {/* Approval & Claim Buttons */}
-              {needsApproval && isConnected && (
-                <Button
-                  onClick={handleApprove}
-                  disabled={isApprovePending || isApproveConfirming}
-                  className="w-full h-12 bg-[#9E75FF] hover:bg-[#8E65EF] text-white font-bold shadow-md active:scale-95 transition-transform"
-                >
-                  {isApprovePending || isApproveConfirming ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Approving...
-                    </>
-                  ) : (
-                    'Approve $DEGEN Token'
-                  )}
-                </Button>
-              )}
-
+              {/* Claim Button */}
               {marketData?.resolved && userBet && !userBet.claimed && (
                 <Button
                   onClick={handleClaimWinnings}
@@ -645,6 +617,15 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                     </>
                   )}
                 </Button>
+              )}
+
+              {/* Auto-approve info */}
+              {needsApproval && isConnected && (
+                <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-700 text-center">
+                    ℹ️ First bet will auto-approve tokens (2 transactions)
+                  </p>
+                </div>
               )}
 
               {/* Bet Buttons with Odds */}
