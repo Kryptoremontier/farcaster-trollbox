@@ -2,6 +2,7 @@ import { createConfig, http, WagmiProvider } from "wagmi";
 import { base, baseSepolia, degen, mainnet, optimism, unichain } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { farcasterMiniApp } from "@farcaster/miniapp-wagmi-connector";
+import { coinbaseWallet } from "wagmi/connectors";
 
 export const config = createConfig({
   chains: [baseSepolia, base, optimism, mainnet, degen, unichain],
@@ -13,7 +14,14 @@ export const config = createConfig({
     [degen.id]: http(),
     [unichain.id]: http(),
   },
-  connectors: [farcasterMiniApp()],
+  connectors: [
+    farcasterMiniApp(),
+    // Coinbase Wallet is required for Farcaster mobile transactions
+    coinbaseWallet({
+      appName: 'TrollBox',
+      preference: 'smartWalletOnly', // Critical for Farcaster Frames!
+    }),
+  ],
 });
 
 const queryClient = new QueryClient();
