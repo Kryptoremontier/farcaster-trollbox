@@ -1,6 +1,5 @@
 import { useReadContract, useWaitForTransactionReceipt, useWriteContract, useAccount } from 'wagmi';
 import { type Address, parseUnits, formatUnits } from 'viem';
-import { baseSepolia } from 'wagmi/chains';
 import TrollBetABI from '~/lib/abi/TrollBet.json';
 
 // ERC20 ABI for approve
@@ -54,17 +53,14 @@ export function usePlaceBet() {
       marketId,
       side,
       amountWei: amountWei.toString(),
-      account: address,
     });
 
-    // writeContract is synchronous in wagmi v2
+    // Simplified call - let wagmi handle account and chain
     writeContract({
       address: TROLLBET_CONTRACT_ADDRESS,
       abi: TrollBetABI,
       functionName: 'placeBet',
       args: [BigInt(marketId), side, amountWei],
-      account: address,
-      chain: baseSepolia,
     });
     
     console.log('[useTrollBet] placeBet writeContract called');
@@ -101,8 +97,6 @@ export function useClaimWinnings() {
       abi: TrollBetABI,
       functionName: 'claimWinnings',
       args: [BigInt(marketId)],
-      account: address,
-      chain: baseSepolia,
     });
   };
 
@@ -134,17 +128,14 @@ export function useApproveToken() {
     console.log('[useTrollBet] calling writeContract for approve...', {
       token: DEGEN_TOKEN_ADDRESS,
       spender: TROLLBET_CONTRACT_ADDRESS,
-      account: address,
     });
 
-    // writeContract is synchronous in wagmi v2
+    // Simplified call - let wagmi handle account and chain
     writeContract({
       address: DEGEN_TOKEN_ADDRESS,
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
-      account: address,
-      chain: baseSepolia,
     });
     
     console.log('[useTrollBet] approve writeContract called');
@@ -369,17 +360,14 @@ export function useMintTestTokens() {
       token: DEGEN_TOKEN_ADDRESS,
       toAddress,
       amountWei: amountWei.toString(),
-      account: address,
     });
 
-    // writeContract is synchronous in wagmi v2
+    // Simplified call - let wagmi handle account and chain
     writeContract({
       address: DEGEN_TOKEN_ADDRESS,
       abi: ERC20_ABI,
       functionName: 'mint',
       args: [toAddress, amountWei],
-      account: address,
-      chain: baseSepolia,
     });
     
     console.log('[useTrollBet] mint writeContract called');
