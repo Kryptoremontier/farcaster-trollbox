@@ -22,6 +22,18 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
   );
   const { marketData } = useMarketDataETH(market.contractMarketId ?? 0);
 
+  // Time remaining state (updates every minute) - MUST be before any returns!
+  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(market.endTime));
+
+  useEffect(() => {
+    // Update time remaining every minute
+    const interval = setInterval(() => {
+      setTimeRemaining(getTimeRemaining(market.endTime));
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [market.endTime]);
+
   // Don't render if no bet data (but allow loading state to pass through)
   if (!isLoading && !userBet) return null;
 
@@ -47,18 +59,6 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
 
   const hasBetYes = yesAmount > 0;
   const hasBetNo = noAmount > 0;
-
-  // Time remaining state (updates every minute)
-  const [timeRemaining, setTimeRemaining] = useState(getTimeRemaining(market.endTime));
-
-  useEffect(() => {
-    // Update time remaining every minute
-    const interval = setInterval(() => {
-      setTimeRemaining(getTimeRemaining(market.endTime));
-    }, 60000); // 60 seconds
-
-    return () => clearInterval(interval);
-  }, [market.endTime]);
 
   // Calculate potential winnings
   const yesPool = marketData ? parseFloat(marketData.yesPool) : market.yesPool;
