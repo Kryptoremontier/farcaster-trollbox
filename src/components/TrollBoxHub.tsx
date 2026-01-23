@@ -58,17 +58,31 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
   // Load Farcaster context and auto-connect wallet
   useEffect(() => {
     const load = async () => {
+      console.log('[TrollBoxHub] Loading Farcaster context...');
       const context = await sdk.context;
       setContext(context);
+      console.log('[TrollBoxHub] Context loaded:', { 
+        hasContext: !!context, 
+        user: context?.user?.username,
+        isConnected 
+      });
       
       // Auto-connect wallet if in Farcaster context and not already connected
       if (context && !isConnected) {
-        console.log('[TrollBoxHub] Auto-connecting wallet...');
+        console.log('[TrollBoxHub] Auto-connecting wallet...', {
+          connector: config.connectors[0]?.name
+        });
         try {
-          connect({ connector: config.connectors[0] });
+          await connect({ connector: config.connectors[0] });
+          console.log('[TrollBoxHub] Auto-connect successful!');
         } catch (e) {
           console.error('[TrollBoxHub] Auto-connect failed:', e);
         }
+      } else {
+        console.log('[TrollBoxHub] Skipping auto-connect:', {
+          hasContext: !!context,
+          isConnected
+        });
       }
     };
     if (sdk && !isSDKLoaded) {

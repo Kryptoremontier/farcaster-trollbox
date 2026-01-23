@@ -84,13 +84,24 @@ function BetStatsCollector({
 }
 
 export function Portfolio({ onMarketSelect }: PortfolioProps) {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, isConnecting } = useAccount();
   const { balance: ethBalance } = useETHBalance(address as Address | undefined);
   const [stats, setStats] = useState({ activeBets: 0, totalWagered: 0 });
 
   const handleStatsUpdate = useCallback((newStats: { activeBets: number, totalWagered: number }) => {
     setStats(newStats);
   }, []);
+
+  // Show loading state while connecting
+  if (isConnecting) {
+    return (
+      <div className="text-center py-16 space-y-3">
+        <div className="text-6xl animate-pulse">⏳</div>
+        <p className="text-gray-500 font-medium">Connecting wallet...</p>
+        <p className="text-sm text-gray-400">Please wait</p>
+      </div>
+    );
+  }
 
   if (!isConnected || !address) {
     return (
