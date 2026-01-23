@@ -30,14 +30,16 @@ const ERC20_ABI = [
 // Contract addresses by chain
 // Base Sepolia (Testnet - Chain ID: 84532)
 export const TROLLBET_CONTRACT_ADDRESS: Address = '0x26dEe56f85fAa471eFF9210326734389186ac625';
+
+// MockDEGEN Token - MUST BE DEPLOYED on Base Sepolia with public mint() function
+// Current address: 0xdDB5C1a86762068485baA1B481FeBeB17d30e002
+// ⚠️ If FAUCET shows "No state changes", this contract doesn't exist!
+// Alternative: Deploy MockDEGEN via Remix IDE using contracts/REMIX_MockDEGEN.sol
 export const DEGEN_TOKEN_ADDRESS: Address = '0xdDB5C1a86762068485baA1B481FeBeB17d30e002';
 
 // Base Mainnet (Production - Chain ID: 8453)
 // export const TROLLBET_MAINNET: Address = '0x...'; // TODO: Deploy to mainnet
 // export const DEGEN_MAINNET: Address = '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed'; // Real $DEGEN
-
-// ⚠️ WARNING: These addresses MUST be deployed contracts on Base Sepolia!
-// If you see "No state changes detected", the contracts don't exist at these addresses.
 
 /**
  * Hook to place a bet on a market - using writeContract with explicit account
