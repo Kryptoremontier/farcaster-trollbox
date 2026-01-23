@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, Users, TrendingUp } from "lucide-react";
+import { Clock, TrendingUp } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
