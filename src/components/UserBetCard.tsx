@@ -14,7 +14,7 @@ interface UserBetCardProps {
   market: Market;
   userAddress: Address;
   onSelect: (marketId: string) => void;
-  onClaim?: (marketId: number) => void;
+  onClaim: ((marketId: number) => void) | null;
   isClaimPending?: boolean;
   isClaimConfirming?: boolean;
 }

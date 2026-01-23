@@ -153,6 +153,15 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
     }
   }, [claimWinningsHook, isConnected, address]);
 
+  // Debug: Log when claimWinnings is created
+  useEffect(() => {
+    console.log('[Portfolio] claimWinnings function created/updated', {
+      hasClaimWinnings: !!claimWinnings,
+      isConnected,
+      address: address?.slice(0, 10)
+    });
+  }, [claimWinnings, isConnected, address]);
+
   const handleStatsUpdate = useCallback((newStats: { 
     activeBets: number, 
     totalWagered: number,
