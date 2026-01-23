@@ -143,11 +143,11 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const { balance: degenBalance, refetch: refetchBalance } = useDegenBalance(address as Address | undefined)
   const { allowance: degenAllowance, refetch: refetchAllowance } = useDegenAllowance(address as Address | undefined)
   
-  // Transaction hooks - pass address for Farcaster SDK
-  const { placeBet, hash: betHash, isPending: isBetPending } = usePlaceBet(address)
+  // Transaction hooks
+  const { placeBet, hash: betHash, isPending: isBetPending } = usePlaceBet()
   const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinnings()
-  const { approve, hash: approveHash, isPending: isApprovePending } = useApproveToken(address)
-  const { mintTokens, hash: mintHash, isPending: isMintPending } = useMintTestTokens(address)
+  const { approve, hash: approveHash, isPending: isApprovePending } = useApproveToken()
+  const { mintTokens, hash: mintHash, isPending: isMintPending } = useMintTestTokens()
   
   // Transaction status tracking
   const { isConfirming: isBetConfirming, isConfirmed: isBetConfirmed } = useTransactionStatus(betHash)

@@ -1,52 +1,7 @@
-import { useReadContract, useWaitForTransactionReceipt } from 'wagmi';
-import { type Address, parseUnits, formatUnits, encodeFunctionData, Hex } from 'viem';
+import { useReadContract, useWaitForTransactionReceipt, useWriteContract, useAccount } from 'wagmi';
+import { type Address, parseUnits, formatUnits } from 'viem';
 import { baseSepolia } from 'wagmi/chains';
-import { useState, useCallback } from 'react';
-import sdk from '@farcaster/miniapp-sdk';
 import TrollBetABI from '~/lib/abi/TrollBet.json';
-
-// Chain ID for all transactions (Base Sepolia for testnet)
-const CHAIN_ID = baseSepolia.id;
-
-/**
- * Helper to send transaction directly via Farcaster SDK
- * This bypasses wagmi and talks directly to the Farcaster wallet
- */
-async function sendViaFarcasterSDK(params: {
-  to: Address;
-  data: Hex;
-  chainId: number;
-  from?: Address;
-}): Promise<string> {
-  console.log('[sendViaFarcasterSDK] Getting provider...');
-  
-  const provider = await sdk.wallet.getEthereumProvider();
-  if (!provider) {
-    throw new Error('No Farcaster wallet provider available');
-  }
-  
-  console.log('[sendViaFarcasterSDK] Provider obtained, sending transaction...', params);
-  
-  // Get current account from provider
-  const accounts = await provider.request({ method: 'eth_accounts' }) as string[];
-  const from = params.from || (accounts[0] as Address);
-  
-  console.log('[sendViaFarcasterSDK] Using account:', from);
-  
-  // Use eth_sendTransaction directly with all required fields
-  const txHash = await provider.request({
-    method: 'eth_sendTransaction',
-    params: [{
-      from,
-      to: params.to,
-      data: params.data,
-      // Let wallet estimate gas
-    }],
-  }) as string;
-  
-  console.log('[sendViaFarcasterSDK] Transaction sent:', txHash);
-  return txHash;
-}
 
 // ERC20 ABI for approve
 const ERC20_ABI = [
@@ -79,54 +34,49 @@ export const TROLLBET_CONTRACT_ADDRESS: Address = '0x26dEe56f85fAa471eFF92103267
 export const DEGEN_TOKEN_ADDRESS: Address = '0xdDB5C1a86762068485baA1B481FeBeB17d30e002';
 
 /**
- * Hook to place a bet on a market - using Farcaster SDK directly
+ * Hook to place a bet on a market - using writeContract with explicit account
  */
-export function usePlaceBet(userAddress?: Address) {
-  const [hash, setHash] = useState<`0x${string}` | undefined>();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+export function usePlaceBet() {
+  const { address } = useAccount();
+  const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const placeBet = useCallback(async (marketId: number, side: boolean, amount: string) => {
-    console.log('[useTrollBet] placeBet called', { marketId, side, amount, userAddress });
-    setIsPending(true);
-    setError(null);
+  const placeBet = async (marketId: number, side: boolean, amount: string) => {
+    console.log('[useTrollBet] placeBet called', { marketId, side, amount, address });
     
-    try {
-      const amountWei = parseUnits(amount, 18);
+    if (!address) {
+      throw new Error('No wallet connected');
+    }
+    
+    const amountWei = parseUnits(amount, 18);
 
-      // Encode the function call data
-      const data = encodeFunctionData({
+    console.log('[useTrollBet] calling writeContract for placeBet...', {
+      address: TROLLBET_CONTRACT_ADDRESS,
+      marketId,
+      side,
+      amountWei: amountWei.toString(),
+      account: address,
+    });
+
+    try {
+      const result = await writeContract({
+        address: TROLLBET_CONTRACT_ADDRESS,
         abi: TrollBetABI,
         functionName: 'placeBet',
         args: [BigInt(marketId), side, amountWei],
+        account: address,
+        chain: baseSepolia,
       });
-
-      console.log('[useTrollBet] calling Farcaster SDK for placeBet...', {
-        to: TROLLBET_CONTRACT_ADDRESS,
-        marketId,
-        side,
-        amountWei: amountWei.toString(),
-        from: userAddress,
-      });
-
-      const txHash = await sendViaFarcasterSDK({
-        to: TROLLBET_CONTRACT_ADDRESS,
-        data: data as Hex,
-        chainId: CHAIN_ID,
-        from: userAddress,
-      });
-      
-      setHash(txHash as `0x${string}`);
-      console.log('[useTrollBet] placeBet success:', txHash);
-      return txHash;
+      console.log('[useTrollBet] placeBet writeContract result:', result);
+      return result;
     } catch (err) {
       console.error('[useTrollBet] placeBet error:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
       throw err;
-    } finally {
-      setIsPending(false);
     }
-  }, [userAddress]);
+  };
+
+  if (error) {
+    console.error('[useTrollBet] placeBet hook error:', error);
+  }
 
   return {
     placeBet,
@@ -137,42 +87,28 @@ export function usePlaceBet(userAddress?: Address) {
 }
 
 /**
- * Hook to claim winnings from a resolved market - using Farcaster SDK directly
+ * Hook to claim winnings from a resolved market
  */
 export function useClaimWinnings() {
-  const [hash, setHash] = useState<`0x${string}` | undefined>();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const { address } = useAccount();
+  const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const claimWinnings = useCallback(async (marketId: number) => {
-    console.log('[useTrollBet] claimWinnings called', { marketId });
-    setIsPending(true);
-    setError(null);
-
-    try {
-      const data = encodeFunctionData({
-        abi: TrollBetABI,
-        functionName: 'claimWinnings',
-        args: [BigInt(marketId)],
-      });
-
-      const txHash = await sendViaFarcasterSDK({
-        to: TROLLBET_CONTRACT_ADDRESS,
-        data: data as Hex,
-        chainId: CHAIN_ID,
-      });
-      
-      setHash(txHash as `0x${string}`);
-      console.log('[useTrollBet] claimWinnings success:', txHash);
-      return txHash;
-    } catch (err) {
-      console.error('[useTrollBet] claimWinnings error:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      throw err;
-    } finally {
-      setIsPending(false);
+  const claimWinnings = async (marketId: number) => {
+    console.log('[useTrollBet] claimWinnings called', { marketId, address });
+    
+    if (!address) {
+      throw new Error('No wallet connected');
     }
-  }, []);
+
+    return writeContract({
+      address: TROLLBET_CONTRACT_ADDRESS,
+      abi: TrollBetABI,
+      functionName: 'claimWinnings',
+      args: [BigInt(marketId)],
+      account: address,
+      chain: baseSepolia,
+    });
+  };
 
   return {
     claimWinnings,
@@ -183,53 +119,48 @@ export function useClaimWinnings() {
 }
 
 /**
- * Hook to approve $DEGEN token spending (unlimited approval) - using Farcaster SDK directly
+ * Hook to approve $DEGEN token spending (unlimited approval)
  */
-export function useApproveToken(userAddress?: Address) {
-  const [hash, setHash] = useState<`0x${string}` | undefined>();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+export function useApproveToken() {
+  const { address } = useAccount();
+  const { data: hash, writeContract, isPending, error } = useWriteContract();
 
   // Max uint256 for unlimited approval
   const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
-  const approve = useCallback(async (_amount?: string) => {
-    console.log('[useTrollBet] approve called', { userAddress });
-    setIsPending(true);
-    setError(null);
+  const approve = async (_amount?: string) => {
+    console.log('[useTrollBet] approve called', { address });
+    
+    if (!address) {
+      throw new Error('No wallet connected');
+    }
+
+    console.log('[useTrollBet] calling writeContract for approve...', {
+      token: DEGEN_TOKEN_ADDRESS,
+      spender: TROLLBET_CONTRACT_ADDRESS,
+      account: address,
+    });
 
     try {
-      // Encode the approve call
-      const data = encodeFunctionData({
+      const result = await writeContract({
+        address: DEGEN_TOKEN_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'approve',
         args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
+        account: address,
+        chain: baseSepolia,
       });
-
-      console.log('[useTrollBet] calling Farcaster SDK for approve...', {
-        to: DEGEN_TOKEN_ADDRESS,
-        spender: TROLLBET_CONTRACT_ADDRESS,
-        from: userAddress,
-      });
-
-      const txHash = await sendViaFarcasterSDK({
-        to: DEGEN_TOKEN_ADDRESS,
-        data: data as Hex,
-        chainId: CHAIN_ID,
-        from: userAddress,
-      });
-      
-      setHash(txHash as `0x${string}`);
-      console.log('[useTrollBet] approve success:', txHash);
-      return txHash;
+      console.log('[useTrollBet] approve writeContract result:', result);
+      return result;
     } catch (err) {
       console.error('[useTrollBet] approve error:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
       throw err;
-    } finally {
-      setIsPending(false);
     }
-  }, [userAddress]);
+  };
+
+  if (error) {
+    console.error('[useTrollBet] approve hook error:', error);
+  }
 
   return {
     approve,
@@ -427,52 +358,48 @@ export function useTransactionStatus(hash?: `0x${string}`) {
 }
 
 /**
- * Hook to mint test tokens (only works on testnet with MockDEGEN) - using Farcaster SDK directly
+ * Hook to mint test tokens (only works on testnet with MockDEGEN)
  */
-export function useMintTestTokens(userAddress?: Address) {
-  const [hash, setHash] = useState<`0x${string}` | undefined>();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+export function useMintTestTokens() {
+  const { address } = useAccount();
+  const { data: hash, writeContract, isPending, error } = useWriteContract();
 
-  const mintTokens = useCallback(async (toAddress: Address, amount: string = "10000") => {
-    console.log('[useTrollBet] mintTokens called', { toAddress, amount, userAddress });
-    setIsPending(true);
-    setError(null);
+  const mintTokens = async (toAddress: Address, amount: string = "10000") => {
+    console.log('[useTrollBet] mintTokens called', { toAddress, amount, address });
+    
+    if (!address) {
+      throw new Error('No wallet connected');
+    }
+    
+    const amountWei = parseUnits(amount, 18);
+
+    console.log('[useTrollBet] calling writeContract for mint...', {
+      token: DEGEN_TOKEN_ADDRESS,
+      toAddress,
+      amountWei: amountWei.toString(),
+      account: address,
+    });
 
     try {
-      const amountWei = parseUnits(amount, 18);
-
-      const data = encodeFunctionData({
+      const result = await writeContract({
+        address: DEGEN_TOKEN_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'mint',
         args: [toAddress, amountWei],
+        account: address,
+        chain: baseSepolia,
       });
-
-      console.log('[useTrollBet] calling Farcaster SDK for mint...', {
-        to: DEGEN_TOKEN_ADDRESS,
-        toAddress,
-        amountWei: amountWei.toString(),
-        from: userAddress,
-      });
-
-      const txHash = await sendViaFarcasterSDK({
-        to: DEGEN_TOKEN_ADDRESS,
-        data: data as Hex,
-        chainId: CHAIN_ID,
-        from: userAddress,
-      });
-      
-      setHash(txHash as `0x${string}`);
-      console.log('[useTrollBet] mint success:', txHash);
-      return txHash;
+      console.log('[useTrollBet] mint writeContract result:', result);
+      return result;
     } catch (err) {
       console.error('[useTrollBet] mint error:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
       throw err;
-    } finally {
-      setIsPending(false);
     }
-  }, [userAddress]);
+  };
+
+  if (error) {
+    console.error('[useTrollBet] mint hook error:', error);
+  }
 
   return {
     mintTokens,
