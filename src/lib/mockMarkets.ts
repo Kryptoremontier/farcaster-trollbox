@@ -19,213 +19,67 @@ export interface Market {
 }
 
 export const MOCK_MARKETS: Market[] = [
-  // Market #0 - BTC $100k (manually created first)
+  // TEST MARKETS - 10 minutes (IDs 19-23)
   {
-    id: 'btc-100k',
-    contractMarketId: 0,
-    question: 'Will BTC hit $100k in 2026?',
-    description: 'The ultimate Bitcoin bull run prediction',
-    thumbnail: '₿📈',
-    category: 'crypto',
-    endTime: new Date('2026-03-01'),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  // Markets #1-6 from first batch
-  {
-    id: 'eth-flip-btc',
-    contractMarketId: 4,
-    question: 'Will ETH flip BTC market cap in 2026?',
-    description: 'The ultimate flippening debate',
-    thumbnail: '💎⚡',
-    category: 'crypto',
-    endTime: new Date('2026-12-31'),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'coinbase-degen',
-    contractMarketId: 5,
-    question: 'Will Coinbase list $DEGEN token this year?',
-    description: 'The ultimate degen dream scenario',
-    thumbnail: '🎩🏛️',
-    category: 'crypto',
-    endTime: new Date('2026-12-31'),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'superbowl-crypto',
-    contractMarketId: 6,
-    question: 'Will there be a crypto ad during Super Bowl?',
-    description: 'Are we back to 2021 vibes?',
-    thumbnail: '🏈📺',
-    category: 'sports',
-    endTime: new Date('2027-02-07'),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  // Markets #7-9 - TEST MARKETS (30 min)
-  {
-    id: 'btc-digit-test',
-    contractMarketId: 7,
-    question: 'Will BTC price end with digit 5 in next 30min?',
+    id: 'btc-digit-7-10min',
+    contractMarketId: 19,
+    question: '🎲 Will BTC price end with digit 7 in next 10min?',
     description: 'Quick test market for payout testing',
-    thumbnail: '🎲5️⃣',
+    thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date(Date.now() + 30 * 60 * 1000),
+    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'eth-btc-ratio-test',
-    contractMarketId: 8,
-    question: 'Will ETH/BTC ratio be above 0.04 in 30min?',
+    id: 'eth-gas-20-10min',
+    contractMarketId: 20,
+    question: '⚡ Will ETH gas be above 20 gwei in 10min?',
     description: 'Quick test market for payout testing',
-    thumbnail: '💎⚡',
+    thumbnail: '⚡',
     category: 'crypto',
-    endTime: new Date(Date.now() + 30 * 60 * 1000),
+    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'whale-move-test',
-    contractMarketId: 9,
-    question: 'Will any whale move >1000 ETH in next 30min?',
+    id: 'whale-move-500-10min',
+    contractMarketId: 21,
+    question: '🐋 Will any whale move >500 ETH in next 10min?',
     description: 'Quick test market for payout testing',
-    thumbnail: '🐋💰',
+    thumbnail: '🐋',
     category: 'crypto',
-    endTime: new Date(Date.now() + 30 * 60 * 1000),
+    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
-  // Markets #10-18 - REAL MARKETS
   {
-    id: 'degen-price',
-    contractMarketId: 10,
-    question: 'Will $DEGEN hit $0.10 this week?',
-    description: 'Degens betting on Degen. Meta af.',
-    thumbnail: '🎩📈',
+    id: 'btc-eth-ratio-10min',
+    contractMarketId: 22,
+    question: '📈 Will BTC/ETH ratio increase in next 10min?',
+    description: 'Quick test market for payout testing',
+    thumbnail: '📈',
     category: 'crypto',
-    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
     status: 'active',
   },
   {
-    id: 'elon-pepe',
-    contractMarketId: 11,
-    question: 'Will Elon Musk post a Pepe meme today?',
-    description: 'The ultimate troll moves are unpredictable',
-    thumbnail: '🐸🚀',
-    category: 'memes',
-    endTime: new Date(Date.now() + 18 * 60 * 60 * 1000),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'base-tvl',
-    contractMarketId: 12,
-    question: 'Will Base TVL exceed $2B this month?',
-    description: 'Onchain summer vibes or bearish reality?',
-    thumbnail: '🔵💎',
+    id: 'base-txs-100-10min',
+    contractMarketId: 23,
+    question: '🎯 Will Base have >100 txs in next 10min?',
+    description: 'Quick test market for payout testing',
+    thumbnail: '🎯',
     category: 'crypto',
-    endTime: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'vitalik-tweet',
-    contractMarketId: 13,
-    question: 'Will Vitalik tweet about AI this week?',
-    description: 'He loves AI more than you love your portfolio',
-    thumbnail: '🧙‍♂️🤖',
-    category: 'tech',
-    endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'farcaster-users',
-    contractMarketId: 14,
-    question: 'Will Farcaster hit 500K users this quarter?',
-    description: 'Bullish on decentralized social or nah?',
-    thumbnail: '🟣👥',
-    category: 'tech',
-    endTime: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'nft-floor',
-    contractMarketId: 15,
-    question: 'Will any Pudgy Penguin sell for >100 ETH this month?',
-    description: 'Penguins going parabolic or staying chill?',
-    thumbnail: '🐧💰',
-    category: 'crypto',
-    endTime: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'eth-merge-anniversary',
-    contractMarketId: 16,
-    question: 'Will ETH be above $3000 on Merge anniversary?',
-    description: 'One year later, are we still bullish?',
-    thumbnail: '💎📅',
-    category: 'crypto',
-    endTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'trump-crypto',
-    contractMarketId: 17,
-    question: 'Will Trump mention crypto in next debate?',
-    description: 'Politics meets decentralization',
-    thumbnail: '🗳️₿',
-    category: 'politics',
-    endTime: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
-    yesPool: 0,
-    noPool: 0,
-    totalBettors: 0,
-    status: 'active',
-  },
-  {
-    id: 'sec-eth-etf',
-    contractMarketId: 18,
-    question: 'Will SEC approve spot ETH ETF this quarter?',
-    description: 'Regulatory hopium or copium?',
-    thumbnail: '⚖️💎',
-    category: 'crypto',
-    endTime: new Date(Date.now() + 74 * 24 * 60 * 60 * 1000),
+    endTime: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
     yesPool: 0,
     noPool: 0,
     totalBettors: 0,
@@ -241,7 +95,7 @@ export function getMarketById(id: string): Market | undefined {
 }
 
 /**
- * Calculate time remaining in human-readable format
+ * Get time remaining string
  */
 export function getTimeRemaining(endTime: Date): string {
   const now = new Date();
@@ -273,30 +127,23 @@ export function getYesPercentage(market: Market): number {
 export function formatPoolAmount(amount: number): string {
   // For ETH amounts (small numbers), show with appropriate decimals
   if (amount < 1) {
-    return `${amount.toFixed(4)} ETH`;
+    if (amount >= 0.001) return `${amount.toFixed(3)} ETH`;
+    return `${amount.toFixed(4)} ETH`; // For very small amounts
   }
-  if (amount < 10) {
-    return `${amount.toFixed(3)} ETH`;
-  }
-  if (amount < 1000) {
-    return `${amount.toFixed(2)} ETH`;
-  }
-  // Legacy support for large mock values (will be replaced by contract data)
-  if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-  if (amount >= 1000) return `${(amount / 1000).toFixed(0)}K`;
-  return amount.toString();
+  if (amount >= 1) return `${amount.toFixed(2)} ETH`;
+  return `${amount.toFixed(4)} ETH`;
 }
 
 /**
- * Get category color
+ * Get category color classes
  */
 export function getCategoryColor(category: Market['category']): string {
   const colors = {
-    crypto: 'bg-purple-100 text-purple-700 border-purple-200',
-    tech: 'bg-blue-100 text-blue-700 border-blue-200',
-    memes: 'bg-green-100 text-green-700 border-green-200',
-    politics: 'bg-red-100 text-red-700 border-red-200',
-    sports: 'bg-orange-100 text-orange-700 border-orange-200',
+    crypto: 'bg-orange-100 text-orange-700 border-orange-300',
+    tech: 'bg-blue-100 text-blue-700 border-blue-300',
+    memes: 'bg-pink-100 text-pink-700 border-pink-300',
+    politics: 'bg-purple-100 text-purple-700 border-purple-300',
+    sports: 'bg-green-100 text-green-700 border-green-300',
   };
-  return colors[category];
+  return colors[category] || colors.crypto;
 }
