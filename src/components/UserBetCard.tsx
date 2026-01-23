@@ -20,8 +20,11 @@ export function UserBetCard({ market, userAddress, onSelect }: UserBetCardProps)
   );
   const { marketData } = useMarketData(market.contractMarketId ?? 0);
 
-  // Don't render if no bet or loading
-  if (isLoading || !userBet) return null;
+  // Don't render if loading
+  if (isLoading) return null;
+
+  // Don't render if no bet data
+  if (!userBet) return null;
 
   const yesAmount = parseFloat(userBet.yesAmount);
   const noAmount = parseFloat(userBet.noAmount);

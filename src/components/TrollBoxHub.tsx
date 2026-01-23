@@ -68,7 +68,7 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
     connect({ connector: config.connectors[0] });
   }, [connect]);
 
-  // Filter markets for trending tab
+  // Filter markets for main/search
   const filteredMarkets = MOCK_MARKETS.filter((market) => {
     const matchesSearch =
       searchQuery === "" ||
@@ -77,6 +77,16 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
 
     return matchesSearch && market.status === "active";
   });
+
+  // Top 10 markets by total pool for trending tab
+  const trendingMarkets = [...MOCK_MARKETS]
+    .filter((market) => market.status === "active")
+    .sort((a, b) => {
+      const totalA = a.yesPool + a.noPool;
+      const totalB = b.yesPool + b.noPool;
+      return totalB - totalA; // Descending order
+    })
+    .slice(0, 10);
 
   // Scroll tabs
   const scrollTabs = (direction: 'left' | 'right') => {
@@ -303,8 +313,8 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
             </button>
           </div>
 
-          {/* Search - show for main, trending and your-bets */}
-          {(selectedTab === "main" || selectedTab === "trending" || selectedTab === "your-bets") && (
+          {/* Search - show for main and your-bets */}
+          {(selectedTab === "main" || selectedTab === "your-bets") && (
             <div className="relative mt-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
@@ -367,7 +377,10 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-gray-900">Your Active Bets</h2>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900">Your Active Bets</h2>
+                      <p className="text-xs text-gray-500 mt-1">All markets where you have placed bets</p>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {MOCK_MARKETS.filter(m => m.contractMarketId !== undefined).map((market) => (
@@ -384,32 +397,35 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
             </>
           )}
 
-          {/* Trending Tab */}
+          {/* Trending Tab - TOP 10 by Total Pool */}
           {selectedTab === "trending" && (
             <>
-              {filteredMarkets.length === 0 ? (
+              {trendingMarkets.length === 0 ? (
                 <div className="text-center py-16 space-y-3">
                   <div className="text-6xl">🤷</div>
-                  <p className="text-gray-500 font-medium">No markets found</p>
-                  <p className="text-sm text-gray-400">Try adjusting your search</p>
+                  <p className="text-gray-500 font-medium">No trending markets</p>
+                  <p className="text-sm text-gray-400">Check back later</p>
                 </div>
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-600">
-                      <span className="font-semibold text-gray-900">
-                        {filteredMarkets.length}
-                      </span>{" "}
-                      active {filteredMarkets.length === 1 ? "market" : "markets"}
-                    </p>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900">🔥 Top 10 Trending Markets</h2>
+                      <p className="text-xs text-gray-500 mt-1">Sorted by highest total pool</p>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredMarkets.map((market) => (
-                      <MarketCard
-                        key={market.id}
-                        market={market}
-                        onSelect={onMarketSelect}
-                      />
+                    {trendingMarkets.map((market, index) => (
+                      <div key={market.id} className="relative">
+                        {/* Rank Badge */}
+                        <div className="absolute -top-2 -left-2 z-10 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-lg border-2 border-white">
+                          {index + 1}
+                        </div>
+                        <MarketCard
+                          market={market}
+                          onSelect={onMarketSelect}
+                        />
+                      </div>
                     ))}
                   </div>
                 </>

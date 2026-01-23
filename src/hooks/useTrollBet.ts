@@ -134,6 +134,9 @@ export function useUserBet(marketId: number, userAddress?: Address) {
     abi: TrollBetABI,
     functionName: 'getUserBet',
     args: userAddress ? [BigInt(marketId), userAddress] : undefined,
+    query: {
+      enabled: !!userAddress && marketId !== undefined,
+    },
   });
 
   const userBet = data ? {
