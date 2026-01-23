@@ -3,7 +3,6 @@
 import { Clock, Users, TrendingUp } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button-component";
 import { cn } from "~/lib/utils";
 import {
   type Market,
@@ -24,92 +23,77 @@ export function MarketCard({ market, onSelect }: MarketCardProps) {
   const timeRemaining = getTimeRemaining(market.endTime);
 
   return (
-    <Card className="bg-white border-gray-200 hover:border-[#9E75FF]/50 hover:shadow-xl transition-all duration-200 overflow-hidden group cursor-pointer">
-      <div onClick={() => onSelect(market.id)}>
-        {/* Thumbnail Header - Larger */}
-        <div className="relative h-40 bg-gradient-to-br from-[#9E75FF]/10 to-[#9E75FF]/5 flex items-center justify-center border-b border-gray-100">
-          <div className="text-7xl group-hover:scale-110 transition-transform duration-200">
+    <Card 
+      className="bg-white border border-gray-200 hover:border-[#9E75FF]/50 hover:shadow-md transition-all duration-200 overflow-hidden group cursor-pointer"
+      onClick={() => onSelect(market.id)}
+    >
+      {/* Compact Header with Emoji & Badge */}
+      <div className="flex items-start justify-between p-3 pb-2 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <div className="text-3xl group-hover:scale-110 transition-transform duration-200">
             {market.thumbnail}
           </div>
           <Badge
             className={cn(
-              "absolute top-4 right-4 text-sm font-semibold px-3 py-1",
+              "text-xs font-semibold px-2 py-0.5",
               getCategoryColor(market.category)
             )}
           >
             {market.category.toUpperCase()}
           </Badge>
         </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-[#9E75FF]">{yesPercentage.toFixed(0)}%</div>
+          <div className="text-xs text-gray-500">chance</div>
+        </div>
+      </div>
 
-        {/* Content - More padding */}
-        <div className="p-5 space-y-4">
-          {/* Question - Larger, more visible */}
-          <h3 className="font-bold text-lg text-gray-900 leading-snug line-clamp-3 min-h-[4rem] group-hover:text-[#9E75FF] transition-colors">
-            {market.question}
-          </h3>
+      {/* Question - Compact but readable */}
+      <div className="p-3 pb-2">
+        <h3 className="font-semibold text-sm text-gray-900 leading-tight line-clamp-2 group-hover:text-[#9E75FF] transition-colors">
+          {market.question}
+        </h3>
+      </div>
 
-          {/* Description - Slightly larger */}
-          <p className="text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">
-            {market.description}
-          </p>
-
-          {/* Stats Row - Larger */}
-          <div className="flex items-center justify-between text-sm text-gray-600 pt-3 border-t border-gray-100">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#9E75FF]" />
-              <span className="font-medium">{timeRemaining}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#9E75FF]" />
-              <span className="font-medium">{market.totalBettors.toLocaleString()}</span>
-            </div>
-          </div>
-
-          {/* Pool Display - Larger */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-500 font-medium">Total Pool</span>
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-[#9E75FF]" />
-                <span className="text-base font-bold text-[#9E75FF]">
-                  {formatPoolAmount(totalPool)} $DEGEN
-                </span>
-              </div>
-            </div>
-
-            {/* YES/NO Progress Bar - Taller */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm font-bold">
-                <span className="text-green-600">YES {yesPercentage.toFixed(0)}%</span>
-                <span className="text-red-600">NO {(100 - yesPercentage).toFixed(0)}%</span>
-              </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden flex shadow-inner">
-                <div
-                  className="h-full bg-green-500 transition-all duration-300"
-                  style={{ width: `${yesPercentage}%` }}
-                />
-                <div
-                  className="h-full bg-red-500 transition-all duration-300"
-                  style={{ width: `${100 - yesPercentage}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-sm text-gray-500 font-medium">
-                <span>{formatPoolAmount(market.yesPool)}</span>
-                <span>{formatPoolAmount(market.noPool)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Bet Button - Larger */}
-          <Button
+      {/* YES/NO Buttons - Polymarket style */}
+      <div className="px-3 pb-3">
+        <div className="grid grid-cols-2 gap-2">
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onSelect(market.id);
             }}
-            className="w-full h-12 bg-[#9E75FF] hover:bg-[#8E65EF] text-white font-bold text-base shadow-lg active:scale-95 transition-transform"
+            className="py-2 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 font-semibold text-sm transition-colors"
           >
-            Bet Now
-          </Button>
+            Yes
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(market.id);
+            }}
+            className="py-2 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-semibold text-sm transition-colors"
+          >
+            No
+          </button>
+        </div>
+      </div>
+
+      {/* Footer Stats */}
+      <div className="px-3 pb-3 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" />
+            <span className="font-medium">{formatPoolAmount(totalPool)}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            <span className="font-medium">{market.totalBettors}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          <span className="font-medium">{timeRemaining}</span>
         </div>
       </div>
     </Card>
