@@ -339,15 +339,7 @@ export function useMarketCount() {
  */
 export function useAllMarkets() {
   const { marketCount, isLoading: isLoadingCount } = useMarketCount();
-  const [markets, setMarkets] = useState<Array<{
-    id: number;
-    question: string;
-    endTime: Date;
-    yesPool: string;
-    noPool: string;
-    resolved: boolean;
-    winningSide: boolean;
-  }>>([]);
+  const [markets, setMarkets] = useState<Array<{ id: number }>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -358,7 +350,7 @@ export function useAllMarkets() {
       }
 
       setIsLoading(true);
-      const loadedMarkets = [];
+      const loadedMarkets: Array<{ id: number }> = [];
 
       for (let i = 0; i < marketCount; i++) {
         try {
@@ -370,7 +362,7 @@ export function useAllMarkets() {
         }
       }
 
-      setMarkets(loadedMarkets as any);
+      setMarkets(loadedMarkets);
       setIsLoading(false);
     }
 
