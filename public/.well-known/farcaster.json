@@ -7,10 +7,10 @@
   "frame": {
     "version": "next",
     "name": "TrollBox",
-    "iconUrl": "https://farcaster-trollbox.netlify.app/icon.png",
-    "homeUrl": "https://farcaster-trollbox.netlify.app",
-    "imageUrl": "https://farcaster-trollbox.netlify.app/troll-banner.png",
-    "splashImageUrl": "https://farcaster-trollbox.netlify.app/splash.png",
+    "iconUrl": "https://farcaster-troll-box.vercel.app/icon.png",
+    "homeUrl": "https://farcaster-troll-box.vercel.app",
+    "imageUrl": "https://farcaster-troll-box.vercel.app/troll-banner.png",
+    "splashImageUrl": "https://farcaster-troll-box.vercel.app/splash.png",
     "splashBackgroundColor": "#9E75FF"
   }
 }
