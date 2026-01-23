@@ -27,11 +27,17 @@ const ERC20_ABI = [
   }
 ] as const;
 
-// Contract address - TODO: Update this after deployment
+// Contract addresses by chain
+// Base Sepolia (Testnet - Chain ID: 84532)
 export const TROLLBET_CONTRACT_ADDRESS: Address = '0x26dEe56f85fAa471eFF9210326734389186ac625';
-
-// $DEGEN token address on Base (chain ID 8453)
 export const DEGEN_TOKEN_ADDRESS: Address = '0xdDB5C1a86762068485baA1B481FeBeB17d30e002';
+
+// Base Mainnet (Production - Chain ID: 8453)
+// export const TROLLBET_MAINNET: Address = '0x...'; // TODO: Deploy to mainnet
+// export const DEGEN_MAINNET: Address = '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed'; // Real $DEGEN
+
+// ⚠️ WARNING: These addresses MUST be deployed contracts on Base Sepolia!
+// If you see "No state changes detected", the contracts don't exist at these addresses.
 
 /**
  * Hook to place a bet on a market - using writeContract with explicit account
@@ -281,9 +287,15 @@ export function useDegenBalance(userAddress?: Address) {
     abi: erc20BalanceABI,
     functionName: 'balanceOf',
     args: userAddress ? [userAddress] : undefined,
+    query: {
+      enabled: !!userAddress,
+      // Don't show 0 while loading - keep previous value
+      placeholderData: (previousData) => previousData,
+    },
   });
 
-  const balance = data ? formatUnits(data as bigint, 18) : '0';
+  // Only show 0 if we actually got data back that is 0, not if loading/error
+  const balance = data !== undefined ? formatUnits(data as bigint, 18) : '0';
 
   return {
     balance,

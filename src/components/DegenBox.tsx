@@ -119,9 +119,12 @@ interface DegenBoxProps {
 
 export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const market = getMarketById(marketId);
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, chain } = useAccount()
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
+  
+  // Check if we're on the correct network (Base Sepolia)
+  const isCorrectNetwork = chain?.id === 84532;
   
   const [selectedAmount, setSelectedAmount] = useState("100")
   const [activeTab, setActiveTab] = useState<"chat" | "leaderboard">("chat")
@@ -776,6 +779,15 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
 
               {/* Wallet Balance */}
               <div className="p-3 bg-gradient-to-br from-green-500/5 to-green-500/10 rounded-lg border border-green-500/20">
+                {/* Network Warning */}
+                {isConnected && !isCorrectNetwork && (
+                  <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-center">
+                    <p className="text-xs text-yellow-800 font-bold">⚠️ Wrong Network!</p>
+                    <p className="text-xs text-yellow-700">Switch to Base Sepolia</p>
+                    <p className="text-xs text-yellow-600">(Current: {chain?.name})</p>
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs text-gray-600 font-medium">💰 Wallet Balance</span>
                   <span className="text-lg font-bold text-green-600 font-mono">
