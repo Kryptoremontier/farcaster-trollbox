@@ -315,8 +315,8 @@ export function Portfolio({
                 market={market}
                 userAddress={address as Address}
                 onSelect={onMarketSelect}
-                onClaim={onClaim}
-                onClaimRefund={onClaimRefund}
+                onClaim={onClaim || null}
+                onClaimRefund={onClaimRefund || null}
                 isClaimPending={isClaimPendingProp}
                 isClaimConfirming={isClaimConfirmingProp}
                 isRefundPending={isRefundPendingProp}
@@ -355,9 +355,12 @@ export function Portfolio({
                   market={market}
                   userAddress={address as Address}
                   onSelect={onMarketSelect}
-                  onClaim={claimWinnings}
-                  isClaimPending={isClaimPending}
-                  isClaimConfirming={isClaimConfirming}
+                  onClaim={onClaim || null}
+                  onClaimRefund={onClaimRefund || null}
+                  isClaimPending={isClaimPendingProp}
+                  isClaimConfirming={isClaimConfirmingProp}
+                  isRefundPending={isRefundPendingProp}
+                  isRefundConfirming={isRefundConfirmingProp}
                 />
               ))}
             </div>
