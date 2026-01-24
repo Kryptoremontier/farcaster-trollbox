@@ -215,19 +215,6 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       
       recordBetAsync();
       
-      // Add message to chat
-      const betMessage: ChatMessage = {
-        id: Date.now().toString(),
-        user: { 
-          name: context?.user?.displayName || context?.user?.username || "You", 
-          avatar: context?.user?.pfpUrl || getAvatarUrl("You"), 
-          bet: selectedSide 
-        },
-        message: `Bet ${selectedAmount} ETH on ${selectedSide}! 🎲`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, betMessage]);
-      
       setSelectedSide(null);
       setTimeout(() => setBetStatus(null), 5000);
     }
