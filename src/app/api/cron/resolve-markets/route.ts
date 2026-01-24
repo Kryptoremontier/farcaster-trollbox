@@ -140,6 +140,33 @@ async function getMarketResult(question: string): Promise<boolean | null> {
     return gasPrice > threshold;
   }
 
+  // BTC last digit EVEN/ODD check
+  if (question.includes("BTC price last digit be EVEN")) {
+    const btcPrice = await fetchCryptoPrice('bitcoin');
+    const lastDigit = Math.floor(btcPrice * 100) % 10;
+    const isEven = lastDigit % 2 === 0;
+    
+    console.log(`      💰 BTC Price: $${btcPrice.toFixed(2)}`);
+    console.log(`      🎲 Last digit: ${lastDigit}, EVEN: ${isEven}`);
+    
+    return isEven;
+  }
+
+  // ETH price threshold check (touch $X before resolution)
+  if (question.includes("ETH price touch")) {
+    const ethPrice = await fetchCryptoPrice('ethereum');
+    const match = question.match(/\$([0-9,]+)/);
+    if (!match) return null;
+    
+    const threshold = parseInt(match[1].replace(/,/g, ''));
+    const touched = ethPrice >= threshold;
+    
+    console.log(`      💰 ETH Price: $${ethPrice.toFixed(2)}, Threshold: $${threshold}`);
+    console.log(`      🎯 Touched: ${touched}`);
+    
+    return touched;
+  }
+
   // ⚠️ WARNING: MOCK ORACLES - DO NOT USE ON MAINNET ⚠️
   
   // Whale movement check (mock for now)
