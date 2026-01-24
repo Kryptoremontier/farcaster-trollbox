@@ -426,7 +426,7 @@ export function useClaimRefund() {
   const claimRefund = (marketId: number) => {
     writeContract({
       address: TROLLBET_ETH_ADDRESS,
-      abi: TROLLBET_ABI,
+      abi: TrollBetETH_ABI,
       functionName: 'claimRefund',
       args: [BigInt(marketId)],
       chainId: base.id,

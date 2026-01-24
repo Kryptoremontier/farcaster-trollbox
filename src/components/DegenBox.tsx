@@ -18,7 +18,9 @@ import {
   useMarketDataETH, 
   useUserBetETH, 
   useTransactionStatusETH,
-  useETHBalance
+  useETHBalance,
+  useClaimRefund,
+  useRefundConfirmation
 } from "~/hooks/useTrollBetETH"
 import type { Address } from "viem"
 import { base } from "wagmi/chains"
@@ -86,10 +88,12 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   // Transaction hooks - NO approve hook needed!
   const { placeBet, hash: betHash, isPending: isBetPending } = usePlaceBetETH()
   const { claimWinnings, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH()
+  const { claimRefund, hash: refundHash, isPending: isRefundPending } = useClaimRefund()
   
   // Transaction status tracking - NO approve tracking needed!
   const { isConfirming: isBetConfirming, isConfirmed: isBetConfirmed } = useTransactionStatusETH(betHash)
   const { isConfirming: isClaimConfirming, isConfirmed: isClaimConfirmed } = useTransactionStatusETH(claimHash)
+  const { isConfirming: isRefundConfirming, isConfirmed: isRefundConfirmed } = useRefundConfirmation(refundHash)
   
   // UI state - NO approval state needed!
   const [betStatus, setBetStatus] = useState<{ type: 'success' | 'error' | 'info', message: string } | null>(null)
@@ -229,9 +233,24 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       });
       refetchMarket();
       refetchUserBet();
+      refetchBalance();
       setTimeout(() => setBetStatus(null), 5000);
     }
-  }, [isClaimConfirmed, refetchMarket, refetchUserBet]);
+  }, [isClaimConfirmed, refetchMarket, refetchUserBet, refetchBalance]);
+
+  // Handle refund confirmation
+  useEffect(() => {
+    if (isRefundConfirmed) {
+      setBetStatus({
+        type: 'success',
+        message: `Refund claimed successfully! 💰`
+      });
+      refetchMarket();
+      refetchUserBet();
+      refetchBalance();
+      setTimeout(() => setBetStatus(null), 5000);
+    }
+  }, [isRefundConfirmed, refetchMarket, refetchUserBet, refetchBalance]);
 
   // NOTE: No approval needed with Native ETH! 🎉
   // NOTE: No mint/faucet needed - users bring their own ETH!
@@ -603,6 +622,47 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                       </div>
                     </div>
                   </div>
+
+                  {/* MARKET CANCELLED - REFUND AVAILABLE */}
+                  {marketData?.cancelled && userBet && !userBet.claimed && (userBet.yesAmount > 0 || userBet.noAmount > 0) && (
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold text-blue-700">🔄 Market Cancelled</span>
+                        <span className="text-xl font-bold text-blue-700">
+                          {((userBet.yesAmount + userBet.noAmount) / 1e18).toFixed(4)} ETH
+                        </span>
+                      </div>
+                      <p className="text-xs text-blue-600 mb-3">
+                        This market was cancelled. Claim your 100% refund (no fees).
+                      </p>
+                      <Button
+                        onClick={() => claimRefund(marketIdNum)}
+                        disabled={isRefundPending || isRefundConfirming}
+                        className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md active:scale-95 transition-transform"
+                      >
+                        {isRefundPending || isRefundConfirming ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Claiming Refund...
+                          </>
+                        ) : (
+                          <>
+                            <TrendingUp className="w-4 h-4 mr-2" />
+                            Claim Refund
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* REFUND CLAIMED */}
+                  {marketData?.cancelled && userBet?.claimed && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <Badge className="w-full justify-center bg-blue-100 text-blue-700 border-blue-300">
+                        ✅ Refund Claimed ({((userBet.yesAmount + userBet.noAmount) / 1e18).toFixed(4)} ETH)
+                      </Badge>
+                    </div>
+                  )}
 
                   {/* User Won */}
                   {userWon && !userBet?.claimed && (
