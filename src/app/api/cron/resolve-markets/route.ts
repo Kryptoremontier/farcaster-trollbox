@@ -47,7 +47,8 @@ const TROLLBET_ABI = [
       {"internalType": "uint256", "name": "noPool", "type": "uint256"},
       {"internalType": "bool", "name": "resolved", "type": "bool"},
       {"internalType": "bool", "name": "winningSide", "type": "bool"},
-      {"internalType": "bool", "name": "exists", "type": "bool"}
+      {"internalType": "bool", "name": "exists", "type": "bool"},
+      {"internalType": "bool", "name": "cancelled", "type": "bool"}
     ],
     "stateMutability": "view",
     "type": "function"
@@ -80,8 +81,9 @@ async function fetchCryptoPrice(symbol: string): Promise<number> {
 
 async function fetchEthGasPrice(): Promise<number> {
   try {
-    // Use Etherscan API for Ethereum mainnet gas prices
-    // Note: For Base gas prices, we'd need a different API
+    // ⚠️ WARNING: This uses Ethereum mainnet gas prices, NOT Base network!
+    // For Base gas prices, use: https://api.basescan.org/api?module=gastracker&action=gasoracle&apikey=YOUR_KEY
+    // Current implementation is for demonstration only
     const response = await fetch(
       'https://api.etherscan.io/api?module=gastracker&action=gasoracle',
       { next: { revalidate: 60 } } // Cache for 60 seconds
@@ -100,7 +102,7 @@ async function fetchEthGasPrice(): Promise<number> {
     }
     
     const gasPrice = parseInt(data.result?.ProposeGasPrice || '0');
-    console.log(`      ⛽ Fetched gas price: ${gasPrice} gwei`);
+    console.log(`      ⛽ Fetched gas price: ${gasPrice} gwei (⚠️ Ethereum mainnet, NOT Base!)`);
     return gasPrice;
   } catch (error) {
     console.error('Failed to fetch gas price:', error);
@@ -153,6 +155,8 @@ async function getMarketResult(question: string): Promise<boolean | null> {
   }
 
   // ETH price threshold check (touch $X before resolution)
+  // ⚠️ WARNING: This only checks CURRENT price, NOT historical high/low
+  // For accurate "touch" markets, you need historical price data API
   if (question.includes("ETH price touch")) {
     const ethPrice = await fetchCryptoPrice('ethereum');
     const match = question.match(/\$([0-9,]+)/);
@@ -162,7 +166,8 @@ async function getMarketResult(question: string): Promise<boolean | null> {
     const touched = ethPrice >= threshold;
     
     console.log(`      💰 ETH Price: $${ethPrice.toFixed(2)}, Threshold: $${threshold}`);
-    console.log(`      🎯 Touched: ${touched}`);
+    console.log(`      🎯 Result: ${touched ? 'YES' : 'NO'} (⚠️ CURRENT price only, not historical!)`);
+    console.log(`      ⚠️  WARNING: This market type needs historical data for accuracy!`);
     
     return touched;
   }
@@ -201,12 +206,19 @@ export async function GET(req: NextRequest) {
   try {
     console.log('🤖 [CRON] Auto-resolve markets started at', new Date().toISOString());
 
-    // Verify cron secret (security)
+    // Verify cron secret (security) - ONLY if called externally
+    // Vercel Cron calls don't include Authorization header, so check if it's from Vercel
     const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      console.log('❌ [CRON] Unauthorized request');
+    const userAgent = req.headers.get('user-agent') || '';
+    const isVercelCron = userAgent.includes('vercel-cron');
+    
+    // If CRON_SECRET is set and it's NOT a Vercel Cron, require auth
+    if (process.env.CRON_SECRET && !isVercelCron && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      console.log('❌ [CRON] Unauthorized request (not Vercel Cron, invalid auth)');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    console.log(`   🔐 Auth: ${isVercelCron ? 'Vercel Cron (trusted)' : authHeader ? 'Bearer token' : 'none'}`);
 
     // Check if bot wallet is configured
     if (!process.env.DEPLOYER_PRIVATE_KEY) {
@@ -280,15 +292,21 @@ export async function GET(req: NextRequest) {
           args: [BigInt(i)]
         });
 
-        const [question, endTime, yesPool, noPool, resolved, , exists] = market;
+        const [question, endTime, yesPool, noPool, resolved, , exists, cancelled] = market;
 
         if (!exists) continue;
         
         results.checked++;
 
-        // Skip if already resolved
-        if (resolved) {
+        // Skip if already resolved or cancelled
+        if (resolved || cancelled) {
           results.skipped++;
+          results.details.push({
+            marketId: i,
+            question,
+            status: cancelled ? 'already_cancelled' : 'already_resolved',
+            reason: cancelled ? 'Market was cancelled' : 'Market already resolved'
+          });
           continue;
         }
 
@@ -402,6 +420,27 @@ export async function GET(req: NextRequest) {
     
     console.log(`\n✅ [CRON] Auto-resolve completed in ${duration}ms`);
     console.log(`   📊 Stats: ${results.resolved} resolved, ${results.skipped} skipped, ${results.failed} failed`);
+    
+    // Log warning if there were failures
+    if (results.failed > 0) {
+      console.error(`\n⚠️  [CRON] WARNING: ${results.failed} market(s) failed to resolve!`);
+      console.error('   🚨 ACTION REQUIRED: Check logs and resolve manually');
+      results.details
+        .filter(d => d.status === 'failed' || d.status === 'error')
+        .forEach(d => {
+          console.error(`   ❌ Market #${d.marketId}: ${d.error || 'Unknown error'}`);
+        });
+    }
+    
+    // Log info about markets needing manual resolution
+    const needsManual = results.details.filter(d => d.status === 'needs_manual');
+    if (needsManual.length > 0) {
+      console.warn(`\n⚠️  [CRON] ${needsManual.length} market(s) need manual resolution:`);
+      needsManual.forEach(d => {
+        console.warn(`   🔧 Market #${d.marketId}: "${d.question}"`);
+        console.warn(`      Reason: ${d.reason}`);
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -412,7 +451,11 @@ export async function GET(req: NextRequest) {
         skipped: results.skipped,
         failed: results.failed
       },
-      details: results.details
+      details: results.details,
+      warnings: {
+        failures: results.failed,
+        needsManual: needsManual.length
+      }
     });
 
   } catch (error) {
