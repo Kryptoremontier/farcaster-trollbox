@@ -127,6 +127,7 @@ contract TrollBetETH {
      * @notice Resolve a market with the winning side
      * @param marketId The ID of the market
      * @param winningSide true = YES won, false = NO won
+     * @dev If winning side has no bets, market is auto-cancelled for refunds
      */
     function resolveMarket(uint256 marketId, bool winningSide) external onlyOwner {
         Market storage market = markets[marketId];
@@ -136,9 +137,15 @@ contract TrollBetETH {
         require(!market.cancelled, "Market cancelled");
         require(block.timestamp >= market.endTime, "Market still active");
 
-        // CRITICAL: Check if winning side has any bets
+        // CRITICAL: If winning side has no bets, auto-cancel for refunds
         uint256 winningPool = winningSide ? market.yesPool : market.noPool;
-        require(winningPool > 0, "No bets on winning side - cannot resolve");
+        
+        if (winningPool == 0) {
+            // Auto-cancel: all bettors get 100% refund
+            market.cancelled = true;
+            emit MarketCancelled(marketId);
+            return;
+        }
 
         market.resolved = true;
         market.winningSide = winningSide;

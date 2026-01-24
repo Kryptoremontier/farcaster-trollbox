@@ -332,6 +332,13 @@ export async function GET(req: NextRequest) {
 
         console.log(`      ✅ Result determined: ${result ? 'YES' : 'NO'}`);
 
+        // Check if winning side has bets
+        const winningPool = result ? yesPool : noPool;
+        if (winningPool === 0n) {
+          console.log(`      ⚠️  WARNING: Winning side has NO bets!`);
+          console.log(`      ℹ️  Contract will auto-cancel and allow refunds`);
+        }
+
         // Resolve market
         const hash = await walletClient.writeContract({
           address: TROLLBET_ETH_ADDRESS,
@@ -346,15 +353,28 @@ export async function GET(req: NextRequest) {
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
         if (receipt.status === 'success') {
-          console.log(`      ✅ Market #${i} resolved successfully!`);
-          results.resolved++;
-          results.details.push({
-            marketId: i,
-            question,
-            result: result ? 'YES' : 'NO',
-            txHash: hash,
-            status: 'resolved'
-          });
+          // Check if market was cancelled instead of resolved
+          if (winningPool === 0n) {
+            console.log(`      🔄 Market #${i} auto-cancelled (no winners)`);
+            results.resolved++;
+            results.details.push({
+              marketId: i,
+              question,
+              result: `AUTO-CANCELLED (${result ? 'YES' : 'NO'} won but no bets)`,
+              txHash: hash,
+              status: 'cancelled'
+            });
+          } else {
+            console.log(`      ✅ Market #${i} resolved successfully!`);
+            results.resolved++;
+            results.details.push({
+              marketId: i,
+              question,
+              result: result ? 'YES' : 'NO',
+              txHash: hash,
+              status: 'resolved'
+            });
+          }
         } else {
           console.log(`      ❌ TX failed for market #${i}`);
           results.failed++;
