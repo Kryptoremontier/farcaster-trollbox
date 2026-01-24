@@ -624,12 +624,12 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                   </div>
 
                   {/* MARKET CANCELLED - REFUND AVAILABLE */}
-                  {marketData?.cancelled && userBet && !userBet.claimed && (userBet.yesAmount > 0 || userBet.noAmount > 0) && (
+                  {marketData?.cancelled && userBet && !userBet.claimed && (parseFloat(userBet.yesAmount) > 0 || parseFloat(userBet.noAmount) > 0) && (
                     <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-semibold text-blue-700">🔄 Market Cancelled</span>
                         <span className="text-xl font-bold text-blue-700">
-                          {((userBet.yesAmount + userBet.noAmount) / 1e18).toFixed(4)} ETH
+                          {(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)).toFixed(4)} ETH
                         </span>
                       </div>
                       <p className="text-xs text-blue-600 mb-3">
@@ -659,7 +659,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                   {marketData?.cancelled && userBet?.claimed && (
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <Badge className="w-full justify-center bg-blue-100 text-blue-700 border-blue-300">
-                        ✅ Refund Claimed ({((userBet.yesAmount + userBet.noAmount) / 1e18).toFixed(4)} ETH)
+                        ✅ Refund Claimed ({(parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount)).toFixed(4)} ETH)
                       </Badge>
                     </div>
                   )}
