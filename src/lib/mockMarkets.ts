@@ -13,7 +13,6 @@ export interface Market {
   endTime: Date;
   yesPool: number;
   noPool: number;
-  totalBettors: number;
   status: 'active' | 'resolved' | 'upcoming';
   result?: 'YES' | 'NO';
 }
@@ -40,8 +39,7 @@ export const MOCK_MARKETS: Market[] = [
     category: 'crypto',
     endTime: new Date('2026-01-25T12:16:49.000Z'), // FIXED timestamp - 24h test
     yesPool: 0, 
-    noPool: 0, 
-    totalBettors: 0, 
+    noPool: 0,
     status: 'active',
   },
   {
@@ -53,8 +51,7 @@ export const MOCK_MARKETS: Market[] = [
     category: 'crypto',
     endTime: new Date('2026-01-25T12:16:49.000Z'), // FIXED timestamp - 24h test
     yesPool: 0, 
-    noPool: 0, 
-    totalBettors: 0, 
+    noPool: 0,
     status: 'active',
   },
 ];

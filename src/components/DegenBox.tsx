@@ -486,10 +486,6 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
                 <Badge className="bg-[#9E75FF]/10 text-[#9E75FF] border-[#9E75FF]/20 text-xs font-semibold">
                   {market?.category || "Prediction Market"}
                 </Badge>
-                <div className="flex items-center gap-1 text-gray-500">
-                  <Users className="w-3 h-3" />
-                  <span className="text-xs">{market?.totalBettors.toLocaleString() || "0"} bettors</span>
-                </div>
               </div>
               <h2 className="text-base font-semibold text-gray-900 leading-tight text-pretty">
                 {market?.question || "Loading market..."}
