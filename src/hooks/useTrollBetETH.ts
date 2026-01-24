@@ -227,7 +227,7 @@ export function useMarketDataETH(marketId: number) {
   const { data, isLoading, error, refetch } = useReadContract({
     address: TROLLBET_ETH_ADDRESS,
     abi: TrollBetETH_ABI,
-    functionName: 'getMarket',
+    functionName: 'markets',
     args: [BigInt(marketId)],
     chainId: base.id,
   });
@@ -240,6 +240,8 @@ export function useMarketDataETH(marketId: number) {
     noPool: formatEther(data[3]),
     resolved: data[4],
     winningSide: data[5],
+    exists: data[6],
+    cancelled: data[7],
   } : null;
 
   return {
