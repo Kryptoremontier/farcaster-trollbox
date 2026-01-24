@@ -25,6 +25,14 @@ const TrollBetETH_ABI = [
     outputs: [],
     stateMutability: 'nonpayable'
   },
+  // claimRefund
+  {
+    type: 'function',
+    name: 'claimRefund',
+    inputs: [{ name: 'marketId', type: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
   // getMarket
   {
     type: 'function',
@@ -37,6 +45,23 @@ const TrollBetETH_ABI = [
       { name: 'noPool', type: 'uint256' },
       { name: 'resolved', type: 'bool' },
       { name: 'winningSide', type: 'bool' }
+    ],
+    stateMutability: 'view'
+  },
+  // markets (direct storage access)
+  {
+    type: 'function',
+    name: 'markets',
+    inputs: [{ name: 'marketId', type: 'uint256' }],
+    outputs: [
+      { name: 'question', type: 'string' },
+      { name: 'endTime', type: 'uint256' },
+      { name: 'yesPool', type: 'uint256' },
+      { name: 'noPool', type: 'uint256' },
+      { name: 'resolved', type: 'bool' },
+      { name: 'winningSide', type: 'bool' },
+      { name: 'exists', type: 'bool' },
+      { name: 'cancelled', type: 'bool' }
     ],
     stateMutability: 'view'
   },
@@ -382,6 +407,48 @@ export function useAllMarkets() {
 export function useTransactionStatusETH(hash?: `0x${string}`) {
   const { data, isLoading, isSuccess, isError } = useWaitForTransactionReceipt({
     hash,
+  });
+
+  return {
+    receipt: data,
+    isConfirming: isLoading,
+    isConfirmed: isSuccess,
+    isError,
+  };
+}
+
+/**
+ * Hook to claim refund from cancelled market
+ */
+export function useClaimRefund() {
+  const { writeContract, data: hash, isPending, isError, error } = useWriteContract();
+
+  const claimRefund = (marketId: number) => {
+    writeContract({
+      address: TROLLBET_ETH_ADDRESS,
+      abi: TROLLBET_ABI,
+      functionName: 'claimRefund',
+      args: [BigInt(marketId)],
+      chainId: base.id,
+    });
+  };
+
+  return {
+    claimRefund,
+    hash,
+    isPending,
+    isError,
+    error,
+  };
+}
+
+/**
+ * Hook to check if transaction is confirmed (for claim refund)
+ */
+export function useRefundConfirmation(hash: `0x${string}` | undefined) {
+  const { data, isLoading, isSuccess, isError } = useWaitForTransactionReceipt({
+    hash,
+    chainId: base.id,
   });
 
   return {

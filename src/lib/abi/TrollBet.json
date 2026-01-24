@@ -51,6 +51,42 @@
   },
   {
     "type": "function",
+    "name": "claimRefund",
+    "inputs": [
+      { "name": "marketId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "cancelMarket",
+    "inputs": [
+      { "name": "marketId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "markets",
+    "inputs": [
+      { "name": "marketId", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      { "name": "question", "type": "string", "internalType": "string" },
+      { "name": "endTime", "type": "uint256", "internalType": "uint256" },
+      { "name": "yesPool", "type": "uint256", "internalType": "uint256" },
+      { "name": "noPool", "type": "uint256", "internalType": "uint256" },
+      { "name": "resolved", "type": "bool", "internalType": "bool" },
+      { "name": "winningSide", "type": "bool", "internalType": "bool" },
+      { "name": "exists", "type": "bool", "internalType": "bool" },
+      { "name": "cancelled", "type": "bool", "internalType": "bool" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getMarket",
     "inputs": [
       { "name": "marketId", "type": "uint256", "internalType": "uint256" }
@@ -188,6 +224,14 @@
       { "name": "marketId", "type": "uint256", "indexed": true, "internalType": "uint256" },
       { "name": "user", "type": "address", "indexed": true, "internalType": "address" },
       { "name": "payout", "type": "uint256", "indexed": false, "internalType": "uint256" }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MarketCancelled",
+    "inputs": [
+      { "name": "marketId", "type": "uint256", "indexed": true, "internalType": "uint256" }
     ],
     "anonymous": false
   },
