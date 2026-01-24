@@ -8,15 +8,16 @@ import { Badge } from "~/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { config } from "~/components/providers/WagmiProvider";
+import { base } from "wagmi/chains";
 import { MarketCard } from "~/components/MarketCard";
 import { UserBetCard } from "~/components/UserBetCard";
 import { Portfolio } from "~/components/Portfolio";
 import { Leaderboard } from "~/components/Leaderboard";
 import { AdminPointsPanel } from "~/components/AdminPointsPanel";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
-import { useClaimWinningsETH, useTransactionStatusETH } from "~/hooks/useTrollBetETH";
+import { useClaimWinningsETH, useTransactionStatusETH, useClaimRefund, useRefundConfirmation } from "~/hooks/useTrollBetETH";
 import type { Address } from "viem";
 
 interface FarcasterUser {
@@ -43,11 +44,14 @@ interface TrollBoxHubProps {
 }
 
 export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chain } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
+  const { switchChain } = useSwitchChain();
   const { claimWinnings: claimWinningsHook, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH();
   const { isConfirming: isClaimConfirming } = useTransactionStatusETH(claimHash);
+  const { claimRefund: claimRefundHook, hash: refundHash, isPending: isRefundPending } = useClaimRefund();
+  const { isConfirming: isRefundConfirming } = useRefundConfirmation(refundHash);
 
   const [context, setContext] = useState<FarcasterContext | undefined>(undefined);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
@@ -73,6 +77,21 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
       console.error('[TrollBoxHub] Error calling claimWinningsHook:', error);
     }
   }, [claimWinningsHook, isConnected, address]);
+
+  // Wrapper for claimRefund
+  const claimRefund = useCallback((marketId: number) => {
+    console.log('[TrollBoxHub] claimRefund called with marketId:', marketId);
+    if (!isConnected || !address) {
+      console.error('[TrollBoxHub] Cannot claim refund: not connected');
+      return;
+    }
+    try {
+      claimRefundHook(marketId);
+      console.log('[TrollBoxHub] claimRefundHook called successfully');
+    } catch (error) {
+      console.error('[TrollBoxHub] Error calling claimRefundHook:', error);
+    }
+  }, [claimRefundHook, isConnected, address]);
 
   // Load Farcaster context and auto-connect wallet
   useEffect(() => {
@@ -109,6 +128,21 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
       load();
     }
   }, [isSDKLoaded, isConnected, connect]);
+
+  // Auto-switch to Base Mainnet when connected
+  useEffect(() => {
+    if (isConnected && chain && chain.id !== base.id && switchChain) {
+      console.log('[TrollBoxHub] Auto-switching to Base Mainnet...', {
+        currentChain: chain.id,
+        targetChain: base.id
+      });
+      try {
+        switchChain({ chainId: base.id });
+      } catch (error) {
+        console.error('[TrollBoxHub] Auto-switch failed:', error);
+      }
+    }
+  }, [isConnected, chain, switchChain]);
 
   const handleConnect = useCallback(() => {
     connect({ connector: config.connectors[0] });
@@ -526,8 +560,11 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
                         userAddress={address as Address}
                         onSelect={onMarketSelect}
                         onClaim={claimWinnings}
+                        onClaimRefund={claimRefund}
                         isClaimPending={isClaimPending}
                         isClaimConfirming={isClaimConfirming}
+                        isRefundPending={isRefundPending}
+                        isRefundConfirming={isRefundConfirming}
                       />
                     ))}
                   </div>
@@ -574,7 +611,15 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
 
           {/* Portfolio Tab */}
           {selectedTab === "portfolio" && (
-            <Portfolio onMarketSelect={onMarketSelect} />
+            <Portfolio 
+              onMarketSelect={onMarketSelect}
+              onClaim={claimWinnings}
+              onClaimRefund={claimRefund}
+              isClaimPending={isClaimPending}
+              isClaimConfirming={isClaimConfirming}
+              isRefundPending={isRefundPending}
+              isRefundConfirming={isRefundConfirming}
+            />
           )}
 
           {/* Leaderboard Tab */}

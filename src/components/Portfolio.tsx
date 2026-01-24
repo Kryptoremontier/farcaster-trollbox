@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount } from "wagmi";
-import { useETHBalance, useUserBetETH, useClaimWinningsETH, useMarketDataETH, useTransactionStatusETH } from "~/hooks/useTrollBetETH";
+import { useETHBalance, useUserBetETH, useMarketDataETH } from "~/hooks/useTrollBetETH";
 import { MOCK_MARKETS } from "~/lib/mockMarkets";
 import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
@@ -11,6 +11,12 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface PortfolioProps {
   onMarketSelect: (marketId: string) => void;
+  onClaim?: ((marketId: number) => void) | null;
+  onClaimRefund?: ((marketId: number) => void) | null;
+  isClaimPending?: boolean;
+  isClaimConfirming?: boolean;
+  isRefundPending?: boolean;
+  isRefundConfirming?: boolean;
 }
 
 // Helper component to collect bet stats
@@ -123,11 +129,17 @@ function BetStatsCollector({
   return null;
 }
 
-export function Portfolio({ onMarketSelect }: PortfolioProps) {
+export function Portfolio({ 
+  onMarketSelect,
+  onClaim,
+  onClaimRefund,
+  isClaimPending: isClaimPendingProp = false,
+  isClaimConfirming: isClaimConfirmingProp = false,
+  isRefundPending: isRefundPendingProp = false,
+  isRefundConfirming: isRefundConfirmingProp = false
+}: PortfolioProps) {
   const { address, isConnected, isConnecting } = useAccount();
   const { balance: ethBalance } = useETHBalance(address as Address | undefined);
-  const { claimWinnings: claimWinningsHook, hash: claimHash, isPending: isClaimPending } = useClaimWinningsETH();
-  const { isConfirming: isClaimConfirming } = useTransactionStatusETH(claimHash);
   const [showEndedBets, setShowEndedBets] = useState(false);
   const [stats, setStats] = useState({ 
     activeBets: 0, 
@@ -136,31 +148,6 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
     lostBets: 0,
     totalWinnings: 0
   });
-
-  // Wrapper for claimWinnings with logging
-  const claimWinnings = useCallback((marketId: number) => {
-    console.log('[Portfolio] claimWinnings called with marketId:', marketId);
-    console.log('[Portfolio] isConnected:', isConnected, 'address:', address);
-    if (!isConnected || !address) {
-      console.error('[Portfolio] Cannot claim: not connected');
-      return;
-    }
-    try {
-      claimWinningsHook(marketId);
-      console.log('[Portfolio] claimWinningsHook called successfully');
-    } catch (error) {
-      console.error('[Portfolio] Error calling claimWinningsHook:', error);
-    }
-  }, [claimWinningsHook, isConnected, address]);
-
-  // Debug: Log when claimWinnings is created
-  useEffect(() => {
-    console.log('[Portfolio] claimWinnings function created/updated', {
-      hasClaimWinnings: !!claimWinnings,
-      isConnected,
-      address: address?.slice(0, 10)
-    });
-  }, [claimWinnings, isConnected, address]);
 
   const handleStatsUpdate = useCallback((newStats: { 
     activeBets: number, 
@@ -328,9 +315,12 @@ export function Portfolio({ onMarketSelect }: PortfolioProps) {
                 market={market}
                 userAddress={address as Address}
                 onSelect={onMarketSelect}
-                onClaim={claimWinnings}
-                isClaimPending={isClaimPending}
-                isClaimConfirming={isClaimConfirming}
+                onClaim={onClaim}
+                onClaimRefund={onClaimRefund}
+                isClaimPending={isClaimPendingProp}
+                isClaimConfirming={isClaimConfirmingProp}
+                isRefundPending={isRefundPendingProp}
+                isRefundConfirming={isRefundConfirmingProp}
               />
             ))}
           </div>

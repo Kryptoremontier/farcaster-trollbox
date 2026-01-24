@@ -15,8 +15,11 @@ interface UserBetCardProps {
   userAddress: Address;
   onSelect: (marketId: string) => void;
   onClaim: ((marketId: number) => void) | null;
+  onClaimRefund?: ((marketId: number) => void) | null;
   isClaimPending?: boolean;
   isClaimConfirming?: boolean;
+  isRefundPending?: boolean;
+  isRefundConfirming?: boolean;
 }
 
 export function UserBetCard({ 
@@ -24,8 +27,11 @@ export function UserBetCard({
   userAddress, 
   onSelect, 
   onClaim,
+  onClaimRefund,
   isClaimPending = false,
-  isClaimConfirming = false
+  isClaimConfirming = false,
+  isRefundPending = false,
+  isRefundConfirming = false
 }: UserBetCardProps) {
   const { userBet, isLoading } = useUserBetETH(
     market.contractMarketId ?? 0,
@@ -84,6 +90,7 @@ export function UserBetCard({
   
   // Market status from contract
   const isResolved = marketData?.resolved ?? false;
+  const isCancelled = marketData?.cancelled ?? false;
   const winningSide = marketData?.winningSide ?? false; // true = YES, false = NO
   const isClaimed = userBet.claimed;
 
@@ -277,6 +284,65 @@ export function UserBetCard({
               </Badge>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Cancelled Market - Claim Refund */}
+      {isCancelled && !isClaimed && totalBet > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="space-y-2">
+            <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-blue-700">🔄 Market Cancelled</span>
+                <span className="text-lg font-bold text-blue-700">
+                  {totalBet.toFixed(4)} ETH
+                </span>
+              </div>
+              <p className="text-xs text-blue-600">
+                Get 100% refund (no fees)
+              </p>
+            </div>
+            {onClaimRefund && (
+              <Button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.nativeEvent.stopImmediatePropagation();
+                  console.log('[UserBetCard] 💰 CLAIM REFUND BUTTON CLICKED!', {
+                    marketId: market.contractMarketId,
+                    hasOnClaimRefund: !!onClaimRefund
+                  });
+                  if (onClaimRefund && market.contractMarketId !== undefined) {
+                    onClaimRefund(market.contractMarketId);
+                  }
+                }}
+                disabled={isRefundPending || isRefundConfirming}
+                className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isRefundPending || isRefundConfirming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Claiming Refund...
+                  </>
+                ) : (
+                  <>
+                    💰 Claim Refund
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isCancelled && isClaimed && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+            <Badge className="w-full justify-center bg-blue-100 text-blue-700 border-blue-300">
+              ✅ Refund Claimed ({totalBet.toFixed(4)} ETH)
+            </Badge>
+          </div>
         </div>
       )}
     </Card>
