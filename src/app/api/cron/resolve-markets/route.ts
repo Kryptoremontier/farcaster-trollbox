@@ -154,6 +154,32 @@ async function getMarketResult(question: string): Promise<boolean | null> {
     return isEven;
   }
 
+  if (question.includes("BTC price last digit be ODD")) {
+    const btcPrice = await fetchCryptoPrice('bitcoin');
+    const lastDigit = Math.floor(btcPrice * 100) % 10;
+    const isOdd = lastDigit % 2 === 1;
+    
+    console.log(`      💰 BTC Price: $${btcPrice.toFixed(2)}`);
+    console.log(`      🎲 Last digit: ${lastDigit}, ODD: ${isOdd}`);
+    
+    return isOdd;
+  }
+
+  // ETH price threshold check - "above $X"
+  if (question.includes("ETH price be above")) {
+    const ethPrice = await fetchCryptoPrice('ethereum');
+    const match = question.match(/\$([0-9,]+)/);
+    if (!match) return null;
+    
+    const threshold = parseInt(match[1].replace(/,/g, ''));
+    const isAbove = ethPrice > threshold;
+    
+    console.log(`      💰 ETH Price: $${ethPrice.toFixed(2)}, Threshold: $${threshold}`);
+    console.log(`      📊 Result: ${isAbove ? 'YES (above)' : 'NO (below or equal)'}`);
+    
+    return isAbove;
+  }
+
   // ETH price threshold check (touch $X before resolution)
   // ⚠️ WARNING: This only checks CURRENT price, NOT historical high/low
   // For accurate "touch" markets, you need historical price data API
