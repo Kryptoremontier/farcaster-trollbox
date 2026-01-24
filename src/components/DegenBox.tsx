@@ -885,23 +885,23 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
               <div className="grid grid-cols-2 gap-3">
                 {/* YES Stats */}
                 <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                  <div className="text-xs text-green-700 font-medium mb-1">YES Bettors</div>
+                  <div className="text-xs text-green-700 font-medium mb-1">YES Pool</div>
                   <div className="text-2xl font-bold text-green-600">
-                    {marketData ? Math.floor(Math.random() * 10) : '0'}
+                    {yesPool.toFixed(4)}
                   </div>
                   <div className="text-xs text-green-600 mt-1">
-                    {yesPool.toFixed(4)} ETH
+                    ETH {yesPool > 0 ? '✓ Active' : ''}
                   </div>
                 </div>
                 
                 {/* NO Stats */}
                 <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-                  <div className="text-xs text-red-700 font-medium mb-1">NO Bettors</div>
+                  <div className="text-xs text-red-700 font-medium mb-1">NO Pool</div>
                   <div className="text-2xl font-bold text-red-600">
-                    {marketData ? Math.floor(Math.random() * 10) : '0'}
+                    {noPool.toFixed(4)}
                   </div>
                   <div className="text-xs text-red-600 mt-1">
-                    {noPool.toFixed(4)} ETH
+                    ETH {noPool > 0 ? '✓ Active' : ''}
                   </div>
                 </div>
               </div>
