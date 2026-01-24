@@ -1,18 +1,14 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import sdk from "@farcaster/miniapp-sdk"
-import { Wallet, Trophy, Clock, Users, TrendingUp, ChevronUp, Send, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Wallet, Trophy, Clock, Users, TrendingUp, ChevronUp, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from "lucide-react"
 import { Button } from "~/components/ui/button-component"
 import { Card } from "~/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar"
-import { Badge } from "~/components/ui/badge"
-import { Input } from "~/components/ui/input"
 import { cn } from "~/lib/utils"
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi"
 import { config } from "~/components/providers/WagmiProvider"
 import { getMarketById } from "~/lib/mockMarkets"
-import { ArrowLeft } from "lucide-react"
 import { 
   usePlaceBetETH, 
   useClaimWinningsETH, 
@@ -43,36 +39,7 @@ interface FarcasterContext {
   }
 }
 
-interface ChatMessage {
-  id: string
-  user: {
-    name: string
-    avatar: string
-    bet: "YES" | "NO" | null
-  }
-  message: string
-  timestamp: Date
-}
-
-interface LeaderboardEntry {
-  rank: number
-  user: {
-    name: string
-    avatar: string
-  }
-  wins: number
-  accuracy: number
-  earnings: number
-}
-
-// Helper to generate avatar URL (DiceBear API for unique avatars)
-const getAvatarUrl = (name: string) => 
-  `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}&backgroundColor=9E75FF`;
-
-// Empty initial state - real data will come from blockchain and API
-const MOCK_MESSAGES: ChatMessage[] = []
-
-const MOCK_LEADERBOARD: LeaderboardEntry[] = []
+// Chat and leaderboard removed - simplified for launch
 
 interface DegenBoxProps {
   marketId: string;
@@ -279,49 +246,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   // NOTE: No approval needed with Native ETH! 🎉
   // NOTE: No mint/faucet needed - users bring their own ETH!
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !marketIdNum) return
-    
-    // Use Farcaster user data if available
-    const userName = context?.user?.displayName || context?.user?.username || "Anonymous";
-    const userAvatar = context?.user?.pfpUrl || getAvatarUrl(userName);
-    const fid = context?.user?.fid;
-    
-    // Optimistically add message to UI
-    const tempMsg: ChatMessage = {
-      id: `temp-${Date.now()}`,
-      user: { 
-        name: userName, 
-        avatar: userAvatar, 
-        bet: null 
-      },
-      message: newMessage,
-      timestamp: new Date(),
-    }
-    setMessages((prev) => [...prev, tempMsg])
-    setNewMessage("")
-    
-    // Save to API
-    try {
-      await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          marketId: marketIdNum,
-          userName,
-          userAvatar,
-          message: newMessage,
-          fid
-        })
-      });
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
-  }
-
-  const formatNumber = (num: number) => {
-    return num.toLocaleString()
-  }
+  // Chat removed - simplified for launch
 
   const handleConnect = useCallback(() => {
     connect({ connector: config.connectors[0] })
