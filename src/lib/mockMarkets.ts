@@ -27,31 +27,31 @@ export interface Market {
 
 // ⚠️ MAINNET MARKETS - BASE MAINNET
 // Contract: 0x52ABabe88DE8799B374b11B91EC1b32989779e55
-// Deployed: 2026-01-23 23:16:24 UTC (Markets #5 & #6)
-// Duration: 12 hours (ends 2026-01-24 11:16 CET)
+// Deployed: 2026-01-24 12:16:49 UTC (Markets #7 & #8)
+// Duration: 24 hours (ends 2026-01-25 12:16:49 UTC)
 
 export const MOCK_MARKETS: Market[] = [
   {
-    id: 'market-5',
-    contractMarketId: 5,
-    question: '🎲 Will BTC price last digit be EVEN (0,2,4,6,8) at resolution?',
+    id: 'market-7',
+    contractMarketId: 7,
+    question: '🎲 Will BTC price last digit be ODD (1, 3, 5, 7, 9) at resolution?',
     description: '✅ CoinGecko Oracle - 50/50 Fair Game',
     thumbnail: '🎲',
     category: 'crypto',
-    endTime: new Date('2026-01-24T10:16:24.000Z'), // FIXED timestamp - 12h test
+    endTime: new Date('2026-01-25T12:16:49.000Z'), // FIXED timestamp - 24h test
     yesPool: 0, 
     noPool: 0, 
     totalBettors: 0, 
     status: 'active',
   },
   {
-    id: 'market-6',
-    contractMarketId: 6,
-    question: '🚀 Will ETH price touch $3,000 before resolution?',
-    description: '✅ CoinGecko Oracle - Psychological Barrier',
+    id: 'market-8',
+    contractMarketId: 8,
+    question: '🚀 Will ETH price be above $3,000 at resolution time?',
+    description: '✅ CoinGecko Oracle - Current Price Check',
     thumbnail: '🚀',
     category: 'crypto',
-    endTime: new Date('2026-01-24T10:16:52.000Z'), // FIXED timestamp - 12h test
+    endTime: new Date('2026-01-25T12:16:49.000Z'), // FIXED timestamp - 24h test
     yesPool: 0, 
     noPool: 0, 
     totalBettors: 0, 

@@ -5,7 +5,7 @@
  * Market #8: ETH above $3,000
  */
 
-import 'dotenv/config';
+import { config } from 'dotenv';
 import { createWalletClient, http, parseEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
@@ -15,6 +15,9 @@ import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load .env.mainnet
+config({ path: join(__dirname, '../.env.mainnet') });
 
 // Load ABI from JSON file
 const TROLLBET_ABI = JSON.parse(readFileSync(join(__dirname, '../src/lib/abi/TrollBet.json'), 'utf-8'));
