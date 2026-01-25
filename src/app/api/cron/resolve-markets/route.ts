@@ -170,13 +170,43 @@ async function getMarketResult(question: string): Promise<boolean | null> {
     const ethPrice = await fetchCryptoPrice('ethereum');
     const match = question.match(/\$([0-9,]+)/);
     if (!match) return null;
-    
+
     const threshold = parseInt(match[1].replace(/,/g, ''));
     const isAbove = ethPrice > threshold;
-    
+
     console.log(`      💰 ETH Price: $${ethPrice.toFixed(2)}, Threshold: $${threshold}`);
     console.log(`      📊 Result: ${isAbove ? 'YES (above)' : 'NO (below or equal)'}`);
-    
+
+    return isAbove;
+  }
+
+  // BTC price threshold check - "above $X"
+  if (question.includes("BTC price be above")) {
+    const btcPrice = await fetchCryptoPrice('bitcoin');
+    const match = question.match(/\$([0-9,]+)/);
+    if (!match) return null;
+
+    const threshold = parseInt(match[1].replace(/,/g, ''));
+    const isAbove = btcPrice > threshold;
+
+    console.log(`      💰 BTC Price: $${btcPrice.toFixed(2)}, Threshold: $${threshold}`);
+    console.log(`      📊 Result: ${isAbove ? 'YES (above)' : 'NO (below or equal)'}`);
+
+    return isAbove;
+  }
+
+  // SOL price threshold check - "above $X"
+  if (question.includes("SOL price be above")) {
+    const solPrice = await fetchCryptoPrice('solana');
+    const match = question.match(/\$([0-9,]+)/);
+    if (!match) return null;
+
+    const threshold = parseInt(match[1].replace(/,/g, ''));
+    const isAbove = solPrice > threshold;
+
+    console.log(`      💰 SOL Price: $${solPrice.toFixed(2)}, Threshold: $${threshold}`);
+    console.log(`      📊 Result: ${isAbove ? 'YES (above)' : 'NO (below or equal)'}`);
+
     return isAbove;
   }
 
