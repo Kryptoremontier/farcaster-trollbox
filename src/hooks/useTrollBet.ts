@@ -49,20 +49,11 @@ export function usePlaceBet() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
   const placeBet = (marketId: number, side: boolean, amount: string) => {
-    console.log('[useTrollBet] placeBet called', { marketId, side, amount, address });
-    
     if (!address) {
       throw new Error('No wallet connected');
     }
-    
-    const amountWei = parseUnits(amount, 18);
 
-    console.log('[useTrollBet] calling writeContract for placeBet...', {
-      address: TROLLBET_CONTRACT_ADDRESS,
-      marketId,
-      side,
-      amountWei: amountWei.toString(),
-    });
+    const amountWei = parseUnits(amount, 18);
 
     // Call with explicit chainId for Farcaster wallet
     writeContract({
@@ -72,13 +63,7 @@ export function usePlaceBet() {
       args: [BigInt(marketId), side, amountWei],
       chainId: baseSepolia.id,
     });
-    
-    console.log('[useTrollBet] placeBet writeContract called');
   };
-
-  if (error) {
-    console.error('[useTrollBet] placeBet hook error:', error);
-  }
 
   return {
     placeBet,
@@ -96,8 +81,6 @@ export function useClaimWinnings() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
   const claimWinnings = (marketId: number) => {
-    console.log('[useTrollBet] claimWinnings called', { marketId, address });
-    
     if (!address) {
       throw new Error('No wallet connected');
     }
@@ -130,16 +113,9 @@ export function useApproveToken() {
   const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
   const approve = (_amount?: string) => {
-    console.log('[useTrollBet] approve called', { address });
-    
     if (!address) {
       throw new Error('No wallet connected');
     }
-
-    console.log('[useTrollBet] calling writeContract for approve...', {
-      token: DEGEN_TOKEN_ADDRESS,
-      spender: TROLLBET_CONTRACT_ADDRESS,
-    });
 
     // Call with explicit chainId for Farcaster wallet
     writeContract({
@@ -149,13 +125,7 @@ export function useApproveToken() {
       args: [TROLLBET_CONTRACT_ADDRESS, MAX_UINT256],
       chainId: baseSepolia.id,
     });
-    
-    console.log('[useTrollBet] approve writeContract called');
   };
-
-  if (error) {
-    console.error('[useTrollBet] approve hook error:', error);
-  }
 
   return {
     approve,
@@ -366,19 +336,11 @@ export function useMintTestTokens() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
   const mintTokens = (toAddress: Address, amount: string = "10000") => {
-    console.log('[useTrollBet] mintTokens called', { toAddress, amount, address });
-    
     if (!address) {
       throw new Error('No wallet connected');
     }
-    
-    const amountWei = parseUnits(amount, 18);
 
-    console.log('[useTrollBet] calling writeContract for mint...', {
-      token: DEGEN_TOKEN_ADDRESS,
-      toAddress,
-      amountWei: amountWei.toString(),
-    });
+    const amountWei = parseUnits(amount, 18);
 
     // Call with explicit chainId for Farcaster wallet
     writeContract({
@@ -388,13 +350,7 @@ export function useMintTestTokens() {
       args: [toAddress, amountWei],
       chainId: baseSepolia.id,
     });
-    
-    console.log('[useTrollBet] mint writeContract called');
   };
-
-  if (error) {
-    console.error('[useTrollBet] mint hook error:', error);
-  }
 
   return {
     mintTokens,

@@ -127,21 +127,12 @@ export function usePlaceBetETH() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
   const placeBet = (marketId: number, side: boolean, amountETH: string) => {
-    console.log('[TrollBetETH] placeBet called', { marketId, side, amountETH, address });
-    
     if (!address) {
       throw new Error('No wallet connected');
     }
-    
+
     // Convert ETH string to wei
     const valueWei = parseEther(amountETH);
-
-    console.log('[TrollBetETH] calling writeContract for placeBet...', {
-      address: TROLLBET_ETH_ADDRESS,
-      marketId,
-      side,
-      value: valueWei.toString(),
-    });
 
     // Call with value (ETH amount) - NO token approval needed!
     writeContract({
@@ -152,13 +143,7 @@ export function usePlaceBetETH() {
       value: valueWei, // ETH sent with transaction
       chainId: base.id,
     });
-    
-    console.log('[TrollBetETH] placeBet writeContract called');
   };
-
-  if (error) {
-    console.error('[TrollBetETH] placeBet hook error:', error);
-  }
 
   return {
     placeBet,
@@ -176,8 +161,6 @@ export function useClaimWinningsETH() {
   const { data: hash, writeContract, isPending, error } = useWriteContract();
 
   const claimWinnings = (marketId: number) => {
-    console.log('[TrollBetETH] claimWinnings called', { marketId, address });
-    
     if (!address) {
       throw new Error('No wallet connected');
     }
@@ -277,15 +260,6 @@ export function useUserBetETH(marketId: number, userAddress?: Address) {
     noAmount: formatEther(data[1]),
     claimed: data[2],
   } : null;
-
-  // Debug logging
-  if (data && (Number(data[0]) > 0 || Number(data[1]) > 0)) {
-    console.log('[useUserBetETH] Found bet for market', marketId, {
-      yesAmount: formatEther(data[0]),
-      noAmount: formatEther(data[1]),
-      claimed: data[2],
-    });
-  }
 
   return {
     userBet,
