@@ -38,3 +38,7 @@ build/
 # Ignore temporary files
 *.tmp
 .cache/
+
+# Screenshots for Claude review
+screenshots/
+.claude/

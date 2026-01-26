@@ -26,31 +26,42 @@ export interface Market {
 
 // ⚠️ MAINNET MARKETS - BASE MAINNET
 // Contract: 0x52ABabe88DE8799B374b11B91EC1b32989779e55
-// Deployed: 2026-01-24 12:16:49 UTC (Markets #7 & #8)
-// Duration: 24 hours (ends 2026-01-25 12:16:49 UTC)
+// Latest: 2026-01-25 (Markets #9, #10, #11)
 
 export const MOCK_MARKETS: Market[] = [
   {
-    id: 'market-7',
-    contractMarketId: 7,
-    question: '🎲 Will BTC price last digit be ODD (1, 3, 5, 7, 9) at resolution?',
-    description: '✅ CoinGecko Oracle - 50/50 Fair Game',
-    thumbnail: '🎲',
-    category: 'crypto',
-    endTime: new Date('2026-01-25T12:16:49.000Z'), // FIXED timestamp - 24h test
-    yesPool: 0, 
+    id: 'market-9',
+    contractMarketId: 9,
+    question: '🇺🇸 Will the US strike Iran by March 31, 2026?',
+    description: '🏛️ Political - Semi-auto resolve with Tavily AI',
+    thumbnail: '🇺🇸',
+    category: 'politics',
+    endTime: new Date('2026-03-31T23:59:59.000Z'),
+    yesPool: 0,
     noPool: 0,
     status: 'active',
   },
   {
-    id: 'market-8',
-    contractMarketId: 8,
-    question: '🚀 Will ETH price be above $3,000 at resolution time?',
-    description: '✅ CoinGecko Oracle - Current Price Check',
-    thumbnail: '🚀',
+    id: 'market-10',
+    contractMarketId: 10,
+    question: '₿ Will BTC price be above $95,000 at resolution time?',
+    description: '✅ CoinGecko Oracle - Auto resolve',
+    thumbnail: '₿',
     category: 'crypto',
-    endTime: new Date('2026-01-25T12:16:49.000Z'), // FIXED timestamp - 24h test
-    yesPool: 0, 
+    endTime: new Date('2026-01-31T23:59:59.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'active',
+  },
+  {
+    id: 'market-11',
+    contractMarketId: 11,
+    question: 'Ξ Will ETH price be above $3,300 at resolution time?',
+    description: '✅ CoinGecko Oracle - Auto resolve',
+    thumbnail: 'Ξ',
+    category: 'crypto',
+    endTime: new Date('2026-01-31T23:59:59.000Z'),
+    yesPool: 0,
     noPool: 0,
     status: 'active',
   },
