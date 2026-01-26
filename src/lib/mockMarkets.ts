@@ -26,8 +26,121 @@ export interface Market {
 
 // ⚠️ MAINNET MARKETS - BASE MAINNET
 // Contract: 0x52ABabe88DE8799B374b11B91EC1b32989779e55
-// Latest: 2026-01-25 (Markets #9, #10, #11)
 
+// ARCHIVED MARKETS - Old/ended markets kept for Portfolio CLAIM functionality
+// Users can still claim winnings from these markets
+export const ARCHIVED_MARKETS: Market[] = [
+  {
+    id: 'market-0',
+    contractMarketId: 0,
+    question: '🎲 Will BTC price end with digit 5 in next 10min?',
+    description: 'Ended - Test market',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date('2026-01-23T20:04:25.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+  {
+    id: 'market-1',
+    contractMarketId: 1,
+    question: '⚡ Will ETH gas be above 15 gwei in 10min?',
+    description: 'Ended - Test market',
+    thumbnail: '⚡',
+    category: 'crypto',
+    endTime: new Date('2026-01-23T20:04:25.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+  {
+    id: 'market-2',
+    contractMarketId: 2,
+    question: '🎲 Will BTC price end with digit 3 in next 10min?',
+    description: 'Ended - Test market',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date('2026-01-23T20:04:25.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+  {
+    id: 'market-3',
+    contractMarketId: 3,
+    question: '🎲 Will BTC price end with digit 5 in next 30min?',
+    description: 'Resolved',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date('2026-01-23T20:37:20.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+  {
+    id: 'market-4',
+    contractMarketId: 4,
+    question: '🎲 Will BTC price end with digit 5 in next 30min?',
+    description: 'Resolved',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date('2026-01-23T21:23:32.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+  {
+    id: 'market-5',
+    contractMarketId: 5,
+    question: '🎲 Will BTC price last digit be EVEN (0,2,4,6,8) at resolution?',
+    description: 'Resolved',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date('2026-01-24T10:16:24.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+  {
+    id: 'market-6',
+    contractMarketId: 6,
+    question: '🚀 Will ETH price touch $3,000 before resolution?',
+    description: 'Resolved',
+    thumbnail: '🚀',
+    category: 'crypto',
+    endTime: new Date('2026-01-24T10:16:52.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+  {
+    id: 'market-7',
+    contractMarketId: 7,
+    question: '🎲 Will BTC price last digit be ODD (1, 3, 5, 7, 9) at resolution?',
+    description: 'Resolved',
+    thumbnail: '🎲',
+    category: 'crypto',
+    endTime: new Date('2026-01-25T12:16:49.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+  {
+    id: 'market-8',
+    contractMarketId: 8,
+    question: '🚀 Will ETH price be above $3,000 at resolution time?',
+    description: 'Resolved',
+    thumbnail: '🚀',
+    category: 'crypto',
+    endTime: new Date('2026-01-25T12:16:49.000Z'),
+    yesPool: 0,
+    noPool: 0,
+    status: 'resolved',
+  },
+];
+
+// ACTIVE MARKETS - Current markets shown on main page
 export const MOCK_MARKETS: Market[] = [
   // Political market - March 31
   {
@@ -166,11 +279,14 @@ export const MOCK_MARKETS: Market[] = [
   },
 ];
 
+// ALL MARKETS - Combined active + archived (for Portfolio)
+export const ALL_MARKETS: Market[] = [...MOCK_MARKETS, ...ARCHIVED_MARKETS];
+
 /**
- * Get market by ID
+ * Get market by ID (searches both active and archived)
  */
 export function getMarketById(id: string): Market | undefined {
-  return MOCK_MARKETS.find(m => m.id === id);
+  return ALL_MARKETS.find(m => m.id === id);
 }
 
 /**

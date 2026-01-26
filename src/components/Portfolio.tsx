@@ -2,7 +2,7 @@
 
 import { useAccount } from "wagmi";
 import { useETHBalance, useUserBetETH, useMarketDataETH } from "~/hooks/useTrollBetETH";
-import { MOCK_MARKETS } from "~/lib/mockMarkets";
+import { MOCK_MARKETS, ALL_MARKETS } from "~/lib/mockMarkets";
 import { UserBetCard } from "~/components/UserBetCard";
 import type { Address } from "viem";
 import { Wallet, TrendingUp, Trophy, Activity, ChevronDown, ChevronUp } from "lucide-react";
@@ -160,7 +160,8 @@ export function Portfolio({
   }, []);
 
   // Prepare markets data (before any early returns)
-  const marketsWithBets = MOCK_MARKETS.filter(m => m.contractMarketId !== undefined);
+  // Use ALL_MARKETS to include archived markets for claiming
+  const marketsWithBets = ALL_MARKETS.filter(m => m.contractMarketId !== undefined);
 
   // Separate active and ended markets
   const { activeMarkets, endedMarkets } = useMemo(() => {
