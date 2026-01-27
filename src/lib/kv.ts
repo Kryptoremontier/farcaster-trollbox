@@ -92,10 +92,18 @@ export async function getUserPoints(address: string): Promise<UserPoints | null>
     } else if (!Array.isArray(data.activeDays)) {
       data.activeDays = Array.from(data.activeDays as unknown as Set<string>);
     }
-    // Ensure new fields exist (backward compat with old data)
+    // Ensure all fields exist (backward compat with old data)
     if (data.totalWonETH === undefined) data.totalWonETH = 0;
     if (data.totalLostETH === undefined) data.totalLostETH = 0;
     if (data.totalClaimedETH === undefined) data.totalClaimedETH = 0;
+    if (data.winsCount === undefined) data.winsCount = 0;
+    if (data.lossesCount === undefined) data.lossesCount = 0;
+    if (data.currentStreak === undefined) data.currentStreak = 0;
+    if (data.maxStreak === undefined) data.maxStreak = 0;
+    if (data.betsPlaced === undefined) data.betsPlaced = 0;
+    if (data.volumeTraded === undefined) data.volumeTraded = 0;
+    if (data.totalPoints === undefined) data.totalPoints = 0;
+    if (data.referrals === undefined) data.referrals = 0;
     return data;
   } catch (error) {
     console.error('Error getting user points:', error);
@@ -309,15 +317,18 @@ export function getUserStats(userPoints: UserPoints): {
   tier: Tier;
   tierMultiplier: number;
 } {
-  const totalBets = userPoints.winsCount + userPoints.lossesCount;
-  const pnlETH = userPoints.totalWonETH - userPoints.totalLostETH;
-  const roi = userPoints.volumeTraded > 0
-    ? (pnlETH / userPoints.volumeTraded) * 100
-    : 0;
-  const winRate = totalBets > 0
-    ? (userPoints.winsCount / totalBets) * 100
-    : 0;
-  const tier = calculateTier(userPoints.totalPoints);
+  const wins = userPoints.winsCount || 0;
+  const losses = userPoints.lossesCount || 0;
+  const totalBets = wins + losses;
+  const wonETH = userPoints.totalWonETH || 0;
+  const lostETH = userPoints.totalLostETH || 0;
+  const volume = userPoints.volumeTraded || 0;
+  const points = userPoints.totalPoints || 0;
+
+  const pnlETH = wonETH - lostETH;
+  const roi = volume > 0 ? (pnlETH / volume) * 100 : 0;
+  const winRate = totalBets > 0 ? (wins / totalBets) * 100 : 0;
+  const tier = calculateTier(points);
   const tierMult = getTierMultiplier(tier);
 
   return {

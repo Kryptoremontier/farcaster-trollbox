@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
-import type { Tier } from "~/lib/pointsSystem";
 
 interface LeaderboardEntry {
   rank: number;
@@ -23,14 +22,14 @@ interface LeaderboardEntry {
   pnlETH: number;
   roi: number;
   winRate: number;
-  tier: Tier;
+  tier: string;
   tierMultiplier: number;
 }
 
 const getAvatarUrl = (name: string) =>
   `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}&backgroundColor=9E75FF`;
 
-const TIER_BADGES: Record<Tier, string> = {
+const TIER_BADGES: Record<string, string> = {
   legendary: '👑',
   diamond: '💎',
   gold: '🥇',
@@ -38,13 +37,21 @@ const TIER_BADGES: Record<Tier, string> = {
   bronze: '🥉',
 };
 
-const TIER_COLORS: Record<Tier, string> = {
+const TIER_COLORS: Record<string, string> = {
   legendary: 'bg-purple-100 text-purple-700 border-purple-300',
   diamond: 'bg-cyan-100 text-cyan-700 border-cyan-300',
   gold: 'bg-yellow-100 text-yellow-700 border-yellow-300',
   silver: 'bg-gray-100 text-gray-600 border-gray-300',
   bronze: 'bg-orange-100 text-orange-700 border-orange-300',
 };
+
+function safeTierBadge(tier: string | undefined): string {
+  return TIER_BADGES[tier || 'bronze'] || '🥉';
+}
+
+function safeTierColor(tier: string | undefined): string {
+  return TIER_COLORS[tier || 'bronze'] || 'bg-orange-100 text-orange-700 border-orange-300';
+}
 
 export function Leaderboard() {
   const { address } = useAccount();
@@ -74,7 +81,7 @@ export function Leaderboard() {
               pnlETH?: number;
               roi?: number;
               winRate?: number;
-              tier?: Tier;
+              tier?: string;
               tierMultiplier?: number;
             }, index: number) => ({
               rank: index + 1,
@@ -146,8 +153,8 @@ export function Leaderboard() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-[#9E75FF]">Your Stats</span>
-              <Badge className={`text-[10px] px-1.5 py-0 border ${TIER_COLORS[currentUser.tier]}`}>
-                {TIER_BADGES[currentUser.tier]} {currentUser.tier.charAt(0).toUpperCase() + currentUser.tier.slice(1)}
+              <Badge className={`text-[10px] px-1.5 py-0 border ${safeTierColor(currentUser.tier)}`}>
+                {safeTierBadge(currentUser.tier)} {(currentUser.tier || 'bronze').charAt(0).toUpperCase() + (currentUser.tier || 'bronze').slice(1)}
               </Badge>
             </div>
             <span className="text-sm font-bold text-gray-900">#{currentUser.rank}</span>
@@ -280,7 +287,7 @@ export function Leaderboard() {
                               )}
                             </div>
                             <div className="text-[10px] text-gray-400 flex items-center gap-1">
-                              <span>{TIER_BADGES[entry.tier]}</span>
+                              <span>{safeTierBadge(entry.tier)}</span>
                               <span>{entry.winsCount}W/{entry.lossesCount}L</span>
                               {entry.currentStreak >= 3 && (
                                 <span className="text-orange-500 flex items-center">
