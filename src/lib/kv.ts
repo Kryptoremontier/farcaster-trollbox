@@ -1,5 +1,18 @@
 import { MiniAppNotificationDetails } from "@farcaster/miniapp-sdk";
 import { Redis } from "@upstash/redis";
+import {
+  type UserPoints,
+  type Tier,
+  calculateBetPoints,
+  applyOutcomeMultiplier,
+  calculateStreakBonus,
+  calculateVolumeMilestoneBonus,
+  calculateTier,
+  getTierMultiplier,
+} from "./pointsSystem";
+
+// Re-export UserPoints so consumers can import from kv
+export type { UserPoints };
 
 // Check if Redis is configured
 const isRedisConfigured = !!(
@@ -11,6 +24,8 @@ const redis = isRedisConfigured ? new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN,
 }) : null;
+
+// ============ NOTIFICATION DETAILS ============
 
 function getUserNotificationDetailsKey(fid: number): string {
   return `frames-v2-demo:user:${fid}`;
@@ -42,29 +57,13 @@ export async function deleteUserNotificationDetails(
 
 // ============ POINTS SYSTEM ============
 
-interface UserPoints {
-  address: string;
-  fid?: number;
-  username?: string;
-  totalPoints: number;
-  betsPlaced: number;
-  volumeTraded: number; // in ETH
-  winsCount: number;
-  lossesCount: number;
-  currentStreak: number;
-  maxStreak: number;
-  firstBetTimestamp: number;
-  lastBetTimestamp: number;
-  referrals: number;
-  activeDays: Set<string>; // YYYY-MM-DD format
-}
-
 interface BetRecord {
   marketId: number;
-  amount: number;
+  amount: number; // ETH
   side: boolean; // true = YES, false = NO
   timestamp: number;
   txHash?: string;
+  basePoints: number; // points earned at bet time (before outcome)
 }
 
 function getUserPointsKey(address: string): string {
@@ -80,16 +79,23 @@ function getLeaderboardKey(): string {
 }
 
 /**
- * Get user points
+ * Get user points data
  */
 export async function getUserPoints(address: string): Promise<UserPoints | null> {
   if (!redis) return null;
   try {
     const data = await redis.get<UserPoints>(getUserPointsKey(address));
-    if (data && data.activeDays) {
-      // Convert activeDays array back to Set
-      data.activeDays = new Set(data.activeDays as unknown as string[]);
+    if (!data) return null;
+    // Ensure activeDays is always an array
+    if (!data.activeDays) {
+      data.activeDays = [];
+    } else if (!Array.isArray(data.activeDays)) {
+      data.activeDays = Array.from(data.activeDays as unknown as Set<string>);
     }
+    // Ensure new fields exist (backward compat with old data)
+    if (data.totalWonETH === undefined) data.totalWonETH = 0;
+    if (data.totalLostETH === undefined) data.totalLostETH = 0;
+    if (data.totalClaimedETH === undefined) data.totalClaimedETH = 0;
     return data;
   } catch (error) {
     console.error('Error getting user points:', error);
@@ -116,35 +122,40 @@ export async function initializeUserPoints(
     lossesCount: 0,
     currentStreak: 0,
     maxStreak: 0,
+    totalWonETH: 0,
+    totalLostETH: 0,
+    totalClaimedETH: 0,
     firstBetTimestamp: Date.now(),
     lastBetTimestamp: Date.now(),
     referrals: 0,
-    activeDays: new Set<string>(),
+    activeDays: [],
   };
 
   if (redis) {
-    await redis.set(getUserPointsKey(address), {
-      ...points,
-      activeDays: Array.from(points.activeDays),
-    });
+    await redis.set(getUserPointsKey(address), points);
   }
 
   return points;
 }
 
 /**
- * Record a bet and update points
+ * Record a bet and update points using the new logical system.
+ *
+ * Points awarded at bet time:
+ * - Base: 10 points
+ * - Volume: (amountETH / 0.001) * 10 points
+ * - Volume milestone bonus (if crossed)
+ * - All multiplied by tier multiplier
  */
 export async function recordBet(
   address: string,
   marketId: number,
-  amount: number,
+  amount: number, // ETH amount (e.g. 0.01)
   side: boolean,
   fid?: number,
   username?: string,
   txHash?: string
 ): Promise<UserPoints> {
-  // Get or initialize user points
   let userPoints = await getUserPoints(address);
   if (!userPoints) {
     userPoints = await initializeUserPoints(address, fid, username);
@@ -154,50 +165,49 @@ export async function recordBet(
   if (fid && !userPoints.fid) userPoints.fid = fid;
   if (username && !userPoints.username) userPoints.username = username;
 
-  // Record the bet
+  // Calculate base points for this bet
+  const basePoints = calculateBetPoints(amount);
+
+  // Check volume milestones BEFORE updating volume
+  const previousVolume = userPoints.volumeTraded;
+  const newVolume = previousVolume + amount;
+  const milestoneBonus = calculateVolumeMilestoneBonus(newVolume, previousVolume);
+
+  // Apply tier multiplier to earned points
+  const tier = calculateTier(userPoints.totalPoints);
+  const tierMultiplier = getTierMultiplier(tier);
+  const pointsEarned = Math.floor((basePoints + milestoneBonus) * tierMultiplier);
+
+  // Daily active bonus
+  const today = new Date().toISOString().split('T')[0];
+  let dailyBonus = 0;
+  if (!userPoints.activeDays.includes(today)) {
+    dailyBonus = Math.floor(100 * tierMultiplier); // DAILY_ACTIVE with tier
+    userPoints.activeDays.push(today);
+  }
+
+  // Update stats
+  userPoints.betsPlaced += 1;
+  userPoints.volumeTraded = newVolume;
+  userPoints.lastBetTimestamp = Date.now();
+  userPoints.totalPoints += pointsEarned + dailyBonus;
+
+  // Record bet with basePoints for later outcome calculation
   const bet: BetRecord = {
     marketId,
     amount,
     side,
     timestamp: Date.now(),
     txHash,
+    basePoints,
   };
 
   if (redis) {
-    // Add bet to user's bet history
     const betsKey = getUserBetsKey(address);
     await redis.lpush(betsKey, bet);
 
-    // Update points
-    const today = new Date().toISOString().split('T')[0];
-    userPoints.activeDays.add(today);
-    userPoints.betsPlaced += 1;
-    userPoints.volumeTraded += amount;
-    userPoints.lastBetTimestamp = Date.now();
+    await redis.set(getUserPointsKey(address), userPoints);
 
-    // Calculate points (from pointsSystem.ts logic)
-    const BET_PLACED_POINTS = 100;
-    const VOLUME_POINTS_PER_1K = 50;
-    const DAILY_ACTIVE_POINTS = 25;
-
-    let pointsEarned = BET_PLACED_POINTS;
-    pointsEarned += Math.floor(amount / 1000) * VOLUME_POINTS_PER_1K;
-    
-    // Daily active bonus (first bet of the day)
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    if (!userPoints.activeDays.has(yesterday)) {
-      pointsEarned += DAILY_ACTIVE_POINTS;
-    }
-
-    userPoints.totalPoints += pointsEarned;
-
-    // Save updated points
-    await redis.set(getUserPointsKey(address), {
-      ...userPoints,
-      activeDays: Array.from(userPoints.activeDays),
-    });
-
-    // Update leaderboard (sorted set by total points)
     await redis.zadd(getLeaderboardKey(), {
       score: userPoints.totalPoints,
       member: address.toLowerCase(),
@@ -206,6 +216,120 @@ export async function recordBet(
 
   return userPoints;
 }
+
+/**
+ * Record outcome after market resolution.
+ * Called when a user's bet is resolved (win or loss).
+ *
+ * - Applies P&L boost: win x2.0, loss x0.5 on original basePoints
+ * - Updates win/loss counts
+ * - Updates streak + streak bonus
+ * - Updates totalWonETH / totalLostETH
+ */
+export async function recordOutcome(
+  address: string,
+  marketId: number,
+  won: boolean,
+  betAmount: number, // ETH the user originally bet
+  payout: number,    // ETH payout (0 if lost, winnings if won)
+): Promise<UserPoints | null> {
+  const userPoints = await getUserPoints(address);
+  if (!userPoints) return null;
+
+  // Calculate outcome bonus points
+  // The base points were: calculateBetPoints(betAmount)
+  const basePoints = calculateBetPoints(betAmount);
+  const outcomePoints = applyOutcomeMultiplier(basePoints, won);
+  // The user already got basePoints at bet time.
+  // Outcome adjustment = outcomePoints - basePoints (can be positive or negative)
+  const pointsAdjustment = outcomePoints - basePoints;
+
+  // Update win/loss counts
+  if (won) {
+    userPoints.winsCount += 1;
+    userPoints.currentStreak += 1;
+    if (userPoints.currentStreak > userPoints.maxStreak) {
+      userPoints.maxStreak = userPoints.currentStreak;
+    }
+    userPoints.totalWonETH += payout;
+  } else {
+    userPoints.lossesCount += 1;
+    userPoints.currentStreak = 0;
+    userPoints.totalLostETH += betAmount;
+  }
+
+  // Streak bonus (only on win)
+  let streakBonus = 0;
+  if (won) {
+    streakBonus = calculateStreakBonus(userPoints.currentStreak);
+  }
+
+  // Apply tier multiplier to adjustment and streak
+  const tier = calculateTier(userPoints.totalPoints);
+  const tierMultiplier = getTierMultiplier(tier);
+  const totalAdjustment = Math.floor((pointsAdjustment + streakBonus) * tierMultiplier);
+
+  userPoints.totalPoints += totalAdjustment;
+  // Ensure points never go below 0
+  if (userPoints.totalPoints < 0) userPoints.totalPoints = 0;
+
+  if (redis) {
+    await redis.set(getUserPointsKey(address), userPoints);
+
+    await redis.zadd(getLeaderboardKey(), {
+      score: userPoints.totalPoints,
+      member: address.toLowerCase(),
+    });
+  }
+
+  return userPoints;
+}
+
+/**
+ * Record a claim (user claimed winnings or refund)
+ */
+export async function recordClaim(
+  address: string,
+  claimedAmount: number, // ETH claimed
+): Promise<void> {
+  const userPoints = await getUserPoints(address);
+  if (!userPoints || !redis) return;
+
+  userPoints.totalClaimedETH += claimedAmount;
+  await redis.set(getUserPointsKey(address), userPoints);
+}
+
+/**
+ * Get full user stats for leaderboard display
+ */
+export function getUserStats(userPoints: UserPoints): {
+  pnlETH: number;
+  roi: number;
+  winRate: number;
+  tier: Tier;
+  tierMultiplier: number;
+} {
+  const totalBets = userPoints.winsCount + userPoints.lossesCount;
+  const pnlETH = userPoints.totalWonETH - userPoints.totalLostETH;
+  const roi = userPoints.volumeTraded > 0
+    ? (pnlETH / userPoints.volumeTraded) * 100
+    : 0;
+  const winRate = totalBets > 0
+    ? (userPoints.winsCount / totalBets) * 100
+    : 0;
+  const tier = calculateTier(userPoints.totalPoints);
+  const tierMult = getTierMultiplier(tier);
+
+  return {
+    pnlETH,
+    roi,
+    winRate,
+    tier,
+    tierMultiplier: tierMult,
+  };
+}
+
+// ============ LEADERBOARD ============
 
 /**
  * Get top N users from leaderboard
@@ -233,6 +357,8 @@ export async function getLeaderboard(limit: number = 100): Promise<Array<{ addre
   }
 }
 
+// ============ BET HISTORY ============
+
 /**
  * Get user's bet history
  */
@@ -249,5 +375,3 @@ export async function getUserBetHistory(
     return [];
   }
 }
-
-// Chat removed for simplicity - only betting statistics now

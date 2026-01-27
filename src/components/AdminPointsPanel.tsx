@@ -11,13 +11,14 @@
 
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { 
-  getTierBadge, 
-  getTierColor, 
-  calculateTier, 
+import {
+  getTierBadge,
+  getTierColor,
+  calculateTier,
   calculateAirdropAllocation,
   TIER_THRESHOLDS,
-  POINTS_CONFIG 
+  POINTS_CONFIG,
+  type Tier,
 } from "~/lib/pointsSystem";
 import { Trophy, TrendingUp, Zap, Gift } from "lucide-react";
 
@@ -170,12 +171,12 @@ export function AdminPointsPanel({ userAddress }: AdminPointsPanelProps) {
           <h2 className="text-xl font-bold text-gray-900 mb-4">📋 Points Configuration</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <div className="text-gray-500 mb-1">Bet Placed</div>
-              <div className="font-bold text-gray-900">{POINTS_CONFIG.BET_PLACED} pts</div>
+              <div className="text-gray-500 mb-1">Bet Base</div>
+              <div className="font-bold text-gray-900">{POINTS_CONFIG.BET_BASE} pts</div>
             </div>
             <div>
-              <div className="text-gray-500 mb-1">Per 0.01 ETH</div>
-              <div className="font-bold text-gray-900">{POINTS_CONFIG.VOLUME_PER_0_01_ETH} pts</div>
+              <div className="text-gray-500 mb-1">Per 0.001 ETH</div>
+              <div className="font-bold text-gray-900">{POINTS_CONFIG.VOLUME_PER_0_001_ETH} pts</div>
             </div>
             <div>
               <div className="text-gray-500 mb-1">Win Multiplier</div>
@@ -194,7 +195,7 @@ export function AdminPointsPanel({ userAddress }: AdminPointsPanelProps) {
           <div className="grid grid-cols-5 gap-4">
             {Object.entries(TIER_THRESHOLDS).map(([tier, threshold]) => (
               <div key={tier} className="text-center">
-                <div className="text-2xl mb-2">{getTierBadge(tier as 'bronze' | 'silver' | 'gold' | 'diamond' | 'legendary')}</div>
+                <div className="text-2xl mb-2">{getTierBadge(tier as Tier)}</div>
                 <div className="text-sm font-medium text-gray-900 capitalize">{tier}</div>
                 <div className="text-xs text-gray-500">{threshold.toLocaleString()} pts</div>
               </div>

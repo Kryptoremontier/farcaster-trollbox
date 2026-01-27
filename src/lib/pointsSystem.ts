@@ -1,138 +1,146 @@
 /**
- * 🤫 SECRET POINTS SYSTEM FOR $TROLL AIRDROP
- * 
- * Users earn points through various activities.
- * Points will be used for future $TROLL token airdrop allocation.
- * 
- * DO NOT expose this system to users yet!
+ * POINTS SYSTEM FOR $TROLL AIRDROP
+ *
+ * Logical, transparent point system based on:
+ * 1. Volume (main factor) - more trading = more points
+ * 2. P&L Boost - winners get multiplier, losers still earn
+ * 3. Consistency - streak bonuses
+ * 4. Early adopter - bonus for early users
  */
+
+export type Tier = 'bronze' | 'silver' | 'gold' | 'diamond' | 'legendary';
 
 export interface UserPoints {
   address: string;
+  fid?: number;
+  username?: string;
   totalPoints: number;
-  breakdown: {
-    betsPlaced: number;        // Points from placing bets
-    volumeTraded: number;      // Points from total volume
-    winStreak: number;         // Bonus for winning streaks
-    earlyAdopter: number;      // Bonus for early users
-    socialEngagement: number;  // Points from chat/social
-    referrals: number;         // Points from referrals
-    consistency: number;       // Daily active bonus
-  };
-  multiplier: number;          // VIP multiplier (1x - 5x)
-  tier: 'bronze' | 'silver' | 'gold' | 'diamond' | 'legendary';
-  lastUpdated: number;
+  betsPlaced: number;
+  volumeTraded: number; // in ETH
+  winsCount: number;
+  lossesCount: number;
+  currentStreak: number;
+  maxStreak: number;
+  totalWonETH: number;    // ETH won from claims
+  totalLostETH: number;   // ETH lost (bet amount on losing bets)
+  totalClaimedETH: number; // ETH actually claimed
+  firstBetTimestamp: number;
+  lastBetTimestamp: number;
+  referrals: number;
+  activeDays: string[]; // YYYY-MM-DD format (stored as array in Redis)
+}
+
+// ============ POINTS CONFIGURATION ============
+
+export const POINTS_CONFIG = {
+  // Base points per bet
+  BET_BASE: 10,
+
+  // Volume: points per 0.001 ETH wagered
+  VOLUME_PER_0_001_ETH: 10,
+
+  // P&L outcome multipliers (applied after market resolution)
+  WIN_MULTIPLIER: 2.0,
+  LOSS_MULTIPLIER: 0.5,
+
+  // Streak bonuses (one-time when streak reached)
+  STREAK_BONUSES: {
+    3: 200,
+    5: 1000,
+    10: 5000,
+  } as Record<number, number>,
+
+  // Volume milestones (one-time bonus)
+  VOLUME_MILESTONES: {
+    0.1: 500,
+    0.5: 2500,
+    1: 10000,
+    5: 50000,
+    10: 150000,
+  } as Record<number, number>,
+
+  // Early adopter bonuses
+  EARLY_ADOPTER: {
+    FIRST_10: 100000,
+    FIRST_50: 50000,
+    FIRST_100: 25000,
+    FIRST_500: 10000,
+    FIRST_1000: 5000,
+    FIRST_5000: 1000,
+  },
+
+  // Social / misc
+  CHAT_MESSAGE: 5,
+  DAILY_ACTIVE: 100,
+};
+
+// ============ TIER SYSTEM ============
+
+export const TIER_THRESHOLDS: Record<Tier, number> = {
+  bronze: 0,
+  silver: 1000,
+  gold: 10000,
+  diamond: 50000,
+  legendary: 200000,
+};
+
+export const TIER_MULTIPLIERS: Record<Tier, number> = {
+  bronze: 1.0,
+  silver: 1.1,
+  gold: 1.25,
+  diamond: 1.5,
+  legendary: 2.0,
+};
+
+// ============ CORE FUNCTIONS ============
+
+/**
+ * Calculate base points for placing a bet (before outcome known)
+ * Formula: 10 base + (amountETH / 0.001) * 10
+ */
+export function calculateBetPoints(amountETH: number): number {
+  const base = POINTS_CONFIG.BET_BASE;
+  const volumePoints = Math.floor(amountETH / 0.001) * POINTS_CONFIG.VOLUME_PER_0_001_ETH;
+  return base + volumePoints;
 }
 
 /**
- * POINTS CALCULATION RULES
- * 🎯 Designed to reward early adopters and active traders heavily
- * 
- * NOTE: Now using Native ETH for betting (not $DEGEN tokens)
- * Volume calculations adjusted for ETH amounts
+ * Apply outcome multiplier after market resolution
+ * Win: x2.0, Loss: x0.5
  */
-export const POINTS_CONFIG = {
-  // Base points per action (INCREASED for early phase)
-  BET_PLACED: 100,                   // 100 points per bet (10x boost for launch)
-  VOLUME_PER_0_01_ETH: 50,          // 50 points per 0.01 ETH wagered (10x boost)
-  WIN_MULTIPLIER: 2.5,               // 2.5x points if bet wins
-  LOSS_CONSOLATION: 0.8,            // 0.8x points if bet loses (still rewarded!)
-  
-  // Streak bonuses (MASSIVE rewards for consistency)
-  WIN_STREAK_BONUS: {
-    3: 500,     // 3 wins in a row: +500 points
-    5: 2000,    // 5 wins in a row: +2,000 points
-    10: 10000,  // 10 wins in a row: +10,000 points
-    20: 50000,  // 20 wins in a row: +50,000 points
-  },
-  
-  // Early adopter bonuses (HUGE incentive for first users)
-  EARLY_ADOPTER: {
-    FIRST_10: 100000,     // First 10 users: 100k points 🚀
-    FIRST_50: 50000,      // First 50 users: 50k points
-    FIRST_100: 25000,     // First 100 users: 25k points
-    FIRST_500: 10000,     // First 500 users: 10k points
-    FIRST_1000: 5000,     // First 1,000 users: 5k points
-    FIRST_5000: 1000,     // First 5,000 users: 1k points
-  },
-  
-  // Social engagement
-  CHAT_MESSAGE: 5,              // 5 points per message
-  MARKET_CREATED: 5000,         // 5,000 points for creating market
-  REFERRAL: 10000,              // 10,000 points per referral (HUGE!)
-  
-  // Consistency bonuses (Reward daily users)
-  DAILY_ACTIVE: 100,            // 100 points for daily activity
-  WEEKLY_STREAK: 1000,          // 1,000 points for 7-day streak
-  MONTHLY_STREAK: 10000,        // 10,000 points for 30-day streak
-  
-  // Volume milestones in ETH (Progressive rewards)
-  VOLUME_MILESTONES: {
-    0.1: 1000,       // 0.1 ETH: +1,000 points
-    0.5: 5000,       // 0.5 ETH: +5,000 points
-    1: 15000,        // 1 ETH: +15,000 points
-    5: 100000,       // 5 ETH: +100,000 points
-    10: 300000,      // 10 ETH: +300,000 points 🎉
-  },
-};
+export function applyOutcomeMultiplier(basePoints: number, won: boolean): number {
+  const multiplier = won ? POINTS_CONFIG.WIN_MULTIPLIER : POINTS_CONFIG.LOSS_MULTIPLIER;
+  return Math.floor(basePoints * multiplier);
+}
 
 /**
- * TIER THRESHOLDS
- * 🏆 Achievable but aspirational
+ * Calculate streak bonus (one-time, when exact streak is reached)
  */
-export const TIER_THRESHOLDS = {
-  bronze: 0,
-  silver: 5000,      // ~50 bets or 1 ETH volume
-  gold: 25000,       // ~250 bets or 5 ETH volume
-  diamond: 100000,   // ~1000 bets or 20 ETH volume
-  legendary: 500000, // Elite traders only 👑
-};
+export function calculateStreakBonus(currentStreak: number): number {
+  return POINTS_CONFIG.STREAK_BONUSES[currentStreak] || 0;
+}
 
 /**
- * MULTIPLIERS BY TIER
+ * Calculate volume milestone bonus (one-time per milestone crossed)
  */
-export const TIER_MULTIPLIERS = {
-  bronze: 1.0,
-  silver: 1.2,
-  gold: 1.5,
-  diamond: 2.0,
-  legendary: 3.0,
-};
-
-/**
- * Calculate points for placing a bet
- * @param amount - Bet amount in ETH
- */
-export function calculateBetPoints(
-  amount: number,
-  won: boolean,
-  currentStreak: number
+export function calculateVolumeMilestoneBonus(
+  newTotalVolume: number,
+  previousVolume: number
 ): number {
-  let points = POINTS_CONFIG.BET_PLACED;
-  
-  // Volume bonus (per 0.01 ETH)
-  points += (amount / 0.01) * POINTS_CONFIG.VOLUME_PER_0_01_ETH;
-  
-  // Win/loss multiplier
-  if (won) {
-    points *= POINTS_CONFIG.WIN_MULTIPLIER;
-    
-    // Streak bonus
-    const streakBonus = POINTS_CONFIG.WIN_STREAK_BONUS[currentStreak as keyof typeof POINTS_CONFIG.WIN_STREAK_BONUS];
-    if (streakBonus) {
-      points += streakBonus;
+  let bonus = 0;
+  for (const [thresholdStr, points] of Object.entries(POINTS_CONFIG.VOLUME_MILESTONES)) {
+    const threshold = parseFloat(thresholdStr);
+    if (newTotalVolume >= threshold && previousVolume < threshold) {
+      bonus += points;
     }
-  } else {
-    points *= POINTS_CONFIG.LOSS_CONSOLATION;
   }
-  
-  return Math.floor(points);
+  return bonus;
 }
 
 /**
  * Calculate user tier based on total points
  */
-export function calculateTier(totalPoints: number): UserPoints['tier'] {
+export function calculateTier(totalPoints: number): Tier {
   if (totalPoints >= TIER_THRESHOLDS.legendary) return 'legendary';
   if (totalPoints >= TIER_THRESHOLDS.diamond) return 'diamond';
   if (totalPoints >= TIER_THRESHOLDS.gold) return 'gold';
@@ -143,8 +151,17 @@ export function calculateTier(totalPoints: number): UserPoints['tier'] {
 /**
  * Get multiplier for user tier
  */
-export function getTierMultiplier(tier: UserPoints['tier']): number {
+export function getTierMultiplier(tier: Tier): number {
   return TIER_MULTIPLIERS[tier];
+}
+
+/**
+ * Apply tier multiplier to points
+ */
+export function applyTierMultiplier(points: number, totalPoints: number): number {
+  const tier = calculateTier(totalPoints);
+  const multiplier = getTierMultiplier(tier);
+  return Math.floor(points * multiplier);
 }
 
 /**
@@ -160,46 +177,9 @@ export function calculateEarlyAdopterBonus(userIndex: number): number {
   return 0;
 }
 
-/**
- * Calculate volume milestone bonus
- */
-export function calculateVolumeMilestoneBonus(
-  totalVolume: number,
-  previousVolume: number
-): number {
-  let bonus = 0;
-  
-  for (const [threshold, points] of Object.entries(POINTS_CONFIG.VOLUME_MILESTONES)) {
-    const thresholdNum = parseInt(threshold);
-    if (totalVolume >= thresholdNum && previousVolume < thresholdNum) {
-      bonus += points;
-    }
-  }
-  
-  return bonus;
-}
+// ============ UI HELPERS ============
 
-/**
- * 🎁 AIRDROP ALLOCATION FORMULA
- * 
- * Total $TROLL supply: 1,000,000,000 (1B)
- * Airdrop allocation: 15% = 150,000,000 $TROLL
- * 
- * User allocation = (User Points / Total Points) × 150M $TROLL
- */
-export function calculateAirdropAllocation(
-  userPoints: number,
-  totalPoints: number
-): number {
-  const AIRDROP_POOL = 150_000_000; // 150M $TROLL
-  const userShare = userPoints / totalPoints;
-  return Math.floor(userShare * AIRDROP_POOL);
-}
-
-/**
- * Get tier badge emoji (for UI - subtle hints)
- */
-export function getTierBadge(tier: UserPoints['tier']): string {
+export function getTierBadge(tier: Tier): string {
   switch (tier) {
     case 'legendary': return '👑';
     case 'diamond': return '💎';
@@ -210,10 +190,7 @@ export function getTierBadge(tier: UserPoints['tier']): string {
   }
 }
 
-/**
- * Get tier color (for UI)
- */
-export function getTierColor(tier: UserPoints['tier']): string {
+export function getTierColor(tier: Tier): string {
   switch (tier) {
     case 'legendary': return 'from-purple-500 to-pink-500';
     case 'diamond': return 'from-cyan-400 to-blue-500';
@@ -225,24 +202,17 @@ export function getTierColor(tier: UserPoints['tier']): string {
 }
 
 /**
- * Mock data for testing (will be replaced with real data from backend)
+ * AIRDROP ALLOCATION FORMULA
+ * Total $TROLL supply: 1,000,000,000 (1B)
+ * Airdrop allocation: 15% = 150,000,000 $TROLL
+ * User allocation = (User Points / Total Points) * 150M $TROLL
  */
-export function getMockUserPoints(address: string): UserPoints {
-  // This will be replaced with actual data from your backend/contract
-  return {
-    address,
-    totalPoints: 0,
-    breakdown: {
-      betsPlaced: 0,
-      volumeTraded: 0,
-      winStreak: 0,
-      earlyAdopter: 0,
-      socialEngagement: 0,
-      referrals: 0,
-      consistency: 0,
-    },
-    multiplier: 1.0,
-    tier: 'bronze',
-    lastUpdated: Date.now(),
-  };
+export function calculateAirdropAllocation(
+  userPoints: number,
+  totalPoints: number
+): number {
+  const AIRDROP_POOL = 150_000_000;
+  if (totalPoints === 0) return 0;
+  const userShare = userPoints / totalPoints;
+  return Math.floor(userShare * AIRDROP_POOL);
 }

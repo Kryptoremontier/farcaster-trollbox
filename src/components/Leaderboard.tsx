@@ -1,82 +1,110 @@
 "use client";
 
-import { Trophy, TrendingUp, Medal, Crown } from "lucide-react";
+import { Trophy, TrendingUp, Medal, Crown, Flame } from "lucide-react";
 import { Card } from "~/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import type { Tier } from "~/lib/pointsSystem";
 
 interface LeaderboardEntry {
   rank: number;
   address: string;
   username?: string;
   avatar?: string;
-  totalWagered: number;
-  totalWon: number;
-  totalLost: number;
-  pnl: number;
+  points: number;
+  betsPlaced: number;
+  volumeTraded: number;
+  winsCount: number;
+  lossesCount: number;
+  currentStreak: number;
+  maxStreak: number;
+  pnlETH: number;
   roi: number;
   winRate: number;
-  activeBets: number;
-  // 🤫 Secret points for future airdrop
-  secretPoints?: number;
+  tier: Tier;
+  tierMultiplier: number;
 }
 
-// Helper to generate avatar URL (DiceBear API for unique avatars)
-const getAvatarUrl = (name: string) => 
+const getAvatarUrl = (name: string) =>
   `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(name)}&backgroundColor=9E75FF`;
 
-// Empty initial state - real data will come from API/Redis
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [];
+const TIER_BADGES: Record<Tier, string> = {
+  legendary: '👑',
+  diamond: '💎',
+  gold: '🥇',
+  silver: '🥈',
+  bronze: '🥉',
+};
+
+const TIER_COLORS: Record<Tier, string> = {
+  legendary: 'bg-purple-100 text-purple-700 border-purple-300',
+  diamond: 'bg-cyan-100 text-cyan-700 border-cyan-300',
+  gold: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  silver: 'bg-gray-100 text-gray-600 border-gray-300',
+  bronze: 'bg-orange-100 text-orange-700 border-orange-300',
+};
 
 export function Leaderboard() {
   const { address } = useAccount();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(MOCK_LEADERBOARD);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/leaderboard?limit=20');
+        const response = await fetch('/api/leaderboard?limit=50');
         const data = await response.json();
-        
+
         if (data.success && data.leaderboard) {
-          // Convert API data to LeaderboardEntry format
-          const entries: LeaderboardEntry[] = data.leaderboard.map((entry: {
-            address: string;
-            points: number;
-            username?: string;
-            fid?: number;
-            betsPlaced?: number;
-            volumeTraded?: number;
-          }, index: number) => ({
-            rank: index + 1,
-            address: entry.address,
-            username: entry.username || `User ${entry.address.slice(0, 6)}`,
-            avatar: getAvatarUrl(entry.username || entry.address),
-            totalWagered: entry.volumeTraded || 0,
-            totalWon: 0, // TODO: Calculate from contract
-            totalLost: 0, // TODO: Calculate from contract
-            pnl: 0, // TODO: Calculate from contract
-            roi: 0, // TODO: Calculate from contract
-            winRate: 0, // TODO: Calculate from contract
-            activeBets: entry.betsPlaced || 0,
-            secretPoints: entry.points || 0,
-          }));
+          const entries: LeaderboardEntry[] = data.leaderboard.map(
+            (entry: {
+              address: string;
+              points: number;
+              username?: string;
+              fid?: number;
+              betsPlaced?: number;
+              volumeTraded?: number;
+              winsCount?: number;
+              lossesCount?: number;
+              currentStreak?: number;
+              maxStreak?: number;
+              pnlETH?: number;
+              roi?: number;
+              winRate?: number;
+              tier?: Tier;
+              tierMultiplier?: number;
+            }, index: number) => ({
+              rank: index + 1,
+              address: entry.address,
+              username: entry.username || `${entry.address.slice(0, 6)}...${entry.address.slice(-4)}`,
+              avatar: getAvatarUrl(entry.username || entry.address),
+              points: entry.points || 0,
+              betsPlaced: entry.betsPlaced || 0,
+              volumeTraded: entry.volumeTraded || 0,
+              winsCount: entry.winsCount || 0,
+              lossesCount: entry.lossesCount || 0,
+              currentStreak: entry.currentStreak || 0,
+              maxStreak: entry.maxStreak || 0,
+              pnlETH: entry.pnlETH || 0,
+              roi: entry.roi || 0,
+              winRate: entry.winRate || 0,
+              tier: entry.tier || 'bronze',
+              tierMultiplier: entry.tierMultiplier || 1.0,
+            })
+          );
           setLeaderboard(entries);
         }
       } catch (error) {
         console.error('Failed to fetch leaderboard:', error);
-        // Keep existing data on error
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchLeaderboard();
-    // Refresh every 30 seconds
     const interval = setInterval(fetchLeaderboard, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -94,50 +122,92 @@ export function Leaderboard() {
     }
   };
 
+  // Find current user in leaderboard
+  const currentUser = leaderboard.find(
+    (e) => e.address.toLowerCase() === address?.toLowerCase()
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-1">
         <div className="flex items-center justify-center gap-2">
-          <Trophy className="w-6 h-6 text-yellow-500" />
-          <h2 className="text-2xl font-bold text-gray-900">Leaderboard</h2>
+          <Trophy className="w-5 h-5 text-yellow-500" />
+          <h2 className="text-xl font-bold text-gray-900">Leaderboard</h2>
         </div>
-        <p className="text-sm text-gray-500">
-          Top performers by total profit & loss
+        <p className="text-xs text-gray-500">
+          Earn points by trading. Points = future $TROLL airdrop allocation.
         </p>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-3 text-center bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
-          <div className="text-2xl font-bold text-yellow-700">
+      {/* Your Stats (if connected) */}
+      {currentUser && (
+        <Card className="p-3 bg-gradient-to-r from-[#9E75FF]/10 to-[#7E55DF]/10 border-[#9E75FF]/30">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-[#9E75FF]">Your Stats</span>
+              <Badge className={`text-[10px] px-1.5 py-0 border ${TIER_COLORS[currentUser.tier]}`}>
+                {TIER_BADGES[currentUser.tier]} {currentUser.tier.charAt(0).toUpperCase() + currentUser.tier.slice(1)}
+              </Badge>
+            </div>
+            <span className="text-sm font-bold text-gray-900">#{currentUser.rank}</span>
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <div className="text-sm font-bold text-[#9E75FF]">{currentUser.points.toLocaleString()}</div>
+              <div className="text-[10px] text-gray-500">Points</div>
+            </div>
+            <div>
+              <div className={`text-sm font-bold ${currentUser.pnlETH >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {currentUser.pnlETH >= 0 ? '+' : ''}{currentUser.pnlETH.toFixed(4)}
+              </div>
+              <div className="text-[10px] text-gray-500">P&L (ETH)</div>
+            </div>
+            <div>
+              <div className="text-sm font-bold text-gray-900">{currentUser.winRate.toFixed(0)}%</div>
+              <div className="text-[10px] text-gray-500">Win Rate</div>
+            </div>
+            <div>
+              <div className="text-sm font-bold text-gray-900">{currentUser.volumeTraded.toFixed(4)}</div>
+              <div className="text-[10px] text-gray-500">Volume</div>
+            </div>
+          </div>
+          {currentUser.currentStreak >= 2 && (
+            <div className="mt-2 flex items-center gap-1 text-xs text-orange-600">
+              <Flame className="w-3 h-3" />
+              {currentUser.currentStreak} win streak!
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Overview Stats */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="p-2 text-center bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+          <div className="text-lg font-bold text-yellow-700">
             {isLoading ? '...' : leaderboard.length}
           </div>
-          <div className="text-xs text-yellow-600 mt-1">Total Players</div>
+          <div className="text-[10px] text-yellow-600">Players</div>
         </Card>
-
-        <Card className="p-3 text-center bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <div className="text-2xl font-bold text-green-700">
-            {isLoading ? '...' : (leaderboard.reduce((sum, e) => sum + (e.totalWagered || 0), 0)).toFixed(4)}
+        <Card className="p-2 text-center bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <div className="text-lg font-bold text-green-700">
+            {isLoading ? '...' : leaderboard.reduce((sum, e) => sum + e.volumeTraded, 0).toFixed(3)}
           </div>
-          <div className="text-xs text-green-600 mt-1">Total Volume (ETH)</div>
+          <div className="text-[10px] text-green-600">Volume (ETH)</div>
         </Card>
-
-        <Card className="p-3 text-center bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <div className="text-2xl font-bold text-blue-700">
-            {isLoading ? '...' : leaderboard.reduce((sum, e) => sum + (e.activeBets || 0), 0)}
+        <Card className="p-2 text-center bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <div className="text-lg font-bold text-blue-700">
+            {isLoading ? '...' : leaderboard.reduce((sum, e) => sum + e.betsPlaced, 0)}
           </div>
-          <div className="text-xs text-blue-600 mt-1">Total Bets</div>
+          <div className="text-[10px] text-blue-600">Total Bets</div>
         </Card>
+      </div>
 
-        <Card className="p-3 text-center bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <div className="text-2xl font-bold text-purple-700">
-            {isLoading ? '...' : leaderboard.length > 0 
-              ? (leaderboard.reduce((sum, e) => sum + (e.winRate || 0), 0) / leaderboard.length).toFixed(1) + '%'
-              : '0.0%'}
-          </div>
-          <div className="text-xs text-purple-600 mt-1">Avg Win Rate</div>
-        </Card>
+      {/* Season Info */}
+      <div className="text-center">
+        <Badge variant="outline" className="text-[10px] text-gray-500 border-gray-300">
+          Season 1 - Points convert to $TROLL at TGE
+        </Badge>
       </div>
 
       {/* Leaderboard Table */}
@@ -146,16 +216,15 @@ export function Leaderboard() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Rank</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Player</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Wagered</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">P&L</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">ROI</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Win Rate</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Active</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600">#</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600">Player</th>
+                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600">Points</th>
+                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600">Volume</th>
+                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600">P&L</th>
+                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-600">Win%</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
@@ -172,91 +241,102 @@ export function Leaderboard() {
                       <Trophy className="w-12 h-12 text-gray-300" />
                       <div>
                         <p className="text-lg font-semibold text-gray-700">No players yet!</p>
-                        <p className="text-sm text-gray-500 mt-1">Be the first to place a bet and claim your spot! 🚀</p>
+                        <p className="text-sm text-gray-500 mt-1">Place a bet to get on the board!</p>
                       </div>
                     </div>
                   </td>
                 </tr>
-              ) : leaderboard.map((entry) => (
-                <tr
-                  key={entry.address}
-                  className={`hover:bg-gray-50 transition-colors ${
-                    entry.address.toLowerCase() === address?.toLowerCase() ? "bg-[#9E75FF]/5" : ""
-                  }`}
-                >
-                  {/* Rank */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {getRankIcon(entry.rank)}
-                    </div>
-                  </td>
+              ) : (
+                leaderboard.map((entry) => {
+                  const isCurrentUser = entry.address.toLowerCase() === address?.toLowerCase();
+                  return (
+                    <tr
+                      key={entry.address}
+                      className={`hover:bg-gray-50 transition-colors ${
+                        isCurrentUser ? "bg-[#9E75FF]/5" : ""
+                      }`}
+                    >
+                      {/* Rank */}
+                      <td className="px-3 py-2.5">
+                        {getRankIcon(entry.rank)}
+                      </td>
 
-                  {/* Player */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-8 h-8 border border-gray-200">
-                        {entry.avatar ? (
-                          <AvatarImage src={entry.avatar} alt={entry.username} />
-                        ) : null}
-                        <AvatarFallback className="bg-[#9E75FF]/10 text-[#9E75FF] text-xs font-semibold">
-                          {(entry.username || entry.address).slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium text-sm text-gray-900 flex items-center gap-2">
-                          {entry.username || entry.address}
-                          {entry.username === "You" && (
-                            <Badge className="text-xs px-1.5 py-0 bg-[#9E75FF] text-white">You</Badge>
-                          )}
+                      {/* Player */}
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-6 h-6 border border-gray-200">
+                            {entry.avatar ? (
+                              <AvatarImage src={entry.avatar} alt={entry.username} />
+                            ) : null}
+                            <AvatarFallback className="bg-[#9E75FF]/10 text-[#9E75FF] text-[10px] font-semibold">
+                              {(entry.username || entry.address).slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <div className="text-xs font-medium text-gray-900 truncate max-w-[100px] flex items-center gap-1">
+                              {entry.username}
+                              {isCurrentUser && (
+                                <Badge className="text-[8px] px-1 py-0 bg-[#9E75FF] text-white">You</Badge>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                              <span>{TIER_BADGES[entry.tier]}</span>
+                              <span>{entry.winsCount}W/{entry.lossesCount}L</span>
+                              {entry.currentStreak >= 3 && (
+                                <span className="text-orange-500 flex items-center">
+                                  <Flame className="w-2.5 h-2.5" />
+                                  {entry.currentStreak}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">{entry.address}</div>
-                      </div>
-                    </div>
-                  </td>
+                      </td>
 
-                  {/* Wagered */}
-                  <td className="px-4 py-3 text-right">
-                    <div className="text-sm font-medium text-gray-900">
-                      {entry.totalWagered.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-500">ETH</div>
-                  </td>
+                      {/* Points */}
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="text-xs font-bold text-[#9E75FF]">
+                          {entry.points.toLocaleString()}
+                        </div>
+                      </td>
 
-                  {/* P&L */}
-                  <td className="px-4 py-3 text-right">
-                    <div className={`text-sm font-bold ${entry.pnl > 0 ? 'text-green-600' : entry.pnl < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                      {entry.pnl > 0 ? '+' : ''}{entry.pnl.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {entry.totalWon}W / {entry.totalLost}L
-                    </div>
-                  </td>
+                      {/* Volume */}
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="text-xs font-medium text-gray-700">
+                          {entry.volumeTraded.toFixed(3)}
+                        </div>
+                        <div className="text-[10px] text-gray-400">ETH</div>
+                      </td>
 
-                  {/* ROI */}
-                  <td className="px-4 py-3 text-right">
-                    <div className={`text-sm font-bold ${entry.roi > 0 ? 'text-green-600' : entry.roi < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                      {entry.roi > 0 ? '+' : ''}{entry.roi.toFixed(1)}%
-                    </div>
-                  </td>
+                      {/* P&L */}
+                      <td className="px-3 py-2.5 text-right">
+                        <div className={`text-xs font-bold ${
+                          entry.pnlETH > 0 ? 'text-green-600' : entry.pnlETH < 0 ? 'text-red-600' : 'text-gray-400'
+                        }`}>
+                          {entry.pnlETH > 0 ? '+' : ''}{entry.pnlETH.toFixed(4)}
+                        </div>
+                        {entry.roi !== 0 && (
+                          <div className={`text-[10px] ${entry.roi > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {entry.roi > 0 ? '+' : ''}{entry.roi.toFixed(0)}%
+                          </div>
+                        )}
+                      </td>
 
-                  {/* Win Rate */}
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <TrendingUp className={`w-3 h-3 ${entry.winRate > 60 ? 'text-green-600' : 'text-gray-400'}`} />
-                      <span className="text-sm font-medium text-gray-900">
-                        {entry.winRate.toFixed(1)}%
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Active Bets */}
-                  <td className="px-4 py-3 text-right">
-                    <Badge variant="outline" className="text-xs px-2 py-0.5">
-                      {entry.activeBets}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
+                      {/* Win Rate */}
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-0.5">
+                          {entry.winRate > 60 && <TrendingUp className="w-3 h-3 text-green-500" />}
+                          <span className={`text-xs font-medium ${
+                            entry.winRate > 60 ? 'text-green-600' : entry.winRate > 0 ? 'text-gray-700' : 'text-gray-400'
+                          }`}>
+                            {entry.winRate.toFixed(0)}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

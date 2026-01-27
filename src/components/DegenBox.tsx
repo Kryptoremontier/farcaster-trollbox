@@ -225,6 +225,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   }, [isBetConfirmed, selectedSide, selectedAmount, context, address, market, refetchMarket, refetchUserBet, refetchBalance]);
 
   // Handle claim confirmation
+  const [claimRecorded, setClaimRecorded] = useState(false);
   useEffect(() => {
     if (isClaimConfirmed) {
       setBetStatus({
@@ -234,11 +235,13 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       refetchMarket();
       refetchUserBet();
       refetchBalance();
+      setClaimRecorded(true);
       setTimeout(() => setBetStatus(null), 5000);
     }
   }, [isClaimConfirmed, refetchMarket, refetchUserBet, refetchBalance]);
 
   // Handle refund confirmation
+  const [refundRecorded, setRefundRecorded] = useState(false);
   useEffect(() => {
     if (isRefundConfirmed) {
       setBetStatus({
@@ -248,6 +251,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       refetchMarket();
       refetchUserBet();
       refetchBalance();
+      setRefundRecorded(true);
       setTimeout(() => setBetStatus(null), 5000);
     }
   }, [isRefundConfirmed, refetchMarket, refetchUserBet, refetchBalance]);
@@ -377,6 +381,86 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const noOdds = totalPool > 0 && parseFloat(marketData?.noPool || "0") > 0
     ? totalPool / parseFloat(marketData?.noPool || "1")
     : 2.0;
+
+  // ===== POINTS: Record outcomes after market resolution =====
+
+  // Record win outcome after claim confirmation
+  useEffect(() => {
+    if (claimRecorded && address && market && userBet) {
+      const betAmount = winningSide
+        ? parseFloat(userBet.yesAmount)
+        : parseFloat(userBet.noAmount);
+      if (betAmount <= 0) return;
+
+      fetch('/api/record-outcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address,
+          marketId: market.contractMarketId ?? 0,
+          won: true,
+          betAmount,
+          payout: userWinnings,
+          claimed: true,
+          claimedAmount: userWinnings,
+        }),
+      })
+        .then(() => console.log('Points: win outcome recorded'))
+        .catch((error: unknown) => console.error('Points: failed to record win outcome', error));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claimRecorded]);
+
+  // Record refund claim
+  useEffect(() => {
+    if (refundRecorded && address && market && userBet) {
+      const refundAmount = parseFloat(userBet.yesAmount) + parseFloat(userBet.noAmount);
+      if (refundAmount <= 0) return;
+
+      fetch('/api/record-outcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address,
+          marketId: market.contractMarketId ?? 0,
+          won: false,
+          betAmount: 0,
+          payout: 0,
+          claimed: true,
+          claimedAmount: refundAmount,
+        }),
+      })
+        .then(() => console.log('Points: refund recorded'))
+        .catch((error: unknown) => console.error('Points: failed to record refund', error));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refundRecorded]);
+
+  // Record loss outcome when user views a resolved market they lost
+  const [lossRecorded, setLossRecorded] = useState(false);
+  useEffect(() => {
+    if (userLost && address && market && userBet && !lossRecorded) {
+      setLossRecorded(true);
+      const betAmount = winningSide
+        ? parseFloat(userBet.noAmount)
+        : parseFloat(userBet.yesAmount);
+      if (betAmount <= 0) return;
+
+      fetch('/api/record-outcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address,
+          marketId: market.contractMarketId ?? 0,
+          won: false,
+          betAmount,
+          payout: 0,
+        }),
+      })
+        .then(() => console.log('Points: loss outcome recorded'))
+        .catch((error: unknown) => console.error('Points: failed to record loss outcome', error));
+    }
+  }, [userLost, address, market, userBet, winningSide, lossRecorded]);
 
   if (!isSDKLoaded) {
     return <div className="flex items-center justify-center h-screen">Loading SDK...</div>
