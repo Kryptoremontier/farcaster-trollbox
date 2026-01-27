@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import sdk from "@farcaster/miniapp-sdk";
-import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, UserCog, ChevronDown, ChevronUp } from "lucide-react";
+import { Wallet, Search, ChevronLeft, ChevronRight, TrendingUp as TrendingUpIcon, Briefcase, UserCog, ChevronDown, ChevronUp, Trophy } from "lucide-react";
 import { Button } from "~/components/ui/button-component";
 import { Badge } from "~/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -420,8 +420,7 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
                 Portfolio
               </button>
 
-              {/* LEADERBOARD TEMPORARILY HIDDEN - DEBUGGING IN PROGRESS */}
-              {/* <button
+              <button
                 onClick={() => setSelectedTab("leaderboard")}
                 className={cn(
                   "px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 flex items-center gap-2",
@@ -432,7 +431,7 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
               >
                 <Trophy className="w-4 h-4" />
                 Leaderboard
-              </button> */}
+              </button>
             </div>
 
             {/* Right Arrow */}
