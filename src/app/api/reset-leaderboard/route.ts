@@ -1,6 +1,6 @@
 /**
- * ONE-TIME endpoint to reset leaderboard data.
- * Protected by CRON_SECRET. Call once, then remove.
+ * Admin endpoint to reset leaderboard data.
+ * Protected by CRON_SECRET.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -10,14 +10,11 @@ export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    // ONE-TIME reset - remove this endpoint after use
-    const url = new URL(req.url);
-    const confirm = url.searchParams.get("confirm");
-    if (confirm !== "RESET_ALL_POINTS_2026") {
-      return NextResponse.json(
-        { error: "Add ?confirm=RESET_ALL_POINTS_2026 to confirm" },
-        { status: 400 }
-      );
+    const authHeader = req.headers.get("authorization");
+    const secret = process.env.CRON_SECRET;
+
+    if (!secret || authHeader !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const result = await resetLeaderboard();
