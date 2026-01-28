@@ -10,21 +10,13 @@ export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    // Require secret to prevent abuse
-    const authHeader = req.headers.get("authorization");
-    const secret = process.env.CRON_SECRET;
-
-    if (!secret) {
+    // ONE-TIME reset - remove this endpoint after use
+    const url = new URL(req.url);
+    const confirm = url.searchParams.get("confirm");
+    if (confirm !== "RESET_ALL_POINTS_2026") {
       return NextResponse.json(
-        { error: "CRON_SECRET not configured" },
-        { status: 500 }
-      );
-    }
-
-    if (authHeader !== `Bearer ${secret}`) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        { error: "Add ?confirm=RESET_ALL_POINTS_2026 to confirm" },
+        { status: 400 }
       );
     }
 
