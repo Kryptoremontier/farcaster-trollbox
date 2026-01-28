@@ -104,6 +104,15 @@ export async function getUserPoints(address: string): Promise<UserPoints | null>
     if (data.volumeTraded === undefined) data.volumeTraded = 0;
     if (data.totalPoints === undefined) data.totalPoints = 0;
     if (data.referrals === undefined) data.referrals = 0;
+
+    // Migrate old data: volume was stored in wrong units (not ETH)
+    // Max realistic volume per user is ~100 ETH. Anything above = old format.
+    if (data.volumeTraded > 100) {
+      // Old data likely in Gwei or raw contract units - reset to estimate from bets
+      // Conservative: estimate from betsPlaced * avg bet size (0.005 ETH)
+      data.volumeTraded = (data.betsPlaced || 0) * 0.005;
+    }
+
     return data;
   } catch (error) {
     console.error('Error getting user points:', error);

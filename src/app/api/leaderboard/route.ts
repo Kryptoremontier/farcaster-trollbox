@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         const stats = getUserStats(userPoints);
         return {
           address: entry.address,
-          points: entry.points,
+          points: userPoints.totalPoints || entry.points,
           username: userPoints.username,
           fid: userPoints.fid,
           betsPlaced: userPoints.betsPlaced,
