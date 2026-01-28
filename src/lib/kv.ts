@@ -105,14 +105,6 @@ export async function getUserPoints(address: string): Promise<UserPoints | null>
     if (data.totalPoints === undefined) data.totalPoints = 0;
     if (data.referrals === undefined) data.referrals = 0;
 
-    // Migrate old data: volume was stored in wrong units (not ETH)
-    // Max realistic volume per user is ~100 ETH. Anything above = old format.
-    if (data.volumeTraded > 100) {
-      // Old data likely in Gwei or raw contract units - reset to estimate from bets
-      // Conservative: estimate from betsPlaced * avg bet size (0.005 ETH)
-      data.volumeTraded = (data.betsPlaced || 0) * 0.005;
-    }
-
     return data;
   } catch (error) {
     console.error('Error getting user points:', error);
@@ -374,6 +366,38 @@ export async function getLeaderboard(limit: number = 100): Promise<Array<{ addre
   } catch (error) {
     console.error('Error getting leaderboard:', error);
     return [];
+  }
+}
+
+/**
+ * Reset entire leaderboard: remove sorted set and all user points/bets data.
+ * Use with caution - this wipes all points history.
+ */
+export async function resetLeaderboard(): Promise<{ cleared: number }> {
+  if (!redis) return { cleared: 0 };
+
+  try {
+    // Get all members from leaderboard sorted set
+    const members = await redis.zrange(getLeaderboardKey(), 0, -1);
+
+    let cleared = 0;
+    for (const addr of members) {
+      const address = String(addr);
+      // Delete user points hash
+      await redis.del(getUserPointsKey(address));
+      // Delete user bets list
+      await redis.del(getUserBetsKey(address));
+      cleared++;
+    }
+
+    // Delete leaderboard sorted set
+    await redis.del(getLeaderboardKey());
+
+    console.log(`[RESET] Cleared leaderboard: ${cleared} users wiped`);
+    return { cleared };
+  } catch (error) {
+    console.error('Error resetting leaderboard:', error);
+    return { cleared: 0 };
   }
 }
 
