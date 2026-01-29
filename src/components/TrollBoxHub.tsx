@@ -558,7 +558,16 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {MOCK_MARKETS
                       .filter(m => m.contractMarketId !== undefined)
-                      .sort((a, b) => a.endTime.getTime() - b.endTime.getTime())
+                      .sort((a, b) => {
+                        const aEnded = isMarketEnded(a);
+                        const bEnded = isMarketEnded(b);
+                        // Active markets first, then ended markets
+                        if (aEnded !== bEnded) {
+                          return aEnded ? 1 : -1;
+                        }
+                        // Within same group, sort by soonest to end
+                        return a.endTime.getTime() - b.endTime.getTime();
+                      })
                       .map((market) => (
                         <UserBetCard
                           key={market.id}
