@@ -10,6 +10,7 @@ import { Badge } from "~/components/ui/badge"
 import { Input } from "~/components/ui/input"
 import { cn } from "~/lib/utils"
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi"
+import { useQueryClient } from "@tanstack/react-query"
 import { config } from "~/components/providers/WagmiProvider"
 import { getMarketById } from "~/lib/mockMarkets"
 import { 
@@ -57,6 +58,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
   const { switchChain } = useSwitchChain()
+  const queryClient = useQueryClient()
   
   // Check if we're on the correct network (Base Mainnet)
   const isCorrectNetwork = chain?.id === 8453;
@@ -187,6 +189,9 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       refetchMarket();
       refetchUserBet();
       refetchBalance();
+
+      // Invalidate all user bet queries so YOUR BETS tab updates immediately
+      queryClient.invalidateQueries({ queryKey: ['readContract'] });
       
       // Record bet and update points
       const recordBetAsync = async () => {
@@ -222,7 +227,7 @@ export function DegenBox({ marketId, onBack }: DegenBoxProps) {
       setSelectedSide(null);
       setTimeout(() => setBetStatus(null), 5000);
     }
-  }, [isBetConfirmed, selectedSide, selectedAmount, context, address, market, refetchMarket, refetchUserBet, refetchBalance]);
+  }, [isBetConfirmed, selectedSide, selectedAmount, context, address, market, refetchMarket, refetchUserBet, refetchBalance, queryClient]);
 
   // Handle claim confirmation
   const [claimRecorded, setClaimRecorded] = useState(false);
