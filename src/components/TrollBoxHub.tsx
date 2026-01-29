@@ -171,25 +171,29 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
     return { activeMarkets: active, endedMarkets: ended };
   }, [isMarketEnded]);
 
-  // Filter active markets for main/search
-  const filteredActiveMarkets = activeMarkets.filter((market) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      market.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      market.description.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter active markets for main/search - sorted by soonest to end
+  const filteredActiveMarkets = activeMarkets
+    .filter((market) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        market.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        market.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesSearch && market.status === "active";
-  });
+      return matchesSearch && market.status === "active";
+    })
+    .sort((a, b) => a.endTime.getTime() - b.endTime.getTime());
 
-  // Filter ended markets for main/search
-  const filteredEndedMarkets = endedMarkets.filter((market) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      market.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      market.description.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter ended markets for main/search - sorted by most recently ended
+  const filteredEndedMarkets = endedMarkets
+    .filter((market) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        market.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        market.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesSearch;
-  });
+      return matchesSearch;
+    })
+    .sort((a, b) => b.endTime.getTime() - a.endTime.getTime());
 
   // Top 10 markets by total pool for trending tab
   const trendingMarkets = [...MOCK_MARKETS]
@@ -552,19 +556,22 @@ export function TrollBoxHub({ onMarketSelect }: TrollBoxHubProps) {
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {MOCK_MARKETS.filter(m => m.contractMarketId !== undefined).map((market) => (
-                      <UserBetCard
-                        key={market.id}
-                        market={market}
-                        userAddress={address as Address}
-                        onSelect={onMarketSelect}
-                        onClaim={claimWinnings}
-                        onClaimRefund={claimRefund}
-                        isClaimPending={isClaimPending}
-                        isClaimConfirming={isClaimConfirming}
-                        isRefundPending={isRefundPending}
-                        isRefundConfirming={isRefundConfirming}
-                      />
+                    {MOCK_MARKETS
+                      .filter(m => m.contractMarketId !== undefined)
+                      .sort((a, b) => a.endTime.getTime() - b.endTime.getTime())
+                      .map((market) => (
+                        <UserBetCard
+                          key={market.id}
+                          market={market}
+                          userAddress={address as Address}
+                          onSelect={onMarketSelect}
+                          onClaim={claimWinnings}
+                          onClaimRefund={claimRefund}
+                          isClaimPending={isClaimPending}
+                          isClaimConfirming={isClaimConfirming}
+                          isRefundPending={isRefundPending}
+                          isRefundConfirming={isRefundConfirming}
+                        />
                     ))}
                   </div>
                 </>
