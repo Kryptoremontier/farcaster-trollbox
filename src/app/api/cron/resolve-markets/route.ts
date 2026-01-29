@@ -65,18 +65,74 @@ const TROLLBET_ABI = [
   }
 ] as const;
 
-// Oracle functions
+// Oracle functions - with fallback APIs for reliability
 async function fetchCryptoPrice(symbol: string): Promise<number> {
+  // Map CoinGecko IDs to Binance symbols
+  const binanceSymbolMap: Record<string, string> = {
+    'bitcoin': 'BTCUSDT',
+    'ethereum': 'ETHUSDT',
+    'solana': 'SOLUSDT',
+  };
+
+  // Try CoinGecko first
   try {
     const response = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=usd`
+      `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=usd`,
+      { signal: AbortSignal.timeout(10000) } // 10 second timeout
     );
+
+    if (!response.ok) {
+      console.warn(`      ⚠️ CoinGecko API error (${response.status}) for ${symbol}, trying fallback...`);
+      throw new Error(`CoinGecko error: ${response.status}`);
+    }
+
     const data = await response.json();
-    return data[symbol]?.usd || 0;
-  } catch (error) {
-    console.error(`Failed to fetch ${symbol} price:`, error);
-    return 0;
+
+    // Check for rate limit error in response body
+    if (data.status?.error_code === 429) {
+      console.warn(`      ⚠️ CoinGecko rate limited for ${symbol}, trying fallback...`);
+      throw new Error('CoinGecko rate limited');
+    }
+
+    const price = data[symbol]?.usd;
+    if (price && price > 0) {
+      console.log(`      ✅ CoinGecko: ${symbol} = $${price.toLocaleString()}`);
+      return price;
+    }
+
+    throw new Error('Invalid price from CoinGecko');
+  } catch (cgError) {
+    console.warn(`      ⚠️ CoinGecko failed: ${cgError instanceof Error ? cgError.message : 'Unknown error'}`);
   }
+
+  // Fallback to Binance API (free, no auth required for public endpoints)
+  const binanceSymbol = binanceSymbolMap[symbol];
+  if (binanceSymbol) {
+    try {
+      const response = await fetch(
+        `https://api.binance.com/api/v3/ticker/price?symbol=${binanceSymbol}`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+
+      if (!response.ok) {
+        console.error(`      ❌ Binance API error (${response.status}) for ${binanceSymbol}`);
+        return 0;
+      }
+
+      const data = await response.json();
+      const price = parseFloat(data.price);
+
+      if (price && price > 0) {
+        console.log(`      ✅ Binance fallback: ${binanceSymbol} = $${price.toLocaleString()}`);
+        return price;
+      }
+    } catch (binanceError) {
+      console.error(`      ❌ Binance fallback failed: ${binanceError instanceof Error ? binanceError.message : 'Unknown error'}`);
+    }
+  }
+
+  console.error(`      ❌ All price sources failed for ${symbol}`);
+  return 0;
 }
 
 async function fetchEthGasPrice(): Promise<number> {
@@ -117,15 +173,19 @@ async function getMarketResult(question: string): Promise<boolean | null> {
   // BTC price digit check
   if (question.includes("BTC price end with digit")) {
     const btcPrice = await fetchCryptoPrice('bitcoin');
+    if (btcPrice === 0) {
+      console.error(`      ❌ Failed to fetch BTC price - skipping resolution`);
+      return null;
+    }
     const match = question.match(/digit (\d)/);
     if (!match) return null;
-    
+
     const targetDigit = parseInt(match[1]);
     const lastDigit = Math.floor(btcPrice * 100) % 10;
-    
+
     console.log(`      💰 BTC Price: $${btcPrice.toFixed(2)}`);
     console.log(`      🎲 Last digit: ${lastDigit}, Target: ${targetDigit}`);
-    
+
     return lastDigit === targetDigit;
   }
 
@@ -145,29 +205,41 @@ async function getMarketResult(question: string): Promise<boolean | null> {
   // BTC last digit EVEN/ODD check
   if (question.includes("BTC price last digit be EVEN")) {
     const btcPrice = await fetchCryptoPrice('bitcoin');
+    if (btcPrice === 0) {
+      console.error(`      ❌ Failed to fetch BTC price - skipping resolution`);
+      return null;
+    }
     const lastDigit = Math.floor(btcPrice * 100) % 10;
     const isEven = lastDigit % 2 === 0;
-    
+
     console.log(`      💰 BTC Price: $${btcPrice.toFixed(2)}`);
     console.log(`      🎲 Last digit: ${lastDigit}, EVEN: ${isEven}`);
-    
+
     return isEven;
   }
 
   if (question.includes("BTC price last digit be ODD")) {
     const btcPrice = await fetchCryptoPrice('bitcoin');
+    if (btcPrice === 0) {
+      console.error(`      ❌ Failed to fetch BTC price - skipping resolution`);
+      return null;
+    }
     const lastDigit = Math.floor(btcPrice * 100) % 10;
     const isOdd = lastDigit % 2 === 1;
-    
+
     console.log(`      💰 BTC Price: $${btcPrice.toFixed(2)}`);
     console.log(`      🎲 Last digit: ${lastDigit}, ODD: ${isOdd}`);
-    
+
     return isOdd;
   }
 
   // ETH price threshold check - "above $X"
   if (question.includes("ETH price be above")) {
     const ethPrice = await fetchCryptoPrice('ethereum');
+    if (ethPrice === 0) {
+      console.error(`      ❌ Failed to fetch ETH price - skipping resolution`);
+      return null;
+    }
     const match = question.match(/\$([0-9,]+)/);
     if (!match) return null;
 
@@ -183,6 +255,10 @@ async function getMarketResult(question: string): Promise<boolean | null> {
   // BTC price threshold check - "above $X"
   if (question.includes("BTC price be above")) {
     const btcPrice = await fetchCryptoPrice('bitcoin');
+    if (btcPrice === 0) {
+      console.error(`      ❌ Failed to fetch BTC price - skipping resolution`);
+      return null;
+    }
     const match = question.match(/\$([0-9,]+)/);
     if (!match) return null;
 
@@ -198,6 +274,10 @@ async function getMarketResult(question: string): Promise<boolean | null> {
   // SOL price threshold check - "above $X"
   if (question.includes("SOL price be above")) {
     const solPrice = await fetchCryptoPrice('solana');
+    if (solPrice === 0) {
+      console.error(`      ❌ Failed to fetch SOL price - skipping resolution`);
+      return null;
+    }
     const match = question.match(/\$([0-9,]+)/);
     if (!match) return null;
 
@@ -215,16 +295,20 @@ async function getMarketResult(question: string): Promise<boolean | null> {
   // For accurate "touch" markets, you need historical price data API
   if (question.includes("ETH price touch")) {
     const ethPrice = await fetchCryptoPrice('ethereum');
+    if (ethPrice === 0) {
+      console.error(`      ❌ Failed to fetch ETH price - skipping resolution`);
+      return null;
+    }
     const match = question.match(/\$([0-9,]+)/);
     if (!match) return null;
-    
+
     const threshold = parseInt(match[1].replace(/,/g, ''));
     const touched = ethPrice >= threshold;
-    
+
     console.log(`      💰 ETH Price: $${ethPrice.toFixed(2)}, Threshold: $${threshold}`);
     console.log(`      🎯 Result: ${touched ? 'YES' : 'NO'} (⚠️ CURRENT price only, not historical!)`);
     console.log(`      ⚠️  WARNING: This market type needs historical data for accuracy!`);
-    
+
     return touched;
   }
 
