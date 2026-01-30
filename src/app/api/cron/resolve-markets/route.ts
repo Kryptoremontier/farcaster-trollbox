@@ -18,15 +18,26 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, createWalletClient, http, formatEther } from 'viem';
+import { createPublicClient, createWalletClient, http, formatEther, fallback } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 
 export const runtime = "edge";
-export const maxDuration = 60; // 60 seconds max execution time
+export const maxDuration = 300; // 5 minutes max execution time (Vercel Pro limit)
 
 // TrollBetETH Contract - BASE MAINNET
 const TROLLBET_ETH_ADDRESS = '0x52ABabe88DE8799B374b11B91EC1b32989779e55';
+
+// Multiple RPC endpoints for reliability (fallback chain)
+const RPC_ENDPOINTS = [
+  process.env.BASE_MAINNET_RPC_URL, // Primary (Alchemy/QuickNode if configured)
+  'https://base.llamarpc.com',      // LlamaRPC (free, generous limits)
+  'https://base.drpc.org',          // dRPC (free tier)
+  'https://mainnet.base.org',       // Official Base RPC (rate limited)
+].filter(Boolean) as string[];
+
+// Helper: delay between operations to avoid rate limits
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Full ABI for reading and resolving markets
 const TROLLBET_ABI = [
@@ -59,6 +70,13 @@ const TROLLBET_ABI = [
       {"internalType": "bool", "name": "winningSide", "type": "bool"}
     ],
     "name": "resolveMarket",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"internalType": "uint256", "name": "marketId", "type": "uint256"}],
+    "name": "cancelMarket",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -369,30 +387,29 @@ export async function GET(req: NextRequest) {
       }, { status: 500 });
     }
 
-    // Setup clients
+    // Setup clients with fallback RPC endpoints
     const account = privateKeyToAccount(process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`);
-    
-    // Use public RPC endpoint to avoid Cloudflare blocking
-    // Alternative: Use Alchemy/Infura with API key for better reliability
-    const rpcUrl = process.env.BASE_MAINNET_RPC_URL || 'https://mainnet.base.org';
-    
-    const publicClient = createPublicClient({
-      chain: base,
-      transport: http(rpcUrl, {
-        timeout: 30_000, // 30 second timeout
-        retryCount: 3,
+
+    // Create fallback transport with multiple RPC endpoints
+    const transports = RPC_ENDPOINTS.map(url =>
+      http(url, {
+        timeout: 30_000,
+        retryCount: 2,
         retryDelay: 1000
       })
+    );
+
+    console.log(`   🌐 Using ${RPC_ENDPOINTS.length} RPC endpoints with fallback`);
+
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: fallback(transports, { rank: true })
     });
 
     const walletClient = createWalletClient({
       account,
       chain: base,
-      transport: http(rpcUrl, {
-        timeout: 30_000,
-        retryCount: 3,
-        retryDelay: 1000
-      })
+      transport: fallback(transports, { rank: true })
     });
 
     console.log(`   🤖 Bot address: ${account.address}`);
@@ -422,9 +439,12 @@ export async function GET(req: NextRequest) {
       }>
     };
 
-    // Check each market
+    // Check each market with rate limit protection
     for (let i = 0; i < Number(marketCount); i++) {
       try {
+        // Add delay between RPC calls to avoid rate limiting (500ms)
+        if (i > 0) await delay(500);
+
         const market = await publicClient.readContract({
           address: TROLLBET_ETH_ADDRESS,
           abi: TROLLBET_ABI,
@@ -435,18 +455,12 @@ export async function GET(req: NextRequest) {
         const [question, endTime, yesPool, noPool, resolved, , exists, cancelled] = market;
 
         if (!exists) continue;
-        
+
         results.checked++;
 
-        // Skip if already resolved or cancelled
+        // Skip if already resolved or cancelled (don't log to reduce noise)
         if (resolved || cancelled) {
           results.skipped++;
-          results.details.push({
-            marketId: i,
-            question,
-            status: cancelled ? 'already_cancelled' : 'already_resolved',
-            reason: cancelled ? 'Market was cancelled' : 'Market already resolved'
-          });
           continue;
         }
 
@@ -465,12 +479,12 @@ export async function GET(req: NextRequest) {
         // Get result from oracle with retry
         let result: boolean | null = null;
         let retries = 0;
-        const maxRetries = 2;
-        
+        const maxRetries = 3;
+
         while (result === null && retries <= maxRetries) {
           if (retries > 0) {
             console.log(`      🔄 Retry ${retries}/${maxRetries}...`);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s between retries
+            await delay(3000); // Wait 3s between retries
           }
           result = await getMarketResult(question);
           retries++;
@@ -492,33 +506,53 @@ export async function GET(req: NextRequest) {
 
         // Check if winning side has bets
         const winningPool = result ? yesPool : noPool;
-        if (winningPool === 0n) {
-          console.log(`      ⚠️  WARNING: Winning side has NO bets!`);
-          console.log(`      ℹ️  Contract will auto-cancel and allow refunds`);
-        }
 
-        // Resolve market
-        const hash = await walletClient.writeContract({
-          address: TROLLBET_ETH_ADDRESS,
-          abi: TROLLBET_ABI,
-          functionName: 'resolveMarket',
-          args: [BigInt(i), result]
-        });
+        // Add delay before transaction to avoid RPC rate limits
+        await delay(1000);
+
+        let hash: `0x${string}`;
+        let isCancellation = false;
+
+        if (winningPool === 0n) {
+          // Winning side has no bets - use cancelMarket for refunds
+          console.log(`      ⚠️  Winning side has NO bets - cancelling for refunds`);
+          isCancellation = true;
+
+          hash = await walletClient.writeContract({
+            address: TROLLBET_ETH_ADDRESS,
+            abi: TROLLBET_ABI,
+            functionName: 'cancelMarket',
+            args: [BigInt(i)]
+          });
+        } else {
+          // Normal resolution - winning side has bets
+          hash = await walletClient.writeContract({
+            address: TROLLBET_ETH_ADDRESS,
+            abi: TROLLBET_ABI,
+            functionName: 'resolveMarket',
+            args: [BigInt(i), result]
+          });
+        }
 
         console.log(`      📤 TX sent: ${hash}`);
 
-        // Wait for confirmation
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        // Wait for confirmation with timeout
+        const receipt = await publicClient.waitForTransactionReceipt({
+          hash,
+          timeout: 60_000 // 60 second timeout for confirmation
+        });
+
+        // Add delay after transaction before processing next market
+        await delay(1000);
 
         if (receipt.status === 'success') {
-          // Check if market was cancelled instead of resolved
-          if (winningPool === 0n) {
-            console.log(`      🔄 Market #${i} auto-cancelled (no winners)`);
+          if (isCancellation) {
+            console.log(`      🔄 Market #${i} cancelled - users can claim refunds`);
             results.resolved++;
             results.details.push({
               marketId: i,
               question,
-              result: `AUTO-CANCELLED (${result ? 'YES' : 'NO'} won but no bets)`,
+              result: `CANCELLED (${result ? 'YES' : 'NO'} won but no bets)`,
               txHash: hash,
               status: 'cancelled'
             });
@@ -546,13 +580,21 @@ export async function GET(req: NextRequest) {
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const isRateLimit = errorMessage.includes('429') || errorMessage.includes('rate limit');
+
         console.error(`   ❌ Error processing market #${i}:`, errorMessage);
         results.failed++;
         results.details.push({
           marketId: i,
           status: 'error',
-          error: errorMessage
+          error: errorMessage.substring(0, 200) // Truncate long error messages
         });
+
+        // If rate limited, wait longer before continuing
+        if (isRateLimit) {
+          console.log(`   ⏳ Rate limited - waiting 5 seconds before continuing...`);
+          await delay(5000);
+        }
       }
     }
 
