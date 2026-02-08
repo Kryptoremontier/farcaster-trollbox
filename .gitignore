@@ -1,44 +1,27 @@
-# Ignore node modules
-node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Ignore Next.js build output
-.next/
-out/
+# dependencies
+/node_modules
 
-# Ignore environment variables
-.env
-.env.local
-.env.*.local
-.env.mainnet
+# next.js
+/.next/
+/out/
 
-# Ignore logs
-*.log
+# production
+/build
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# Ignore OS files
-.DS_Store
-Thumbs.db
+# env files
+.env*
 
-# Ignore IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# vercel
+.vercel
 
-# Ignore test coverage
-coverage/
-
-# Ignore build artifacts
-dist/
-build/
-
-# Ignore temporary files
-*.tmp
-.cache/
-
-# Screenshots for Claude review
-screenshots/
-.claude/
+# typescript
+*.tsbuildinfo
+next-env.d.ts
